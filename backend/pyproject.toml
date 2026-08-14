@@ -1,0 +1,106 @@
+[project]
+name = "haven"
+version = "2.0.0.dev0"
+description = "Human Adaptation & Vitality Enhancement Network — a fatigue-aware safety co-pilot"
+# Upper bound is deliberate: 3.12-3.14 are verified to have wheels for the whole
+# tree (including onnxruntime via fastembed). Without a cap, uv resolves against
+# unreleased versions and fails on packages that do not claim them yet.
+requires-python = ">=3.12,<3.15"
+
+# Runtime. Deliberately small: the offline path (§6) must work with nothing but
+# these installed. Optional groups below land at the phase that needs them.
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.8",
+    "numpy>=2.0",
+    "httpx>=0.27",
+    # Phase 1A — the compiled StateGraph. Pure-Python orchestration, no network
+    # calls of its own. See app/config.py for the LangSmith tracing guard.
+    "langgraph>=1.0,<2.0",
+    "langchain-core>=1.0,<2.0",
+]
+
+[project.optional-dependencies]
+# Phase 3 — real reasoning providers behind HAVEN's own provider chain.
+providers = [
+    "langchain-ollama>=1.0",
+    "langchain-ibm>=1.0",
+]
+# Phase 5 — hybrid retrieval. `fastembed` is ONNX (~50MB), deliberately not
+# sentence-transformers/PyTorch (~2GB). BM25 alone remains the offline terminal.
+rag = [
+    # Not yet at 1.0 stable, unlike the rest of the tree. Pinned to the 0.4 line.
+    "langchain-community>=0.4,<1.0",
+    "langchain-text-splitters>=1.0",
+    "langchain-chroma>=1.0",
+    "chromadb>=0.5",
+    "fastembed>=0.4",
+    "rank-bm25>=0.2",
+]
+# Phase 4 — the offline corpus compiler. Never imported by the request path.
+compiler = [
+    "pypdf>=5.0",
+    "pdfplumber>=0.11",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "hypothesis>=6.100",
+    "ruff>=0.6",
+]
+
+# This is an application, not a library: `app`, `tools`, `tests`, `eval`, and
+# `compiler` are imported by path, exactly as pytest's `pythonpath` arranges.
+[tool.uv]
+package = false
+
+# --------------------------------------------------------------------------
+# Ruff
+# --------------------------------------------------------------------------
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+src = ["."]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+]
+ignore = [
+    # The formatter owns line length; E501 only duplicates it and fights the
+    # long prose strings in the procedure corpus.
+    "E501",
+    # `timezone.utc` -> `datetime.UTC`. The codebase is already consistent on
+    # `timezone.utc` across 18 sites; the alias buys nothing and the churn would
+    # bury real changes.
+    "UP017",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Scenario and corpus modules are data, and read better unwrapped.
+"app/data/*.py" = ["E741"]
+"tools/calibrate.py" = ["T201"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "tools", "eval", "compiler"]
+
+# --------------------------------------------------------------------------
+# pytest
+# --------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+# Infra-gated tests are excluded by default so a clean checkout runs green with
+# no Ollama and no watsonx credentials. Override with `pytest -m integration`.
+addopts = "-m 'not integration and not live'"
+markers = [
+    "integration: requires a local Ollama instance",
+    "live: requires watsonx.ai credentials (consumes Lite-tier tokens)",
+]

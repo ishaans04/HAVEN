@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Console palette. Built for a fatigued operator reading under time pressure:
+ * one dark surface, restrained accents, and status colour reserved exclusively
+ * for risk state so nothing else competes with it.
+ */
+:root {
+  --hv-bg: #070a0f;
+  --hv-panel: #0e131b;
+  --hv-panel-raised: #141b26;
+  --hv-line: #1e2733;
+  --hv-line-bright: #2b3746;
+  --hv-text: #e6edf5;
+  --hv-muted: #8494a8;
+  --hv-dim: #5b6b7f;
+
+  --hv-nominal: #35d6a4;
+  --hv-watch: #f2c14e;
+  --hv-degraded: #ff6b5e;
+  --hv-critical: #ff4d4d;
+  --hv-accent: #4aa8ff;
+  --hv-violet: #a78bfa;
+}
+
+html,
+body {
+  background: var(--hv-bg);
+  color: var(--hv-text);
+}
+
+body {
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "tnum" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono {
+  font-family: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* Faint grid, so the console reads as an instrument surface rather than a page. */
+.hv-grid {
+  background-image:
+    linear-gradient(rgba(74, 168, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74, 168, 255, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+.hv-panel {
+  background: var(--hv-panel);
+  border: 1px solid var(--hv-line);
+  border-radius: 10px;
+}
+
+.hv-zone-label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hv-dim);
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--hv-line-bright);
+  border-radius: 6px;
+}
+
+@keyframes hv-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.hv-pulse {
+  animation: hv-pulse 2s ease-in-out infinite;
+}
