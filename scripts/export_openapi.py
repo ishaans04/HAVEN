@@ -33,7 +33,17 @@ def export() -> Path:
     schema = app.openapi()
     # sort_keys so the output depends on the models, not on dict insertion order,
     # and a trailing newline so the file is well-formed for git.
-    OUTPUT.write_text(json.dumps(schema, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    #
+    # newline="\n" is load-bearing, not tidiness. Without it Python's text mode
+    # writes CRLF on Windows while .gitattributes normalises the committed file
+    # to LF, so the CI drift check would pass on Ubuntu and fail on every
+    # developer's machine the moment they regenerated -- reporting drift that
+    # does not exist and hiding drift that does.
+    OUTPUT.write_text(
+        json.dumps(schema, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
     return OUTPUT
 
 

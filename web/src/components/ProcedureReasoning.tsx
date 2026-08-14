@@ -43,15 +43,30 @@ export function ProcedureReasoning({
 
   const retrieveStep = audit?.steps.find((s) => s.step === "RETRIEVE");
   const selectStep = audit?.steps.find((s) => s.step === "SELECT");
+  const verifyStep = audit?.steps.find((s) => s.step === "VERIFY");
   const candidates = (retrieveStep?.outputs.candidates ?? []) as RetrievedCandidate[];
   const rejected = (selectStep?.outputs.rejected ?? []) as RejectedCandidate[];
+  // The model's *proposal*. Whether it survived is VERIFY's answer, not this
+  // one — a passage the checker rejected must not be shown as the rule that
+  // governed.
   const governing = selectStep?.outputs.governing_passage_id as string | null | undefined;
+  const verified = verifyStep?.outputs.verified === true;
   const rejectionById = new Map(rejected.map((r) => [r.passage_id, r]));
 
   const reasoningSteps = (audit?.steps ?? []).filter((s) =>
-    ["RETRIEVE", "SELECT", "GATE", "FUSE", "GENERATE", "GENERATE_FALLBACK", "REFUSE", "SCHEDULE_IMPACT", "WITHHOLD", "DEGRADED"].includes(
-      s.step,
-    ),
+    [
+      "RETRIEVE",
+      "ADMISSIBILITY",
+      "SELECT",
+      "VERIFY",
+      "FUSE",
+      "GENERATE",
+      "GENERATE_FALLBACK",
+      "REFUSE",
+      "SCHEDULE_IMPACT",
+      "WITHHOLD",
+      "DEGRADED",
+    ].includes(s.step),
   );
 
   return (
@@ -104,7 +119,11 @@ export function ProcedureReasoning({
                     {c.doc} §{c.section}
                   </span>
                   {isGoverning ? (
-                    <Tag tone="good">selected — preconditions satisfied</Tag>
+                    verified ? (
+                      <Tag tone="good">proposed — verified by the checker</Tag>
+                    ) : (
+                      <Tag tone="bad">proposed — rejected by the checker</Tag>
+                    )
                   ) : rejection ? (
                     <span className="text-[10px] leading-snug text-[color:var(--hv-degraded)]">
                       rejected — {rejection.why}

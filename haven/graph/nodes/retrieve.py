@@ -2,13 +2,16 @@
 
 Assembles the deterministic fact set the reasoning tier is allowed to see -- it
 is also the allow-list the numeric-integrity guard checks generated text
-against -- and binds the retrieval and reasoning adapters into the flow that
-will run them.
+against -- binds the retrieval and reasoning adapters into the flow that will
+run them, and performs the retrieval itself.
 
-In this phase the retrieval call itself still happens inside
-``ReasoningFlow.run``, which REASON invokes. Decomposing that flow into its own
-RETRIEVE / SELECT / GATE / FUSE / GENERATE nodes is the next phase's work; this
-node is the seam it will be split along.
+Since Phase 1B this node really does retrieve. In Phase 1A it only bound the
+flow, because ``ReasoningFlow.run`` was one indivisible call covering retrieval,
+selection, the gate, fusion and generation; that call is gone, and each of its
+steps is now a node of this graph. What comes back is the *full* candidate
+payload: compiled preconditions included, because ADMISSIBILITY, the audit trail
+and the console all need them. The redaction that keeps them away from the
+reasoning tier happens at SELECT, in one place (safety requirement S4).
 """
 
 from __future__ import annotations
@@ -40,4 +43,4 @@ def retrieve_node(state: SituationState) -> dict[str, Any]:
         "kss": round(sample.kss, 1),
     }
     flow = ReasoningFlow(state["retriever"], state["llm"], state["trail"])
-    return {"facts": facts, "flow": flow}
+    return {"facts": facts, "flow": flow, "candidates": flow.retrieve(facts)}

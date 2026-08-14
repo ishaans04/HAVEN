@@ -219,6 +219,28 @@ export interface components {
              */
             title: string;
         };
+        /**
+         * ClauseDetail
+         * @description One compiled precondition, as the deterministic checker evaluated it.
+         *
+         *     Present on both outcomes, because both are claims about the same test: on a
+         *     recommendation these clauses are the evidence the citation was lawful; on a
+         *     refusal they are the reason it was not. The reasoning tier never sees this
+         *     shape -- it is produced by ``haven.deterministic.preconditions`` after the
+         *     model has already spoken (safety requirement S4).
+         */
+        ClauseDetail: {
+            /** Actual */
+            actual: string;
+            /** Clause */
+            clause: string;
+            /** Expected */
+            expected: string;
+            /** Explanation */
+            explanation: string;
+            /** Satisfied */
+            satisfied: boolean;
+        };
         /** CrewMember */
         CrewMember: {
             /**
@@ -537,21 +559,38 @@ export interface components {
              */
             resource_cost: string;
             schedule_impact: components["schemas"]["ScheduleImpact"];
+            /**
+             * Verified Clauses
+             * @default []
+             */
+            verified_clauses: components["schemas"]["ClauseDetail"][];
         };
         /** Refusal */
         Refusal: {
             best_candidate?: components["schemas"]["BestCandidate"] | null;
+            /**
+             * Checker Disagreed
+             * @default false
+             */
+            checker_disagreed: boolean;
             /** Escalate To */
             escalate_to: string;
             /** Explanation */
             explanation: string;
+            /**
+             * Failed Clauses
+             * @default []
+             */
+            failed_clauses: components["schemas"]["ClauseDetail"][];
             /** Gate */
             gate: number;
+            /** Model Selected */
+            model_selected?: string | null;
             /**
              * Reason
              * @enum {string}
              */
-            reason: "no_governing_procedure" | "insufficient_input" | "roster_conflict" | "provider_unavailable";
+            reason: "no_governing_procedure" | "insufficient_input" | "roster_conflict" | "provider_unavailable" | "precondition_unmet" | "checker_model_disagreement";
             /** Reason Label */
             reason_label: string;
             /** Searched */

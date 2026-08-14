@@ -31,7 +31,15 @@ class Thresholds:
     risk_critical_at: float = 0.42
 
     # --- Stage 4/5: retrieval + reasoning ---------------------------------
-    # Below this relevance the reasoning flow must REFUSE (PRD 4.1 step 2).
+    # DISPLAY ONLY since Phase 1B. This was the v1 relevance gate: a TF-IDF
+    # similarity float compared against a threshold, with the comparison treated
+    # as a decision about whether a rule governs. It is not one -- similarity is
+    # a property of wording, admissibility is a property of the rule -- so that
+    # branch is gone and ``deterministic/preconditions.py`` settles the question
+    # clause by clause instead. The number survives so refusal payloads can show
+    # an operator the retrieval floor that was in force beside the closest
+    # candidate's score. Nothing may branch on it; a test in
+    # ``tests/test_propose_dispose.py`` scans the package and enforces that.
     relevance_gate: float = 0.45
     # Number of candidate passages handed to the reasoning tier. Deliberately
     # generous so confusable near-misses are included (PRD 4, stage 4).

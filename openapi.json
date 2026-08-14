@@ -161,6 +161,40 @@
         "title": "Citation",
         "type": "object"
       },
+      "ClauseDetail": {
+        "description": "One compiled precondition, as the deterministic checker evaluated it.\n\nPresent on both outcomes, because both are claims about the same test: on a\nrecommendation these clauses are the evidence the citation was lawful; on a\nrefusal they are the reason it was not. The reasoning tier never sees this\nshape -- it is produced by ``haven.deterministic.preconditions`` after the\nmodel has already spoken (safety requirement S4).",
+        "properties": {
+          "actual": {
+            "title": "Actual",
+            "type": "string"
+          },
+          "clause": {
+            "title": "Clause",
+            "type": "string"
+          },
+          "expected": {
+            "title": "Expected",
+            "type": "string"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "satisfied": {
+            "title": "Satisfied",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "clause",
+          "satisfied",
+          "expected",
+          "actual",
+          "explanation"
+        ],
+        "title": "ClauseDetail",
+        "type": "object"
+      },
       "CrewMember": {
         "properties": {
           "circadian_offset_h": {
@@ -810,6 +844,14 @@
           },
           "schedule_impact": {
             "$ref": "#/components/schemas/ScheduleImpact"
+          },
+          "verified_clauses": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ClauseDetail"
+            },
+            "title": "Verified Clauses",
+            "type": "array"
           }
         },
         "required": [
@@ -834,6 +876,11 @@
               }
             ]
           },
+          "checker_disagreed": {
+            "default": false,
+            "title": "Checker Disagreed",
+            "type": "boolean"
+          },
           "escalate_to": {
             "title": "Escalate To",
             "type": "string"
@@ -842,16 +889,37 @@
             "title": "Explanation",
             "type": "string"
           },
+          "failed_clauses": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ClauseDetail"
+            },
+            "title": "Failed Clauses",
+            "type": "array"
+          },
           "gate": {
             "title": "Gate",
             "type": "number"
+          },
+          "model_selected": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Selected"
           },
           "reason": {
             "enum": [
               "no_governing_procedure",
               "insufficient_input",
               "roster_conflict",
-              "provider_unavailable"
+              "provider_unavailable",
+              "precondition_unmet",
+              "checker_model_disagreement"
             ],
             "title": "Reason",
             "type": "string"

@@ -104,6 +104,23 @@ class EvaluationRequest(BaseModel):
 # --------------------------------------------------------------------------
 # Response  (PRD 5.2 / 5.3)
 # --------------------------------------------------------------------------
+class ClauseDetail(BaseModel):
+    """One compiled precondition, as the deterministic checker evaluated it.
+
+    Present on both outcomes, because both are claims about the same test: on a
+    recommendation these clauses are the evidence the citation was lawful; on a
+    refusal they are the reason it was not. The reasoning tier never sees this
+    shape -- it is produced by ``haven.deterministic.preconditions`` after the
+    model has already spoken (safety requirement S4).
+    """
+
+    clause: str
+    satisfied: bool
+    expected: str
+    actual: str
+    explanation: str
+
+
 class Citation(BaseModel):
     doc: str
     section: str
@@ -127,6 +144,12 @@ class Recommendation(BaseModel):
     rationale: str
     resource_cost: str = ""
     schedule_impact: ScheduleImpact
+    # Every precondition of the cited passage, as the deterministic checker
+    # evaluated it *after* the model proposed the citation. Non-empty and
+    # all-satisfied on every recommendation HAVEN issues (safety requirement
+    # S5); the console shows it so an operator can audit the citation rather
+    # than trust it.
+    verified_clauses: list[ClauseDetail] = []
 
 
 class BestCandidate(BaseModel):
@@ -141,13 +164,28 @@ class Refusal(BaseModel):
         "insufficient_input",
         "roster_conflict",
         "provider_unavailable",
+        # The reasoning tier named a passage; the deterministic checker found a
+        # precondition of that passage unsatisfied. ``failed_clauses`` names it.
+        "precondition_unmet",
+        # The reasoning tier and the checker reached different conclusions about
+        # whether anything governs. Both directions fail closed (S6).
+        "checker_model_disagreement",
     ]
     reason_label: str
     searched: list[str]
     best_candidate: BestCandidate | None = None
+    # Retrieval relevance floor. Display-only since v2: no decision anywhere in
+    # HAVEN branches on it (``tests/test_propose_dispose.py`` asserts that).
+    # Retained on the contract so the console can keep showing the operator what
+    # similarity the closest candidate actually scored.
     gate: float
     explanation: str
     escalate_to: str
+    # Which preconditions the checker found unsatisfied, and what the model had
+    # proposed when it did. Empty when the refusal never reached a selection.
+    failed_clauses: list[ClauseDetail] = []
+    model_selected: str | None = None
+    checker_disagreed: bool = False
 
 
 class Evidence(BaseModel):

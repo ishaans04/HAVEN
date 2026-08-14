@@ -30,13 +30,14 @@ from haven.contracts import (
     TimelineTask,
 )
 from haven.deterministic.nasa_tlx import WorkloadResult
+from haven.deterministic.preconditions import AdmissibilityResult
 from haven.deterministic.screens import ConfidenceResult
 from haven.deterministic.three_process_model import AlertnessSample, ThreeProcessModel
 from haven.deterministic.triggers import TriggerResult
 from haven.rag.retriever import ProcedureRetriever
 from haven.reasoning.audit import AuditTrail
 from haven.reasoning.llm import ReasoningLLM
-from haven.reasoning.orchestrator import ReasoningFlow, ReasoningOutcome
+from haven.reasoning.orchestrator import ReasoningFlow, ReasoningOutcome, Verdict
 
 
 @dataclass(frozen=True)
@@ -121,9 +122,21 @@ class SituationState(TypedDict, total=False):
     confidence: ConfidenceResult
     evidence: Evidence
 
-    # -- RETRIEVE / REASON --------------------------------------------------
+    # -- RETRIEVE -> ADMISSIBILITY -> SELECT -> VERIFY -----------------------
     facts: dict[str, Any]
     flow: ReasoningFlow
+    # Full candidate payloads: compiled preconditions included, because the
+    # checker, the audit trail and the console all need them. SELECT redacts
+    # them to prose before any provider sees them (S4).
+    candidates: list[dict[str, Any]]
+    admissibility: dict[str, AdmissibilityResult]
+    selection: dict[str, Any]
+    verdict: Verdict
+
+    # -- FUSE / GENERATE / REFUSE -------------------------------------------
+    justification: str
+    # Set by whichever node settled the matter. Once present it is final: every
+    # later reasoning node reads it and returns without acting.
     outcome: ReasoningOutcome
     degraded: bool
     degraded_reason: str | None

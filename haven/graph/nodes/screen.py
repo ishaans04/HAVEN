@@ -57,6 +57,9 @@ def screen_node(state: SituationState) -> dict[str, Any]:
             gate=outcome.refusal["gate"],
             explanation=outcome.refusal["explanation"],
             escalate_to=outcome.refusal["escalate_to"],
+            failed_clauses=outcome.refusal["failed_clauses"],
+            model_selected=outcome.refusal["model_selected"],
+            checker_disagreed=outcome.refusal["checker_disagreed"],
         )
     else:
         snapshots = [
@@ -126,6 +129,10 @@ def screen_node(state: SituationState) -> dict[str, Any]:
                     f"case, so the decision is escalated rather than downgraded."
                 ),
                 escalate_to="flight_director",
+                # The passage verified cleanly; what failed was the roster, not
+                # the rule. Recording the selection keeps the refusal traceable
+                # back to the same passage the audit trail names.
+                model_selected=outcome.model_selected,
             )
         else:
             recommendation = Recommendation(
@@ -134,6 +141,10 @@ def screen_node(state: SituationState) -> dict[str, Any]:
                 citation=Citation(**outcome.citation),
                 rationale=rationale + downgrade_note,
                 resource_cost=RESOURCE_COST[action],
+                # The checker's verdict on the cited passage, carried out to the
+                # operator. A downgrade changes the action, never the citation,
+                # so these clauses describe the passage still being cited.
+                verified_clauses=outcome.verified_clauses,
                 schedule_impact=ScheduleImpact(
                     roster_ok=impact.roster_ok,
                     checked_roles=sorted(set(impact.checked_roles)),

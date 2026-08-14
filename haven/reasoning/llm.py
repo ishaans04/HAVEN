@@ -64,11 +64,19 @@ SYSTEM_PROMPT = (
 
 SELECT_PROMPT = """TASK: SELECT
 
-Identify which single candidate passage governs the situation below, or report that none do.
-A passage governs only if the situation satisfies its stated preconditions. Topical similarity
-is not sufficient: a passage about the same task type that governs a different domain (vehicle
-state, suit systems, staffing) or a different mission phase (planning rather than execution)
-does NOT govern.
+Read the candidate passages below and identify which single passage governs the situation, or
+report that none do.
+
+A passage governs only if its own text establishes that it applies to this operation, in this
+mission phase, and to the operator's alertness state. Topical similarity is not sufficient.
+Passages frequently disclaim jurisdiction in their own wording -- a passage that says it covers
+a planning activity, vehicle state, suit systems, or that crew rest is assessed elsewhere, does
+not govern an execution-phase crew-alertness situation. Read for those limits.
+
+You are given no structured metadata and no precondition table. Judge from the text.
+Your selection is a proposal: it is checked against the compiled rule independently before
+anything is issued, so name the passage you can defend from its wording, and name none if none
+fits. Refusing is a correct answer.
 
 SITUATION (deterministic tier; treat as fact):
 {facts}
@@ -77,7 +85,7 @@ CANDIDATE PASSAGES:
 {candidates}
 
 Respond with JSON only:
-{{"governing_passage_id": "<id or null>", "relevance": <0-1>, "rejected": [{{"passage_id": "..", "why": ".."}}]}}
+{{"governing_passage_id": "<id or null>", "reason": "<one sentence>", "rejected": [{{"passage_id": "..", "why": ".."}}]}}
 """
 
 FUSE_PROMPT = """TASK: FUSE
@@ -97,7 +105,7 @@ Respond with the justification text only.
 
 GENERATE_PROMPT = """TASK: GENERATE
 
-Write the operator-facing recommendation. State the action the procedure prescribes, then the
+Write the operator-facing recommendation. State the action the procedure requires, then the
 justification. Cite the procedure by document and section. Use only the numbers given; do not
 introduce any other figure.
 
@@ -140,12 +148,27 @@ class ReasoningLLM:
 # Mock provider
 # --------------------------------------------------------------------------
 class MockGraniteLLM(ReasoningLLM):
-    """Deterministic stand-in for Granite.
+    """Deterministic stand-in for Granite, reasoning from prose.
 
-    The SELECT step is genuinely a decision, not a lookup: it evaluates each
-    candidate's declared preconditions against the situation and rejects
-    passages that are merely similar. That is the behaviour the real model is
-    prompted to perform, reproduced deterministically so the demo cannot fail.
+    In v1 the SELECT step read each candidate's compiled ``applies_when`` and
+    evaluated it with Python conditionals. That made the "reasoning tier" a
+    rules engine wearing a model's clothes: it was handed the answer key, and
+    the skill it demonstrated would transfer to no real procedure library. Since
+    v2 the candidate payload reaching any provider is redacted to prose
+    (``passage_id``, ``doc``, ``section``, ``title``, ``text``) and this mock
+    judges from the text, as the model it stands in for must.
+
+    The corpus was written to make that possible. Every near-miss states its own
+    limit in plain language -- "Sleep shifting is a planning activity", "This
+    section governs vehicle state and approach geometry only", "is not assessed
+    by this section" -- because a real rulebook does the same.
+
+    **It is deliberately fallible.** Reading prose, it cannot evaluate a
+    threshold the passage does not quantify: "below the nominal execution
+    threshold" names no number, so nothing here can confirm it. That is exactly
+    the class of judgement the deterministic checker owns, and VERIFY is what
+    makes a wrong proposal safe. A mock that could not be wrong would hide the
+    mechanism this system exists to demonstrate.
     """
 
     provider = "mock-granite"
@@ -164,76 +187,144 @@ class MockGraniteLLM(ReasoningLLM):
         raise ValueError(f"Unknown reasoning task {task!r}")
 
     # -- SELECT ----------------------------------------------------------
+    # Phrases by which a passage disclaims jurisdiction over crew alertness
+    # during execution. Checked first, and before anything else, because a
+    # passage that has already said "not me" has settled the question -- and
+    # because several near-misses would otherwise pass the later checks on
+    # vocabulary they use while disclaiming it (OPS-DUTY-03 3.5 talks about
+    # recovery periods in the same breath as declining to gate execution).
+    _DISCLAIMERS: tuple[tuple[str, str], ...] = (
+        ("planning activity", "passage governs the planning phase, not execution"),
+        ("completed before the execution period", "passage governs the planning phase, not execution"),
+        ("does not itself gate task execution", "passage sets planning limits and does not gate execution"),
+        ("defines planning limits", "passage sets planning limits and does not gate execution"),
+        ("governs vehicle state", "passage governs vehicle state, not crew alertness"),
+        ("approach geometry only", "passage governs vehicle state, not crew alertness"),
+        ("is not assessed by this section", "passage defers crew rest status to another section"),
+        ("verified separately", "passage defers crew rest status to another section"),
+    )
+
+    # Vocabulary that marks a passage as actually addressing operator condition.
+    # Matched on word boundaries: "restarted" is not "rest".
+    _CREW_STATE_TERMS: tuple[str, ...] = (
+        "alertness",
+        "alert phase",
+        "fatigue",
+        "sleep",
+        "sleepiness",
+        "circadian",
+        "rest",
+        "duty ceiling",
+        "duty load",
+        "recovery period",
+    )
+
+    # How each operation is named in procedure prose. A rulebook does not say
+    # "orbital_burn"; it says "propulsive manoeuvre". Reading the corpus means
+    # recognising the operation from the words it is written in.
+    _OPERATION_TERMS: dict[str, tuple[str, ...]] = {
+        "orbital_burn": ("propulsive", "burn", "manoeuvre", "reboost"),
+        "docking": ("docking", "proximity operation", "approach corridor", "range gate"),
+        "eva": ("extravehicular", "egress", "suited", "pre-breathe"),
+        "robotics_capture": ("robotic", "capture"),
+        "hatch_operation": ("hatch",),
+        "science_ops": ("payload", "science"),
+        "maintenance": ("maintenance",),
+        "medical_contingency": ("medical",),
+    }
+
+    # A passage may scope itself by class rather than by operation. Only counts
+    # where the situation is in that class.
+    _SAFETY_CRITICAL_SCOPE = "safety-critical task"
+
     @staticmethod
-    def _unmet_conditions(applies_when: dict, facts: dict) -> list[str]:
-        unmet: list[str] = []
-        if "task_types" in applies_when and facts["task_type"] not in applies_when["task_types"]:
-            unmet.append(
-                f"passage is scoped to {', '.join(applies_when['task_types'])}; "
-                f"situation task type is {facts['task_type']}"
-            )
-        if "criticality_in" in applies_when and facts["criticality"] not in applies_when["criticality_in"]:
-            unmet.append(
-                f"passage applies at {'/'.join(applies_when['criticality_in'])} criticality; "
-                f"situation is {facts['criticality']}"
-            )
-        if "alertness_below" in applies_when and facts["alertness_score"] >= applies_when["alertness_below"]:
-            unmet.append("passage requires alertness below its execution threshold; situation is above it")
-        if applies_when.get("requires_circadian_flag") and not facts["circadian_flag"]:
-            unmet.append("passage requires the task to fall in the operator's circadian trough; it does not")
-        if "workload_above" in applies_when and facts["workload_score"] <= applies_when["workload_above"]:
-            unmet.append("passage requires sustained duty load above its ceiling; situation is below it")
-        if "phase" in applies_when and applies_when["phase"] != facts.get("phase", "execution"):
-            unmet.append(
-                f"passage governs the {applies_when['phase']} phase; situation is in {facts.get('phase', 'execution')}"
-            )
-        if "domain" in applies_when:
-            unmet.append(f"passage governs {applies_when['domain'].replace('_', ' ')}, not crew alertness")
-        return unmet
+    def _mentions(text: str, term: str) -> bool:
+        return re.search(rf"\b{re.escape(term)}", text) is not None
+
+    @classmethod
+    def _disclaims(cls, text: str) -> str | None:
+        for phrase, why in cls._DISCLAIMERS:
+            if phrase in text:
+                return why
+        return None
+
+    @classmethod
+    def _addresses_crew_state(cls, text: str) -> bool:
+        return any(cls._mentions(text, term) for term in cls._CREW_STATE_TERMS)
+
+    @classmethod
+    def _covers_operation(cls, text: str, task_type: str, criticality: str) -> bool:
+        if criticality == "high" and cls._SAFETY_CRITICAL_SCOPE in text:
+            return True
+        return any(cls._mentions(text, term) for term in cls._OPERATION_TERMS.get(task_type, ()))
 
     def _select(self, context: dict[str, Any]) -> dict:
-        facts = context["facts"]
-        candidates = context["candidates"]
+        """Judge each candidate from its text, as the real model is prompted to.
 
-        governing: dict | None = None
+        Four readings, in order, on the passage's own words plus the
+        deterministic fact set -- never on compiled preconditions, which this
+        method is not given:
+
+          1. does the passage disclaim jurisdiction?
+          2. does it address the operator's condition at all, or only hardware?
+          3. does it name this operation, or scope itself to tasks of this class?
+          4. does it condition itself on a crew state the facts report absent?
+
+        Step 4 is limited to conditions a reader can actually settle: the
+        circadian trough is stated categorically in prose and reported
+        categorically in the facts, so the two can be compared. A threshold the
+        passage does not quantify ("below the nominal execution threshold")
+        cannot be, and is deliberately left to the deterministic checker.
+
+        The first survivor is the proposal. Later survivors are reported as
+        rejected in favour of it -- the prompt asks for a single governing
+        passage, and retrieval order is the model's only ranking signal.
+        """
+        facts = context["facts"]
+        task_type = str(facts.get("task_type", "")).replace("_", " ")
+        criticality = str(facts.get("criticality", ""))
+        in_circadian_trough = bool(facts.get("circadian_flag"))
+
+        governing: str | None = None
         rejected: list[dict] = []
 
-        for cand in candidates:
-            unmet = self._unmet_conditions(cand["applies_when"], facts)
-            if unmet or not cand["prescribes"]:
-                reason = unmet[0] if unmet else "passage states no prescribed action for this condition"
-                rejected.append(
-                    {
-                        "passage_id": cand["passage_id"],
-                        "why": reason,
-                        "relevance": round(cand["relevance"] * 0.55, 3),
-                    }
+        def reject(passage_id: str, why: str) -> None:
+            rejected.append({"passage_id": passage_id, "why": why})
+
+        for cand in context["candidates"]:
+            passage_id = cand["passage_id"]
+            text = f"{cand.get('title', '')}. {cand['text']}".lower()
+
+            disclaimer = self._disclaims(text)
+            if disclaimer:
+                reject(passage_id, disclaimer)
+                continue
+            if not self._addresses_crew_state(text):
+                reject(passage_id, "passage does not address operator alertness, fatigue or rest state")
+                continue
+            if not self._covers_operation(text, str(facts.get("task_type", "")), criticality):
+                reject(passage_id, f"passage does not name {task_type} among the operations it covers")
+                continue
+            if "circadian trough" in text and not in_circadian_trough:
+                reject(
+                    passage_id,
+                    "passage applies where the task falls inside the operator's circadian trough; this one does not",
                 )
                 continue
-            judged = round(min(0.98, cand["relevance"] + 0.12), 3)
-            if governing is None or judged > governing["relevance"]:
-                if governing is not None:
-                    rejected.append(
-                        {
-                            "passage_id": governing["governing_passage_id"],
-                            "why": "governing but lower relevance than the selected passage",
-                            "relevance": governing["relevance"],
-                        }
-                    )
-                governing = {"governing_passage_id": cand["passage_id"], "relevance": judged}
+            if governing is None:
+                governing = passage_id
             else:
-                rejected.append(
-                    {
-                        "passage_id": cand["passage_id"],
-                        "why": "governing but lower relevance than the selected passage",
-                        "relevance": round(min(0.98, cand["relevance"] + 0.12), 3),
-                    }
-                )
+                reject(passage_id, "also addresses this condition, but the selected passage is more specific")
 
-        if governing is None:
-            best = max((r["relevance"] for r in rejected), default=0.0)
-            return {"governing_passage_id": None, "relevance": best, "rejected": rejected}
-        return {**governing, "rejected": rejected}
+        return {
+            "governing_passage_id": governing,
+            "reason": (
+                f"passage addresses operator alertness for {task_type} during execution and disclaims nothing"
+                if governing
+                else f"no candidate passage addresses operator alertness for {task_type} during execution"
+            ),
+            "rejected": rejected,
+        }
 
     # -- FUSE ------------------------------------------------------------
     @staticmethod
@@ -254,8 +345,8 @@ class MockGraniteLLM(ReasoningLLM):
         return (
             f"{', '.join(clauses)}. "
             f"{passage['doc']} section {passage['section']} governs this combination directly: it addresses "
-            f"{passage['title'][0].lower()}{passage['title'][1:]} and its stated preconditions are all "
-            f"satisfied by the current state."
+            f"{passage['title'][0].lower()}{passage['title'][1:]} and the situation falls inside the "
+            f"conditions its text states."
         )
 
     # -- GENERATE --------------------------------------------------------

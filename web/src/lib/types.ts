@@ -45,6 +45,7 @@ export type EvaluationRequest = Schemas["EvaluationRequest"];
 // Response
 // --------------------------------------------------------------------------
 export type Citation = Schemas["Citation"];
+export type ClauseDetail = Schemas["ClauseDetail"];
 export type ScheduleImpact = Schemas["ScheduleImpact"];
 export type Recommendation = Schemas["Recommendation"];
 export type BestCandidate = Schemas["BestCandidate"];
@@ -89,8 +90,11 @@ export interface RetrievedCandidate {
   tag_match: number;
 }
 
+// The reasoning tier now reports *why* it rejected a passage and nothing else.
+// It used to report a `relevance` float beside it, derived by arithmetic on the
+// retrieval similarity score; that number looked like a judgement and was not
+// one, and nothing decides anything by it any more.
 export interface RejectedCandidate {
   passage_id: string;
   why: string;
-  relevance: number;
 }

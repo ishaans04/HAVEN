@@ -53,9 +53,9 @@ that enforce them.
 | S1 | Numbers are computed, never generated | v1, green |
 | S2 | Exactly one of recommendation / refusal | v1, green |
 | S3 | No citation, no recommendation | v1, green |
-| S4 | The reasoning tier never receives compiled preconditions | Phase 1B |
-| S5 | No citation without independent checker confirmation | Phase 1B |
-| S6 | Model/checker disagreement fails closed, both directions | Phase 1B |
+| S4 | The reasoning tier never receives compiled preconditions | Phase 1B, green |
+| S5 | No citation without independent checker confirmation | Phase 1B, green |
+| S6 | Model/checker disagreement fails closed, both directions | Phase 1B, green |
 | S7 | No entry forgeable without the key; no silent deletion | Phase 2 |
 | S8 | Every outcome records its corpus manifest | Phase 2 |
 | S9 | The graph is static: no LLM routes, no tool nodes, no cycles | Phase 1A |
@@ -63,6 +63,98 @@ that enforce them.
 ---
 
 ## [Unreleased]
+
+### Phase 1B — Propose / dispose
+
+**Landed.** The core change of the project. 330 tests passing (162 carried
+forward + 168 new), **three pre-existing tests edited, all three of them
+committed topology snapshots**. All eight scenarios reach the same branch as
+v1. Delivers **S4**, **S5** and **S6**.
+
+Before this phase the "AI reasoning tier" was a rules engine wearing a model's
+clothes: the SELECT prompt carried each candidate's compiled `applies_when` and
+`prescribes`, and `MockGraniteLLM._unmet_conditions` evaluated them with Python
+conditionals. The model was handed the answer key, and even a real Granite would
+have been doing symbolic matching rather than reading procedure. The gate that
+produced HAVEN's headline refusal was a TF-IDF similarity float compared against
+`THRESHOLDS.relevance_gate`, with a hardcoded `+0.12` in the mock — a similarity
+score wearing a decision's clothes.
+
+#### Added
+
+- `haven/deterministic/preconditions.py` — `check(applies_when, prescribes,
+  facts) -> AdmissibilityResult`. The clause logic, moved out of the mock and
+  into the deterministic tier where it is a safety component with its own tests.
+  It emits a `ClauseDetail` for **every** clause, satisfied or not, because the
+  console renders the whole verdict and one reason invites the assumption that
+  fixing it would change the answer.
+- `haven/graph/nodes/{admissibility,select,verify,fuse,generate,refuse}.py` and
+  the second branch in the system, at VERIFY.
+- `tests/test_preconditions.py` (29) and `tests/test_propose_dispose.py` (81),
+  plus S4/S5/S6 in `tests/test_safety_invariants.py`.
+
+#### Changed
+
+- **The situation graph.** `RETRIEVE → REASON` becomes
+  `RETRIEVE → ADMISSIBILITY → SELECT → VERIFY → FUSE → GENERATE`, with
+  `VERIFY ↘ REFUSE`; both terminal paths converge on SCREEN. `ReasoningFlow.run`
+  — the single indivisible call Phase 1A had to preserve — is gone, and each of
+  its steps is a node. This is the seam Phase 1A documented in the `RETRIEVE`
+  and `REASON` docstrings, now opened.
+- **ADMISSIBILITY does not filter the candidate set,** deliberately. A near-miss
+  is inadmissible by construction; dropping the inadmissible candidates before
+  SELECT would delete the `eva_near_miss` discrimination case and make the
+  model's "rejection" of P-SLP-2.1 a tautology. Pre-cleaning the candidate set
+  is the same mistake as showing the model `applies_when`, reached from the
+  other direction.
+- **The mock reads prose.** `_unmet_conditions` is deleted. `_select` now
+  applies four readings in order — disclaimer, crew-state relevance, operation
+  scope, and stated categorical conditions — against the passage text and the
+  deterministic fact set. It recognises an operation by the words procedure uses
+  for it ("propulsive manoeuvre", not `orbital_burn`).
+- **The float gate is gone from the decision path.** No GATE step, no `+0.12`,
+  and SELECT no longer returns a relevance score at all.
+  `THRESHOLDS.relevance_gate` and `Refusal.gate` survive as display-only, and a
+  test AST-scans every module in `haven/` to prove no branch reads them.
+- Contract: `ClauseDetail`; `Recommendation.verified_clauses`;
+  `Refusal.failed_clauses` / `.model_selected` / `.checker_disagreed`; two new
+  refusal reasons, `precondition_unmet` and `checker_model_disagreement`.
+  `openapi.json` and `web/src/lib/api-types.ts` regenerated.
+- Console: Zone 3 renders ADMISSIBILITY and VERIFY and distinguishes "proposed —
+  verified" from "proposed — rejected"; the refusal panel leads with the
+  unsatisfied clauses and demotes retrieval similarity to "closest candidate".
+
+#### Shapes forced by the required topology
+
+- **A settled outcome is final; later reasoning nodes are inert.** The required
+  diagram gives VERIFY the only new branch, so a provider outage at FUSE or
+  GENERATE cannot route to REFUSE. Instead the node that loses the provider
+  degrades in place and every node after it reads `state["outcome"]` and returns
+  without acting. One rule, applied uniformly, rather than four edges.
+- **`GENERATE_PROMPT` reworded**, "the action the procedure prescribes" → "the
+  action the procedure requires". S4 is asserted as a substring ban and the
+  prompt's own English collided with the field name. The wording is the same
+  instruction; the alternative was a carve-out in the safety test.
+
+#### Deliberately not done
+
+- **`prescribes`'s *value* still reaches the provider at GENERATE**, as
+  `action`. It must: GENERATE's whole job is to state the prescribed action, and
+  by then the checker has already verified the citation. S4 is about the
+  *selection* stage seeing the answer key, and the tests assert on field names
+  for exactly that reason. Worth revisiting only if FUSE/GENERATE ever move
+  upstream of VERIFY, which they must not.
+- **The mock cannot evaluate `alertness_below`, `workload_above` or
+  `criticality_in` from prose**, and does not try. "Below the nominal execution
+  threshold" names no number. This is the *correct* limit of a prose reader, and
+  it is what makes the mock genuinely fallible — `test_the_mock_is_fallible_and_
+  the_checker_is_what_makes_that_safe` pins it.
+- **`best_candidate.relevance` on a refusal is now retrieval similarity**, no
+  longer the mock's `relevance * 0.55`. `test_refusals_record_what_was_searched`
+  still asserts it sits below the gate and still passes — but on the shipped
+  corpus that is now incidental rather than structural. Left untouched as a v1
+  invariant; flagged here so a future failure is read as a display question, not
+  a safety one.
 
 ### Phase 1A — The seven-stage cycle as a compiled LangGraph state machine
 

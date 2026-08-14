@@ -53,15 +53,36 @@ EVALUATION_EDGES = {
     ("PRESENT", "__end__", False),
 }
 
-SITUATION_NODES = {"__start__", "CONFIDENCE", "WITHHOLD", "RETRIEVE", "REASON", "SCREEN", "__end__"}
+SITUATION_NODES = {
+    "__start__",
+    "CONFIDENCE",
+    "WITHHOLD",
+    "RETRIEVE",
+    "ADMISSIBILITY",
+    "SELECT",
+    "VERIFY",
+    "FUSE",
+    "GENERATE",
+    "REFUSE",
+    "SCREEN",
+    "__end__",
+}
 
 SITUATION_EDGES = {
     ("__start__", "CONFIDENCE", False),
-    # The confidence gate is the only branch in either graph.
+    # Branch 1: is the input good enough to reason about at all?
     ("CONFIDENCE", "WITHHOLD", True),
     ("CONFIDENCE", "RETRIEVE", True),
-    ("RETRIEVE", "REASON", False),
-    ("REASON", "SCREEN", False),
+    ("RETRIEVE", "ADMISSIBILITY", False),
+    ("ADMISSIBILITY", "SELECT", False),
+    ("SELECT", "VERIFY", False),
+    # Branch 2: did the deterministic checker confirm what the model proposed?
+    # The model proposes; this edge is where the checker disposes.
+    ("VERIFY", "FUSE", True),
+    ("VERIFY", "REFUSE", True),
+    ("FUSE", "GENERATE", False),
+    ("GENERATE", "SCREEN", False),
+    ("REFUSE", "SCREEN", False),
     ("SCREEN", "__end__", False),
     ("WITHHOLD", "__end__", False),
 }
@@ -103,6 +124,34 @@ def test_the_withhold_branch_bypasses_retrieval_and_reasoning() -> None:
     assert out_of == {"__end__"}
 
 
+def test_operator_facing_prose_is_reachable_only_through_verification() -> None:
+    """The propose/dispose invariant, asserted on the topology.
+
+    FUSE and GENERATE are the two nodes that write text an operator will read
+    and act on. Neither may be reached except through VERIFY, and the refusal
+    branch may not double back into them -- otherwise a selection the checker
+    rejected could still be written up, and the check would be advisory.
+    """
+    edges = _edges(SITUATION_GRAPH)
+    assert {source for source, target, _ in edges if target == "FUSE"} == {"VERIFY"}
+    assert {source for source, target, _ in edges if target == "GENERATE"} == {"FUSE"}
+    assert {source for source, target, _ in edges if target == "REFUSE"} == {"VERIFY"}
+    assert {target for source, target, _ in edges if source == "REFUSE"} == {"SCREEN"}
+
+
+def test_the_checker_runs_before_the_reasoning_tier_is_consulted() -> None:
+    """ADMISSIBILITY is upstream of SELECT, on every path that reaches SELECT.
+
+    Committed as topology rather than left to node code: the checker's verdict
+    has to be a position taken independently and *first*, or "the checker
+    agreed" means only that it was asked afterwards.
+    """
+    edges = _edges(SITUATION_GRAPH)
+    assert {source for source, target, _ in edges if target == "SELECT"} == {"ADMISSIBILITY"}
+    assert {source for source, target, _ in edges if target == "ADMISSIBILITY"} == {"RETRIEVE"}
+    assert {source for source, target, _ in edges if target == "VERIFY"} == {"SELECT"}
+
+
 # --------------------------------------------------------------------------
 # 3: no conditional-edge router may consult a provider
 # --------------------------------------------------------------------------
@@ -110,7 +159,10 @@ def test_the_withhold_branch_bypasses_retrieval_and_reasoning() -> None:
 # node, router function). Adding a conditional edge anywhere fails this before
 # any of the content checks below run, which is the point -- a new route into
 # the control flow gets read by a human.
-ROUTERS = {("situation", "CONFIDENCE", "route_after_confidence")}
+ROUTERS = {
+    ("situation", "CONFIDENCE", "route_after_confidence"),
+    ("situation", "VERIFY", "route_after_verify"),
+}
 
 # Matched against lowercased source, so provider class names (ReasoningLLM,
 # MockGraniteLLM, WatsonxGraniteLLM, UnavailableLLM, ...) are all covered by

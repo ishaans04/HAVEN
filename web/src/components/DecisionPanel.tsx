@@ -143,14 +143,39 @@ export function DecisionPanel({ situation }: { situation: Situation | null }) {
               </div>
             ) : null}
 
+            {/* Why the refusal happened: the compiled clauses the deterministic
+                checker found unsatisfied in the passage the model proposed. This
+                is the reason, and it is stated in the operator's terms. */}
+            {ref.failed_clauses.length > 0 ? (
+              <div className="mt-3">
+                <div className="hv-zone-label">
+                  Checker rejected {ref.model_selected} — unsatisfied preconditions
+                </div>
+                <ul className="mt-1 space-y-1">
+                  {ref.failed_clauses.map((clause) => (
+                    <li key={clause.clause} className="text-[11px] leading-snug">
+                      <span className="mono text-[10px] text-[var(--hv-dim)]">{clause.clause}</span>{" "}
+                      <span className="text-[var(--hv-muted)]">
+                        expected {clause.expected}, actual {clause.actual}
+                      </span>
+                      <div className="text-[color:var(--hv-degraded)]">{clause.explanation}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {/* Retrieval similarity, shown because it explains what was *found*.
+                It decides nothing: admissibility is settled clause by clause
+                above, and the gate is a display floor. */}
             {ref.best_candidate ? (
               <div className="mt-3">
                 <div className="flex items-baseline justify-between">
                   <span className="hv-zone-label">
-                    Best candidate — {ref.best_candidate.doc} §{ref.best_candidate.section}
+                    Closest candidate — {ref.best_candidate.doc} §{ref.best_candidate.section}
                   </span>
                   <span className="mono text-[10px] text-[var(--hv-muted)]">
-                    {ref.best_candidate.relevance.toFixed(3)} vs gate {ref.gate.toFixed(2)}
+                    retrieval similarity {ref.best_candidate.relevance.toFixed(3)}
                   </span>
                 </div>
                 <div className="mt-1">

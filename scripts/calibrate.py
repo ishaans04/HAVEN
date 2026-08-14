@@ -54,6 +54,9 @@ def main() -> None:
                 print(f"      reason   : {s.refusal.reason}")
                 print(f"      searched : {s.refusal.searched}")
                 print(f"      best     : {s.refusal.best_candidate}")
+                print(f"      proposed : {s.refusal.model_selected}  disagreed={s.refusal.checker_disagreed}")
+                for clause in s.refusal.failed_clauses:
+                    print(f"      UNMET    : {clause.clause:<24} {clause.explanation[:70]}")
 
             trail = AUDIT.get(s.audit_ref)
             if trail:
@@ -61,9 +64,19 @@ def main() -> None:
                     if entry.step == "RETRIEVE":
                         for c in entry.outputs["candidates"]:
                             print(f"      retrieved: {c['passage_id']:<10} rel={c['relevance']:.3f} {c['title'][:56]}")
+                    if entry.step == "ADMISSIBILITY":
+                        admissible = entry.outputs["admissible"]
+                        print(f"      checker  : admissible={admissible or 'none'}")
                     if entry.step == "SELECT":
                         for r in entry.outputs.get("rejected", []):
-                            print(f"      REJECTED : {r['passage_id']:<10} rel={r['relevance']:.3f} -- {r['why'][:80]}")
+                            print(f"      REJECTED : {r['passage_id']:<10} -- {r['why'][:80]}")
+                    if entry.step == "VERIFY":
+                        print(
+                            f"      VERIFY   : verified={entry.outputs['verified']} "
+                            f"disagreed={entry.outputs['checker_disagreed']} "
+                            f"reason={entry.outputs['refusal_reason']}"
+                        )
+                print(f"      steps    : {' -> '.join(e.step for e in trail.entries)}")
                 print(f"      chain    : {'valid' if trail.verify() else 'BROKEN'} ({len(trail.entries)} steps)")
         ts = response.tier_status
         if ts.degraded:
