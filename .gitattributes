@@ -1,0 +1,20 @@
+# Normalise line endings. Development happens on Windows and CI runs on Ubuntu;
+# without this, every file checked out on one and touched on the other shows as
+# wholly rewritten, and the contract drift check in CI would compare LF-generated
+# output against a CRLF working copy and fail on nothing but line endings.
+* text=auto eol=lf
+
+# Binary assets — never touched.
+*.woff  binary
+*.woff2 binary
+*.ico   binary
+*.png   binary
+*.jpg   binary
+*.pdf   binary
+
+# Generated. Marked so review diffs collapse them by default; they are still
+# committed, because CI regenerates and diffs them to catch contract drift.
+backend/openapi.json          linguist-generated=true
+frontend/src/lib/api-types.ts linguist-generated=true
+backend/uv.lock               linguist-generated=true
+frontend/package-lock.json    linguist-generated=true
