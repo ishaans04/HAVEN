@@ -199,7 +199,7 @@ class ThreeProcessModel:
         raw = float(np.clip(s + c + w, SCALE_MIN, SCALE_MAX))
 
         biological_h = (at.hour + at.minute / 60.0 - self.acrophase_offset_h) % 24.0
-        from app.config import THRESHOLDS
+        from haven.config import THRESHOLDS
 
         in_low = THRESHOLDS.circadian_low_start_hour <= biological_h <= THRESHOLDS.circadian_low_end_hour
 

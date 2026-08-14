@@ -4,7 +4,7 @@ Used during build to confirm each scenario lands where the PRD says it should,
 and kept because it is the fastest way to see the whole system's behaviour at
 once after a threshold change.
 
-    python -m tools.calibrate
+    python -m scripts.calibrate
 """
 
 from __future__ import annotations
@@ -14,12 +14,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app import engine  # noqa: E402
-from app.contracts import EvaluationRequest  # noqa: E402
-from app.data.scenarios import SCENARIOS  # noqa: E402
-from app.main import UnavailableLLM  # noqa: E402
-from app.reasoning.audit import AUDIT  # noqa: E402
-from app.reasoning.llm import build_llm  # noqa: E402
+from haven import engine  # noqa: E402
+from haven.api.main import UnavailableLLM  # noqa: E402
+from haven.contracts import EvaluationRequest  # noqa: E402
+from haven.data.scenarios import SCENARIOS  # noqa: E402
+from haven.reasoning.audit import AUDIT  # noqa: E402
+from haven.reasoning.llm import build_llm  # noqa: E402
 
 
 def main() -> None:

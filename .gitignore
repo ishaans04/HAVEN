@@ -1,8 +1,9 @@
 # Python
-backend/.venv/
+.venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.ruff_cache/
 .env
 
 # Node / Next.js
@@ -20,12 +21,12 @@ AGENTS.md
 docs/superpowers/
 
 # Audit ledger and its signing key (Phase 2) — runtime state, never committed
-backend/haven_ledger.db*
-backend/.audit_key
+haven_ledger.db*
+.audit_key
 
 # Source documents for the corpus compiler (Phase 4) — redistributable only
 # from their original publishers, so the manifest is tracked and the PDFs are not
-backend/data/source_documents/
+corpus/sources/
 
 # Editors / OS
 .DS_Store

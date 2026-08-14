@@ -23,7 +23,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from app.config import LLM
+from haven.config import LLM
 
 _NUMBER = re.compile(r"\d+(?:\.\d+)?")
 

@@ -14,7 +14,7 @@
 
 # Generated. Marked so review diffs collapse them by default; they are still
 # committed, because CI regenerates and diffs them to catch contract drift.
-backend/openapi.json          linguist-generated=true
-frontend/src/lib/api-types.ts linguist-generated=true
-backend/uv.lock               linguist-generated=true
-frontend/package-lock.json    linguist-generated=true
+openapi.json             linguist-generated=true
+web/src/lib/api-types.ts linguist-generated=true
+uv.lock                  linguist-generated=true
+web/package-lock.json    linguist-generated=true

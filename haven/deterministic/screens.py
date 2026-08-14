@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from app.config import THRESHOLDS
+from haven.config import THRESHOLDS
 
 
 # --------------------------------------------------------------------------

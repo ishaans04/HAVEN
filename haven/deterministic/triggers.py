@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.config import THRESHOLDS
+from haven.config import THRESHOLDS
 
 
 @dataclass(frozen=True)

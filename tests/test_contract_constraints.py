@@ -22,7 +22,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from pydantic import ValidationError
 
-from app.contracts import (
+from haven.contracts import (
     AuditStep,
     CrewReadiness,
     DutyEntry,
@@ -32,7 +32,7 @@ from app.contracts import (
     SleepEntry,
     Task,
 )
-from app.data.scenarios import BY_ID
+from haven.data.scenarios import BY_ID
 
 NAIVE = datetime(2026, 8, 20, 12, 0, 0)
 AWARE = NAIVE.replace(tzinfo=timezone.utc)
@@ -77,8 +77,8 @@ def test_a_non_utc_offset_is_converted_not_merely_labelled() -> None:
 
 def test_a_fully_naive_request_evaluates_without_raising() -> None:
     """The regression this guards: naive input used to 500 inside the model."""
-    from app import engine
-    from app.reasoning.llm import MockGraniteLLM
+    from haven import engine
+    from haven.reasoning.llm import MockGraniteLLM
 
     payload = BY_ID["burn_fatigue"].build()
 

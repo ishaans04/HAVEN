@@ -13,9 +13,9 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from app import engine
-from app.config import BUILD_MODE, LLM, RETRIEVAL, THRESHOLDS
-from app.contracts import (
+from haven import engine
+from haven.config import BUILD_MODE, LLM, RETRIEVAL, THRESHOLDS
+from haven.contracts import (
     AuditRecord,
     DecisionRecord,
     DecisionRequest,
@@ -24,11 +24,11 @@ from app.contracts import (
     ProcedureSummary,
     ScenarioSummary,
 )
-from app.data.scenarios import BY_ID as SCENARIO_BY_ID
-from app.data.scenarios import SCENARIOS
-from app.reasoning.audit import AUDIT
-from app.reasoning.llm import LLMUnavailable, ReasoningLLM, build_llm
-from app.retrieval.corpus import CORPUS, DOCS
+from haven.data.scenarios import BY_ID as SCENARIO_BY_ID
+from haven.data.scenarios import SCENARIOS
+from haven.rag.corpus import CORPUS, DOCS
+from haven.reasoning.audit import AUDIT
+from haven.reasoning.llm import LLMUnavailable, ReasoningLLM, build_llm
 
 app = FastAPI(
     title="HAVEN",

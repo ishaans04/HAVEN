@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.config import THRESHOLDS
-from app.retrieval.vector_store import Candidate, build_store
+from haven.config import THRESHOLDS
+from haven.rag.vector_store import Candidate, build_store
 
 
 @dataclass(frozen=True)

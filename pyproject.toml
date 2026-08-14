@@ -51,7 +51,7 @@ dev = [
     "ruff>=0.6",
 ]
 
-# This is an application, not a library: `app`, `tools`, `tests`, `eval`, and
+# This is an application, not a library: `haven`, `scripts`, `tests`, `eval`, and
 # `compiler` are imported by path, exactly as pytest's `pythonpath` arranges.
 [tool.uv]
 package = false
@@ -85,11 +85,11 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 # Scenario and corpus modules are data, and read better unwrapped.
-"app/data/*.py" = ["E741"]
-"tools/calibrate.py" = ["T201"]
+"haven/data/*.py" = ["E741"]
+"scripts/calibrate.py" = ["T201"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app", "tools", "eval", "compiler"]
+known-first-party = ["haven", "scripts", "eval", "compiler"]
 
 # --------------------------------------------------------------------------
 # pytest

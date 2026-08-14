@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-from app import offline
+from haven import offline
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -124,7 +124,7 @@ def _run_probe(body: str) -> subprocess.CompletedProcess[str]:
 def test_importing_app_main_opens_no_socket() -> None:
     """The whole API tier must import without touching the network."""
     result = _run_probe("""
-        import app.main  # noqa: F401
+        import haven.api.main  # noqa: F401
         print("OK")
         """)
     assert result.returncode == 0, f"import attempted network I/O or failed:\n{result.stderr}"
@@ -134,8 +134,8 @@ def test_importing_app_main_opens_no_socket() -> None:
 def test_guard_wins_against_a_hostile_environment() -> None:
     """Tracing is forced on in the environment; importing app must still disable it."""
     result = _run_probe("""
-        import app  # noqa: F401
-        from app.offline import is_tracing_disabled
+        import haven  # noqa: F401
+        from haven.offline import is_tracing_disabled
         assert is_tracing_disabled(), "guard failed to override a hostile environment"
         print("OK")
         """)
@@ -150,7 +150,7 @@ def test_langchain_sees_tracing_disabled_after_import() -> None:
     actually does -- this reads the value through its own accessor.
     """
     result = _run_probe("""
-        import app  # noqa: F401
+        import haven  # noqa: F401
         from langchain_core.tracers.langchain import LangChainTracer  # noqa: F401
         from langchain_core.utils.env import env_var_is_set
 

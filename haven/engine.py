@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from app.config import BUILD_MODE, THRESHOLDS
-from app.contracts import (
+from haven.config import BUILD_MODE, THRESHOLDS
+from haven.contracts import (
     Citation,
     CrewReadiness,
     CurvePoint,
@@ -26,15 +26,15 @@ from app.contracts import (
     TierStatus,
     TimelineTask,
 )
-from app.data.crew import SAFETY_CRITICAL_ROLES, duty_hours_24h
-from app.deterministic import nasa_tlx, triggers
-from app.deterministic.screens import CrewSnapshot, assess_confidence, screen_schedule_impact
-from app.deterministic.three_process_model import SleepEpisode, ThreeProcessModel
-from app.reasoning.audit import AUDIT, AuditTrail
-from app.reasoning.llm import ReasoningLLM, build_llm
-from app.reasoning.orchestrator import ReasoningFlow
-from app.retrieval.corpus import BY_ID
-from app.retrieval.retriever import get_retriever
+from haven.data.crew import SAFETY_CRITICAL_ROLES, duty_hours_24h
+from haven.deterministic import nasa_tlx, triggers
+from haven.deterministic.screens import CrewSnapshot, assess_confidence, screen_schedule_impact
+from haven.deterministic.three_process_model import SleepEpisode, ThreeProcessModel
+from haven.rag.corpus import BY_ID
+from haven.rag.retriever import get_retriever
+from haven.reasoning.audit import AUDIT, AuditTrail
+from haven.reasoning.llm import ReasoningLLM, build_llm
+from haven.reasoning.orchestrator import ReasoningFlow
 
 ACTION_LABELS = {
     "second_operator_verify": "Second-operator verification",

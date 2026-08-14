@@ -13,26 +13,23 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Belt and braces. app/offline.py clears these at import, but a runner that
+  # Belt and braces. haven/offline.py clears these at import, but a runner that
   # never reaches Python should not have them set either.
   LANGCHAIN_TRACING_V2: "false"
   LANGSMITH_TRACING: "false"
   NEXT_TELEMETRY_DISABLED: "1"
 
 jobs:
-  backend:
-    name: Backend — lint, format, tests
+  engine:
+    name: Engine — lint, format, tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - uses: actions/checkout@v4
 
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-dependency-glob: backend/uv.lock
+          cache-dependency-glob: uv.lock
 
       # The declared floor, not the newest interpreter. Running on 3.12 is what
       # stops syntax from a later version reaching the codebase unnoticed.
@@ -60,7 +57,7 @@ jobs:
         run: uv run pytest tests/test_offline_guard.py -v
 
       - name: Every scenario reaches its intended branch
-        run: uv run python -m tools.calibrate
+        run: uv run python -m scripts.calibrate
 
   contract:
     name: Contract — generated types must not drift
@@ -71,46 +68,43 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-dependency-glob: backend/uv.lock
+          cache-dependency-glob: uv.lock
 
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: web/package-lock.json
 
       - run: uv python install 3.12
-        working-directory: backend
 
       - run: uv sync --frozen --python 3.12
-        working-directory: backend
 
       - run: npm ci
-        working-directory: frontend
+        working-directory: web
 
       - name: Re-export the OpenAPI schema
-        run: uv run python -m tools.export_openapi
-        working-directory: backend
+        run: uv run python -m scripts.export_openapi
 
       - name: Regenerate the TypeScript contract
         run: npm run gen:types
-        working-directory: frontend
+        working-directory: web
 
       # The whole point of Phase 0: a contract change that is not mirrored on the
       # other side fails here, within one CI run, instead of at runtime.
       - name: Fail if the committed contract is stale
         run: |
-          if ! git diff --exit-code -- backend/openapi.json frontend/src/lib/api-types.ts; then
+          if ! git diff --exit-code -- openapi.json web/src/lib/api-types.ts; then
             echo "::error::The committed contract is out of date."
-            echo "::error::Run 'uv run python -m tools.export_openapi' in backend/,"
-            echo "::error::then 'npm run gen:types' in frontend/, and commit both files."
+            echo "::error::Run 'uv run python -m scripts.export_openapi', then"
+            echo "::error::'npm run gen:types' in web/, and commit both files."
             exit 1
           fi
 
       - name: Typecheck
         run: npm run typecheck
-        working-directory: frontend
+        working-directory: web
 
       - name: Build
         run: npm run build
-        working-directory: frontend
+        working-directory: web

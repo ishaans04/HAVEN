@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "gen:types": "openapi-typescript ../backend/openapi.json -o src/lib/api-types.ts",
+    "gen:types": "openapi-typescript ../openapi.json -o src/lib/api-types.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

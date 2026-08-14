@@ -10,13 +10,13 @@ import re
 
 import pytest
 
-from app import engine
-from app.config import THRESHOLDS
-from app.contracts import EvaluationRequest
-from app.data.scenarios import SCENARIOS
-from app.main import UnavailableLLM
-from app.reasoning.audit import AUDIT
-from app.reasoning.llm import MockGraniteLLM, NumericIntegrityError, assert_no_novel_numbers
+from haven import engine
+from haven.api.main import UnavailableLLM
+from haven.config import THRESHOLDS
+from haven.contracts import EvaluationRequest
+from haven.data.scenarios import SCENARIOS
+from haven.reasoning.audit import AUDIT
+from haven.reasoning.llm import MockGraniteLLM, NumericIntegrityError, assert_no_novel_numbers
 
 NUMBER = re.compile(r"\d+(?:\.\d+)?")
 
@@ -108,7 +108,7 @@ def test_no_decision_is_recorded_without_a_human() -> None:
 # --------------------------------------------------------------------------
 @pytest.mark.parametrize("scenario_id", ALL_SCENARIOS)
 def test_every_recommendation_carries_a_resolvable_citation(scenario_id: str) -> None:
-    from app.retrieval.corpus import BY_ID
+    from haven.rag.corpus import BY_ID
 
     response = run(scenario_id)
     for situation in response.situations:

@@ -14,7 +14,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from app.data.crew import WINDOW_END, WINDOW_START, make_crew, task
+from haven.data.crew import WINDOW_END, WINDOW_START, make_crew, task
 
 
 @dataclass(frozen=True)

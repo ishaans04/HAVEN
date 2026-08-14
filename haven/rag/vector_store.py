@@ -21,8 +21,8 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 
-from app.config import RETRIEVAL
-from app.retrieval.corpus import CORPUS, Passage
+from haven.config import RETRIEVAL
+from haven.rag.corpus import CORPUS, Passage
 
 _TOKEN = re.compile(r"[a-z][a-z0-9\-]+")
 _STOP = {

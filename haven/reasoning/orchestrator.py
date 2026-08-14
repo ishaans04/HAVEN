@@ -16,9 +16,12 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
-from app.config import THRESHOLDS
-from app.reasoning.audit import AuditTrail
-from app.reasoning.llm import (
+from haven.config import THRESHOLDS
+from haven.rag.corpus import BY_ID
+from haven.rag.retriever import ProcedureRetriever, SituationQuery
+from haven.rag.vector_store import Candidate
+from haven.reasoning.audit import AuditTrail
+from haven.reasoning.llm import (
     FUSE_PROMPT,
     GENERATE_PROMPT,
     SELECT_PROMPT,
@@ -26,9 +29,6 @@ from app.reasoning.llm import (
     ReasoningLLM,
     assert_no_novel_numbers,
 )
-from app.retrieval.corpus import BY_ID
-from app.retrieval.retriever import ProcedureRetriever, SituationQuery
-from app.retrieval.vector_store import Candidate
 
 _NUMBER = re.compile(r"\d+(?:\.\d+)?")
 

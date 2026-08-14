@@ -1,9 +1,9 @@
 """Export the OpenAPI schema to a file, for TypeScript generation.
 
-    python -m tools.export_openapi
+    python -m scripts.export_openapi
 
-The schema is written to ``backend/openapi.json`` and committed. That serves two
-purposes beyond feeding ``openapi-typescript``:
+The schema is written to ``openapi.json`` at the repository root and committed.
+That serves two purposes beyond feeding ``openapi-typescript``:
 
   * The contract becomes visible in review. A change to ``contracts.py`` shows up
     as a schema diff in the same commit, which is what makes the locked contract
@@ -24,7 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.main import app  # noqa: E402
+from haven.api.main import app  # noqa: E402
 
 OUTPUT = Path(__file__).resolve().parents[1] / "openapi.json"
 

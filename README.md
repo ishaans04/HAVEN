@@ -19,14 +19,14 @@ and CI asserts it on every push.
 Dependencies are managed with [uv](https://docs.astral.sh/uv/). Install it once
 with `pip install uv`, or see the upstream instructions.
 
-**Backend** (from `backend/`):
+**Engine and API** (from the repository root):
 
 ```bash
 uv sync
-uv run uvicorn app.main:app --reload --port 8000
+uv run uvicorn haven.api.main:app --reload --port 8000
 ```
 
-**Frontend** (from `frontend/`):
+**Console** (from `web/`):
 
 ```bash
 npm install && npm run dev
@@ -34,7 +34,7 @@ npm install && npm run dev
 
 Open <http://localhost:3000>. Interactive API docs are at <http://localhost:8000/docs>.
 
-**Tests** (from `backend/`):
+**Tests** (from the repository root):
 
 ```bash
 uv run pytest
@@ -47,15 +47,15 @@ runs green with no Ollama and no watsonx credentials. Opt in with
 **See every scenario's outcome in one pass:**
 
 ```bash
-uv run python -m tools.calibrate
+uv run python -m scripts.calibrate
 ```
 
-**Regenerate the contract** after changing `app/contracts.py` — CI fails if these
-are stale:
+**Regenerate the contract** after changing `haven/contracts.py` — CI fails if
+these are stale:
 
 ```bash
-uv run python -m tools.export_openapi   # from backend/
-npm run gen:types                       # from frontend/
+uv run python -m scripts.export_openapi   # from the repository root
+npm run gen:types                         # from web/
 ```
 
 ---
@@ -85,7 +85,7 @@ The console renders one Situation across six zones. Eight scenarios along the to
                       |
                       |  REST / JSON — the locked contract
                       v
- API            FastAPI (async, Python 3.11+)
+ API            FastAPI (async, Python 3.12+)
                       |
       +---------------+----------------+
       v               v                v
@@ -112,43 +112,49 @@ The console renders one Situation across six zones. Eight scenarios along the to
 
 ### Layout
 
+One repository, no `backend/` and `frontend/` split. The Python package carries
+the tier boundaries in its own directory names, so the architecture is legible
+from the file tree.
+
 ```text
-backend/
-  pyproject.toml                dependencies, Ruff, pytest — one file
-  openapi.json                  the exported contract; the console's types are generated from it
-backend/app/
+pyproject.toml                  dependencies, Ruff, pytest — one file
+openapi.json                    the exported contract; the console's types are generated from it
+haven/
   offline.py                    the offline guarantee, enforced at import time
   config.py                     every safety threshold, in one reviewable place
   contracts.py                  the locked JSON contract (Pydantic)
   engine.py                     the seven-stage evaluation cycle
-  main.py                       FastAPI routes
-  deterministic/
+  api/
+    main.py                     FastAPI routes
+  deterministic/                owns every safety number
     three_process_model.py      Åkerstedt & Folkard, published parameters
     nasa_tlx.py                 Hart & Staveland weighted formula
     triggers.py                 stage 3 — raise a Situation, or archive
     screens.py                  stage 6 — confidence gate + schedule impact
-  retrieval/
+  rag/                          retrieves candidates; decides nothing
     corpus.py                   procedures, near-misses, and one deliberate gap
     vector_store.py             in-process TF-IDF | real ChromaDB
     retriever.py                LangChain-shaped retriever interface
-  reasoning/
+  reasoning/                    reads, selects, explains, or refuses
     llm.py                      mock | Ollama | watsonx adapters + numeric guard
     orchestrator.py             the reasoning flow
     audit.py                    hash-chained append-only trail
   data/
     crew.py                     representative roster, synthetic sleep/duty
     scenarios.py                the eight demo scenarios
-frontend/src/
+web/src/                        the six-zone operator console
   lib/api-types.ts              generated from openapi.json — do not edit
   lib/types.ts                  friendly names over the generated shapes
   components/                   one file per zone
+tests/                          including the safety invariants
+scripts/                        calibrate, export_openapi
 ```
 
 ---
 
 ## The safety model, as tests
 
-The three hard rules are executable, not aspirational. `backend/tests/test_safety_invariants.py`:
+The three hard rules are executable, not aspirational. `tests/test_safety_invariants.py`:
 
 1. **Numbers are computed, never generated.** Every numeral in operator-facing text is asserted to trace back to a value the deterministic tier logged. `assert_no_novel_numbers` raises on violation at runtime, and a test proves the guard actually fires.
 2. **The system flags risk; it never acts.** Every Situation resolves to exactly one of a recommendation or a refusal. There is no third, self-actioning state.
@@ -177,7 +183,7 @@ Both mocked tiers sit behind interfaces their real counterparts already satisfy.
 | Scripted Granite stand-in | Local Granite via Ollama | `HAVEN_LLM_PROVIDER=ollama` |
 | In-process TF-IDF store | ChromaDB + sentence-transformers | `HAVEN_VECTOR_STORE=chroma`, after `uv sync --extra rag` |
 
-The prompts in `reasoning/llm.py` are the real prompts — the mock receives them and returns what Granite is asked to return. See `backend/.env.example`.
+The prompts in `reasoning/llm.py` are the real prompts — the mock receives them and returns what Granite is asked to return. See `.env.example`.
 
 ---
 

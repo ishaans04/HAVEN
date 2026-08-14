@@ -11,21 +11,21 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from app import engine
-from app.contracts import EvaluationRequest
-from app.data.scenarios import SCENARIOS
-from app.deterministic import nasa_tlx
-from app.deterministic.screens import CrewSnapshot, screen_schedule_impact
-from app.deterministic.three_process_model import (
+from haven import engine
+from haven.api.main import UnavailableLLM
+from haven.contracts import EvaluationRequest
+from haven.data.scenarios import SCENARIOS
+from haven.deterministic import nasa_tlx
+from haven.deterministic.screens import CrewSnapshot, screen_schedule_impact
+from haven.deterministic.three_process_model import (
     SleepEpisode,
     ThreeProcessModel,
     circadian,
     inertia,
     normalise,
 )
-from app.main import UnavailableLLM
-from app.reasoning.audit import AUDIT
-from app.reasoning.llm import MockGraniteLLM
+from haven.reasoning.audit import AUDIT
+from haven.reasoning.llm import MockGraniteLLM
 
 
 def run(scenario_id: str):
