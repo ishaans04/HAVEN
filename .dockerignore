@@ -1,0 +1,33 @@
+# Everything the build does not need, and some things it must not have.
+#
+# The venv and node_modules are rebuilt inside the image from lockfiles; copying
+# a host venv in would ship Windows binaries to a Linux container.
+
+.venv/
+**/node_modules/
+**/.next/
+**/out/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Runtime state. The ledger and its signing key are generated on first run, and
+# baking a key into an image would make every deployment share one.
+haven_ledger.db*
+.audit_key
+/data/
+
+.git/
+.github/
+.claude/
+docs/
+
+# Source documents for the corpus compiler: large, and redistributable only from
+# their original publishers.
+corpus/sources/
+corpus/compiled/
+corpus/review.json
+
+tests/

@@ -111,6 +111,11 @@ jobs:
         run: npm run typecheck
         working-directory: web
 
-      - name: Build
+      - name: Build the static export
         run: npm run build
         working-directory: web
+
+      # The export is what the container serves. If it stops being produced,
+      # the image would ship an API with no console and nothing would say so.
+      - name: The export exists
+        run: test -f web/out/index.html

@@ -5,8 +5,17 @@ import type {
   ScenarioSummary,
 } from "./types";
 
-export const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
+/**
+ * Where the API lives.
+ *
+ * Empty by default, meaning same-origin: in the shipped container FastAPI
+ * serves both the console and the API, so a relative path is correct and a
+ * hardcoded host would break the moment it was deployed anywhere.
+ *
+ * `npm run dev` sets it to localhost:8000, because in development the console
+ * and the API genuinely are two processes on two ports.
+ */
+export const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "";
 
 async function get<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, { cache: "no-store" });

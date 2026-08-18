@@ -19,20 +19,34 @@ and CI asserts it on every push.
 Dependencies are managed with [uv](https://docs.astral.sh/uv/). Install it once
 with `pip install uv`, or see the upstream instructions.
 
-**Engine and API** (from the repository root):
+**Everything, one process** (from the repository root):
 
 ```bash
 uv sync
-uv run uvicorn haven.api.main:app --reload --port 8000
+cd web && npm ci && npm run build && cd ..
+uv run uvicorn haven.api.main:app --port 8000
 ```
 
-**Console** (from `web/`):
+Open <http://localhost:8000>. FastAPI serves the console as a static export from
+the same origin as the API, so there is one port and nothing to configure.
+Interactive API docs are at `/docs`.
+
+**Or in a container:**
 
 ```bash
-npm install && npm run dev
+docker build -t haven .
+docker run -p 7860:7860 -v haven-ledger:/data haven
 ```
 
-Open <http://localhost:3000>. Interactive API docs are at <http://localhost:8000/docs>.
+The volume keeps the audit ledger across restarts. Without it the container is
+still correct, just amnesiac — the right default for a demo and the wrong one
+for anything real.
+
+**For development**, run the console separately so it hot-reloads:
+
+```bash
+cd web && NEXT_PUBLIC_API_BASE=http://localhost:8000 npm run dev
+```
 
 **Tests** (from the repository root):
 
@@ -256,4 +270,33 @@ Named explicitly, because the system's whole thesis is that flagging uncertainty
 
 ---
 
-*Deterministic tier owns all safety numbers; the AI reasoning tier reads, selects, explains, or refuses; the human owns every decision.*
+## Where this stands
+
+Phases 0–8 of the v2 plan are complete. Every gap the architecture design named
+is closed and enforced by a test that fails when the protection is removed:
+
+| Gap | Closed by |
+|---|---|
+| The reasoning tier is bypassed — it was handed the answer key | Phase 1B — it reads prose; a deterministic checker disposes |
+| `applies_when` is authored metadata, not extracted knowledge | Phase 4 — a compiler, under human review |
+| No persistence; `audit_ref` collides across evaluations | Phase 2 — a SQLite ledger, distinct identities |
+| Real-provider adapters never executed | Phase 3 — LangChain chat models, tested |
+| The chain detects corruption but not tampering | Phase 2 — HMAC, globally chained |
+
+**651 tests.** Nine safety requirements, each with a named enforcement point.
+
+What has *not* been done, plainly: no live-provider figures exist, because
+watsonx credentials were not available here — the evaluation harness reports the
+offline stand-in's numbers and exists precisely to produce the comparison the
+moment there is something to measure. The container is written and its parts are
+verified individually, but Docker was not installed in the build environment, so
+the image itself is unbuilt. The corpus is still the hand-authored one; the
+compiler that replaces it is tested end to end against generated PDFs rather
+than against NASA's.
+
+See `CHANGELOG.md` for what each phase decided and why, and `DEMO.md` for the
+six-scenario walkthrough.
+
+---
+
+*Deterministic tier owns all safety numbers; the AI reasoning tier reads, proposes, explains, or refuses; a deterministic checker disposes; the human owns every decision.*

@@ -8,10 +8,12 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from haven import engine
 from haven.config import BUILD_MODE, LLM, RETRIEVAL, THRESHOLDS
@@ -41,6 +43,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Only needed in development, where the console runs on its own port. In the
+# shipped container both are served from one origin and no request is
+# cross-origin at all.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -181,3 +186,20 @@ def record_decision(request: DecisionRequest) -> DecisionRecord:
 @app.get("/api/decisions", response_model=list[DecisionRecord])
 def list_decisions() -> list[DecisionRecord]:
     return [DecisionRecord.model_validate(d) for d in AUDIT.decisions()]
+
+
+# --------------------------------------------------------------------------
+# The console, served from the same origin as the API
+# --------------------------------------------------------------------------
+#
+# Mounted last, and only if it has been built. Two consequences worth stating:
+#
+# * The mount is at "/" and would otherwise shadow every API route, so it has to
+#   come after them. FastAPI matches in declaration order.
+# * A missing export is not an error. Development runs the console on its own
+#   port with `npm run dev`, and an API that refused to start without a built
+#   frontend would make that workflow impossible.
+CONSOLE_DIR = Path(__file__).resolve().parents[2] / "web" / "out"
+
+if CONSOLE_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=str(CONSOLE_DIR), html=True), name="console")
