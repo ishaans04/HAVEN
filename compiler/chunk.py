@@ -43,6 +43,45 @@ MAX_CHUNK_CHARS = 2400
 MIN_CHUNK_CHARS = 120
 
 
+#: `[Rationale: ...]` — NASA-STD-3001's explanatory block, running to the end of
+#: the chunk. Non-greedy to the final bracket is wrong here: rationale text
+#: itself contains bracketed cross-references like `[V2 7059]`.
+RATIONALE = re.compile(r"\[\s*Rationale\s*:", re.I)
+
+
+def split_rationale(text: str) -> dict:
+    """Separate what a NASA standard *requires* from what it *explains*.
+
+    This is the sharpest instance in the whole corpus of guidance being mistaken
+    for a requirement, and it lives inside a single passage rather than between
+    documents. NASA-STD-3001 Volume 1 [V1 6001] requires only this:
+
+        Crew schedule planning and operations shall be provided to include
+        circadian entrainment, work/rest schedule assessment, task loading
+        assessment, countermeasures, and special activities.
+
+    Its rationale block then says, among much else, "Avoid scheduling critical
+    tasks during the circadian nadir (typically between 1-7 AM …)" and
+    "Recommended 8.5 hr. sleep period". Those are the sentences a fatigue system
+    most wants, and they are *not* the requirement. A reader — human or model —
+    working from the concatenated chunk would encode them as binding conditions
+    and produce a rule NASA did not write.
+
+    So the requirement text is carried separately, and the extraction prompt is
+    given both, labelled. The chunk keeps the full text, because a rationale is
+    genuinely useful context and dropping it would lose the reasoning a reviewer
+    needs; what it does not keep is the pretence that the two are the same thing.
+    """
+    match = RATIONALE.search(text)
+    if not match:
+        return {"requirement_text": text.strip(), "rationale_text": "", "has_rationale": False}
+    return {
+        "requirement_text": text[: match.start()].strip(),
+        "rationale_text": text[match.start() :].strip(),
+        "has_rationale": True,
+    }
+
+
 @dataclass(frozen=True)
 class Boundary:
     """Where a rule starts, and what identifies it."""
@@ -121,12 +160,46 @@ def _overlong(document: Document) -> list[Document]:
     ]
 
 
-def chunk_page(page: Document) -> list[Document]:
+def _prose(page: Document) -> list[Document]:
+    """Split a page with no rule structure at all, on paragraph then sentence.
+
+    Reserved for research sources, and the reason is not convenience. The
+    requirement-aware splitter exists because severing an exception from the rule
+    it qualifies silently widens that rule. A research paper carries no rule to
+    widen: nothing compiled from one may prescribe an action, so no precondition
+    of consequence can be separated from anything. What is left is prose worth
+    retrieving and worth rejecting, and a character window is an honest way to
+    cut it.
+
+    Applying this to a standard would be the bug this module opens by describing.
+    """
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=MAX_CHUNK_CHARS,
+        chunk_overlap=200,
+        separators=["\n\n", "\n", ". ", " "],
+    )
+    parts = [part for part in splitter.split_text(page.page_content) if len(part.strip()) >= MIN_CHUNK_CHARS]
+    number = page.metadata.get("page", 0)
+    return [
+        Document(
+            page_content=part.strip(),
+            metadata={
+                **page.metadata,
+                "section": f"p{number}-{index}",
+                "section_title": "",
+                "boundary_kind": "prose",
+            },
+        )
+        for index, part in enumerate(parts, start=1)
+    ]
+
+
+def chunk_page(page: Document, *, prose_fallback: bool = False) -> list[Document]:
     """One page into whole rules."""
     text = page.page_content
     boundaries = find_boundaries(text)
     if not boundaries:
-        return []
+        return _prose(page) if prose_fallback else []
 
     chunks: list[Document] = []
     for index, boundary in enumerate(boundaries):
@@ -142,13 +215,14 @@ def chunk_page(page: Document) -> list[Document]:
                 "section": boundary.section,
                 "section_title": boundary.title,
                 "boundary_kind": boundary.kind,
+                **split_rationale(body),
             },
         )
         chunks.extend(_overlong(chunk))
     return chunks
 
 
-def chunk_document(pages: list[Document]) -> list[Document]:
+def chunk_document(pages: list[Document], *, prose_fallback: bool = False) -> list[Document]:
     """Every page of a document into whole rules, in document order.
 
     Pages are processed independently. A rule spanning a page break is therefore
@@ -162,7 +236,7 @@ def chunk_document(pages: list[Document]) -> list[Document]:
     for page in pages:
         if page.metadata.get("empty"):
             continue
-        chunks.extend(chunk_page(page))
+        chunks.extend(chunk_page(page, prose_fallback=prose_fallback))
     return chunks
 
 
@@ -172,6 +246,8 @@ def summarise(chunks: list[Document]) -> dict:
         "chunks": len(chunks),
         "requirements": sum(1 for c in chunks if c.metadata.get("boundary_kind") == "requirement"),
         "headings": sum(1 for c in chunks if c.metadata.get("boundary_kind") == "heading"),
+        "prose": sum(1 for c in chunks if c.metadata.get("boundary_kind") == "prose"),
+        "with_rationale": sum(1 for c in chunks if c.metadata.get("has_rationale")),
         "split": sum(1 for c in chunks if c.metadata.get("split")),
         "sections": sorted({c.metadata.get("section", "") for c in chunks}),
     }

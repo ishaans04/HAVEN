@@ -233,10 +233,44 @@ def _source_line(meta: dict) -> str:
     return ", ".join(b for b in bits if b)
 
 
+def passage_id(chunk: Document, taken: set[str], *, prefix: str = "P") -> str:
+    """A stable, unique, human-readable identifier for one chunk.
+
+    Uniqueness is not a nicety. ``BY_ID`` is a dict, every citation resolves
+    through it, and two chunks sharing an id means one rule silently replaces
+    another — a corpus that looks complete while a passage an operator can be
+    shown a citation to no longer exists.
+
+    Collisions are real rather than theoretical: section numbers repeat across
+    documents (both a NASA standard and a technical memorandum have a "5.1"),
+    and a requirement spanning a page break is seen twice, since pages are
+    chunked independently. So the document's own short code opens the id, and a
+    repeat is numbered rather than dropped. ``P-V1-4002-2`` reads as what it is —
+    the second chunk carrying that requirement number — and asks the reviewer to
+    look at whether the rule was split across pages.
+    """
+    stem = str(chunk.metadata.get("section", "")).strip().replace(" ", "-") or "unsectioned"
+    code = str(chunk.metadata.get("passage_prefix", "")).strip().replace(" ", "-")
+    # A requirement identifier already opens with its volume, so "V1" plus
+    # "V1-6001" would stutter.
+    if code and not stem.upper().startswith(f"{code.upper()}-"):
+        stem = f"{code}-{stem}"
+
+    candidate = f"{prefix}-{stem}"
+    if candidate not in taken:
+        return candidate
+    suffix = 2
+    while f"{candidate}-{suffix}" in taken:
+        suffix += 1
+    return f"{candidate}-{suffix}"
+
+
 def propose_all(chunks: list[Document], llm: ReasoningLLM, *, prefix: str = "P") -> list[Proposal]:
     """Draft encodings for every chunk, in document order."""
     proposals: list[Proposal] = []
-    for index, chunk in enumerate(chunks, start=1):
-        section = str(chunk.metadata.get("section", index)).replace(" ", "-")
-        proposals.append(propose(chunk, llm, passage_id=f"{prefix}-{section}"))
+    taken: set[str] = set()
+    for chunk in chunks:
+        identifier = passage_id(chunk, taken, prefix=prefix)
+        taken.add(identifier)
+        proposals.append(propose(chunk, llm, passage_id=identifier))
     return proposals

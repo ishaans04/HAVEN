@@ -43,6 +43,31 @@ class SourceDocument:
     #: Marks passages compiled from this source. Real documents are "extracted";
     #: anything written for the prototype must say so.
     provenance: str = "extracted"
+    #: The force of what this document says: "authoritative" for a standard
+    #: stating shall-requirements, "guidance" for a handbook, "research" for a
+    #: paper. It travels with every page and every chunk, because the one thing
+    #: that must not happen to a handbook's recommendation is to arrive at the
+    #: checker indistinguishable from a requirement.
+    authority: str = "authoritative"
+    #: Page ranges to compile, 1-based and inclusive, as ``((start, end), ...)``.
+    #: Empty means the whole document.
+    #:
+    #: Scoping is not an optimisation. NASA-STD-3001 Volume 2 carries 1,579
+    #: requirements, three of which concern sleep; compiling all of them would
+    #: bury the fatigue rulebook inside a corpus about acoustics, radiation and
+    #: hatch clearances, and every one of those would compete for retrieval
+    #: against the rules that actually govern. A corpus is a claim about what is
+    #: relevant, and an unscoped one makes no claim at all.
+    #:
+    #: Page numbers are safe to pin because the file itself is: the registry
+    #: carries a SHA-256, so a re-issued PDF is refused rather than silently
+    #: re-paginated underneath these ranges.
+    pages: tuple[tuple[int, int], ...] = ()
+    #: Short code opening every passage id compiled from this document, e.g.
+    #: ``V1`` giving ``P-V1-6001``. Stated per document rather than derived,
+    #: because passage ids appear in citations an operator reads and in audit
+    #: rows that outlive the corpus -- they should be short, stable, and chosen.
+    passage_prefix: str = ""
 
     def sha256(self) -> str:
         digest = hashlib.sha256()
@@ -71,6 +96,35 @@ def _require(module: str):
         ) from exc
 
 
+def _read(pages, source: SourceDocument, wanted: set[int] | None) -> list[tuple[int, str]]:
+    """Extract text from the pages in scope, and only those.
+
+    Both readers expose pages as a lazy sequence, so skipping the rest is the
+    difference between reading four pages of the HIDH and reading all 1,301 of
+    them to throw 1,297 away.
+    """
+    if wanted is not None:
+        beyond = sorted(n for n in wanted if n > len(pages))
+        if beyond:
+            # A range naming pages the document does not have means the scope was
+            # written against a different file — a different revision, most
+            # likely. Compiling the overlap would produce a corpus quietly
+            # missing whatever those pages held.
+            raise ExtractionError(
+                f"{source.doc_id}: scope names page(s) {beyond[:5]} but the document has "
+                f"{len(pages)}. The scope was written against a different file."
+            )
+
+    extracted = [
+        (number, page.extract_text() or "")
+        for number, page in enumerate(pages, start=1)
+        if wanted is None or number in wanted
+    ]
+    if wanted is not None and not extracted:
+        raise ExtractionError(f"{source.doc_id}: the configured scope selects no pages")
+    return extracted
+
+
 def extract_pages(source: SourceDocument, *, prefer_layout: bool = True) -> list[Document]:
     """One `Document` per page, carrying the source's provenance.
 
@@ -88,26 +142,30 @@ def extract_pages(source: SourceDocument, *, prefer_layout: bool = True) -> list
     if not source.path.exists():
         raise ExtractionError(f"{source.doc_id}: no such file {source.path}")
 
-    pages: list[str] = []
+    wanted = {n for start, end in source.pages for n in range(start, end + 1)} or None
+
+    numbered: list[tuple[int, str]] = []
     if prefer_layout:
         try:
             pdfplumber = _require("pdfplumber")
             with pdfplumber.open(str(source.path)) as pdf:
-                pages = [(page.extract_text() or "") for page in pdf.pages]
+                numbered = _read(pdf.pages, source, wanted)
         except ExtractionError:
             raise
         except Exception:
-            pages = []
+            numbered = []
 
-    if not pages:
+    if not numbered:
         pypdf = _require("pypdf")
         try:
             reader = pypdf.PdfReader(str(source.path))
-            pages = [(page.extract_text() or "") for page in reader.pages]
+            numbered = _read(reader.pages, source, wanted)
+        except ExtractionError:
+            raise
         except Exception as exc:
             raise ExtractionError(f"{source.doc_id}: could not be read ({exc})") from exc
 
-    if not pages:
+    if not numbered:
         raise ExtractionError(f"{source.doc_id}: contains no pages")
 
     checksum = source.sha256()
@@ -121,12 +179,14 @@ def extract_pages(source: SourceDocument, *, prefer_layout: bool = True) -> list
                 "url": source.url,
                 "retrieved": source.retrieved,
                 "provenance": source.provenance,
+                "authority": source.authority,
+                "passage_prefix": source.passage_prefix or source.doc_id,
                 "source_sha256": checksum,
                 "page": number,
                 "empty": not text.strip(),
             },
         )
-        for number, text in enumerate(pages, start=1)
+        for number, text in numbered
     ]
 
 

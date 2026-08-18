@@ -1,0 +1,232 @@
+{
+  "registry_version": 1,
+  "documents": [
+    {
+      "doc_id": "NASA-STD-3001-V2",
+      "title": "NASA Spaceflight Human-System Standard, Volume 2: Human Factors, Habitability, and Environmental Health",
+      "document_number": "NASA-STD-3001 Volume 2",
+      "revision": "F",
+      "published": "2026-07-14",
+      "authority": "authoritative",
+      "provenance": "extracted",
+      "url": "https://standards.nasa.gov/standard/NASA/NASA-STD-3001_VOL_2",
+      "pdf_url": "https://standards.nasa.gov/system/files/tmp/NASA-STD-3001%20Vol%202%20Rev%20F.pdf",
+      "path": "sources/nasa-std-3001-vol-2-rev-f.pdf",
+      "retrieved": "2026-08-18",
+      "verified_on": "2026-08-18",
+      "verification": "NASA Technical Standards System summary page for NASA-STD-3001_VOL_2, read 2026-08-18, states Version F, Document Date 07/14/2026, Is Active? ACTIVE, and 'Standard is cleared for public accessibility on the internet'. The downloaded PDF's cover page independently states 'Approved: 2026-07-14' and 'Superseding NASA-STD-3001, Volume 2, Revision E'; revisions Baseline through E appear only under Document History on the same page.",
+      "supersedes": [
+        "Revision E",
+        "Revision D",
+        "Revision C (approved 2022-04-20)",
+        "Revision B (approved 2019-09-09)",
+        "Revision A (approved 2015-02-10)",
+        "Baseline (approved 2011-01-10)"
+      ],
+      "rationale": "The authoritative requirements source named for this corpus. Its shall-statements are the only text in the corpus that may ground a mandatory action.",
+      "scope": [
+        {
+          "pages": [
+            40,
+            47
+          ],
+          "label": "5.1 Human Performance and 5.2 Human Error, including 5.1.4 Cognitive Workload"
+        },
+        {
+          "pages": [
+            95,
+            98
+          ],
+          "label": "6.6.1.8-6.6.1.11 crew sleep continuous, intermittent and annoyance noise limits"
+        },
+        {
+          "pages": [
+            134,
+            135
+          ],
+          "label": "7.9 Behavioral Health and Sleep"
+        }
+      ],
+      "sha256": "a09e0a3853306f59a62b5ab494734c25afc8f83eadb159fdb5825706bc36d48f",
+      "bytes": 6753988,
+      "passage_prefix": "V2"
+    },
+    {
+      "doc_id": "NASA-STD-3001-V1",
+      "title": "NASA Spaceflight Human-System Standard, Volume 1: Crew Health",
+      "document_number": "NASA-STD-3001 Volume 1",
+      "revision": "C",
+      "published": "2023-09-15",
+      "authority": "authoritative",
+      "provenance": "extracted",
+      "url": "https://standards.nasa.gov/standard/NASA/NASA-STD-3001_VOL_1",
+      "pdf_url": "https://standards.nasa.gov/sites/default/files/standards/NASA/C//nasa-std-3001-vol-1-rev-c-signature.pdf",
+      "path": "sources/nasa-std-3001-vol-1-rev-c.pdf",
+      "retrieved": "2026-08-18",
+      "verified_on": "2026-08-18",
+      "verification": "NASA Technical Standards System summary page for NASA-STD-3001_VOL_1, read 2026-08-18, states Version C, Document Date 09/15/2023, Is Active? ACTIVE. The downloaded PDF's cover page states 'Approved: 2023-09-15' and 'Superseding NASA-STD-3001, Volume 1, Revision B'.",
+      "supersedes": [
+        "Revision B",
+        "Revision A Change 1",
+        "Revision A (published 2014-07-30)",
+        "Baseline"
+      ],
+      "rationale": "Added beyond the Volume 2 originally specified, because Volume 2 does not contain the standard's fatigue requirements. Scanning all 1,579 of its requirements found 51 mentioning sleep, fatigue or workload and none stating a work-rest limit; Volume 1 section 6.1 is titled 'Circadian Shifting Operations and Fatigue Management' and [V1 4014] states the work-hours limit requirement. Omitting it would have meant compiling an authoritative fatigue corpus from the one volume of the standard that has no fatigue requirements in it.",
+      "scope": [
+        {
+          "pages": [
+            32,
+            37
+          ],
+          "label": "4 Fitness-for-Duty, including 4.3 Behavioral Health and Cognition and [V1 4014] In-Mission Completion of Critical Tasks"
+        },
+        {
+          "pages": [
+            51,
+            52
+          ],
+          "label": "6.1 Circadian Shifting Operations and Fatigue Management, [V1 6001]"
+        }
+      ],
+      "sha256": "93f9f08700959cd542485e21d746b26d3863589c6ee7645d1e9b0bc5bfdda319",
+      "bytes": 1839091,
+      "passage_prefix": "V1"
+    },
+    {
+      "doc_id": "NASA-SP-2010-3407",
+      "title": "Human Integration Design Handbook (HIDH)",
+      "document_number": "NASA/SP-2010-3407/REV1",
+      "revision": "Rev 1",
+      "published": "2014-06-05",
+      "authority": "guidance",
+      "provenance": "extracted",
+      "url": "https://www.nasa.gov/organizations/ochmo/human-integration-design-handbook/",
+      "pdf_url": "https://www.nasa.gov/wp-content/uploads/2023/03/human-integration-design-handbook-revision-1.pdf",
+      "path": "sources/nasa-sp-2010-3407-hidh-rev-1.pdf",
+      "retrieved": "2026-08-18",
+      "verified_on": "2026-08-18",
+      "verification": "NASA OCHMO's Human Integration Design Handbook page, read 2026-08-18 and itself last updated 2026-02-18, offers 'Human Integration Design Handbook Revision 1' as the handbook download. The PDF is NASA/SP-2010-3407/REV1, 'Approved: 06-05-2014'. Its own Document History Log records a 'Revised 2, 10-20-2022, Revised Section 4: Anthropometry, Biomechanics, and Strength - See OCHMO-HB-004'; NASA publishes that section separately as OCHMO-HB-004 Rev A and does not distribute a consolidated Revision 2. Section 4 is therefore superseded and is excluded from the compiled scope, which reaches only 7.10 Sleep.",
+      "supersedes": [
+        "Baseline (approved 2010-01-27)"
+      ],
+      "rationale": "The companion handbook to NASA-STD-3001, and the guidance layer of this corpus. It states rationale and recommended practice, never requirements, which is why nothing compiled from it may prescribe an action.",
+      "scope": [
+        {
+          "pages": [
+            641,
+            644
+          ],
+          "label": "7.10 Sleep"
+        }
+      ],
+      "sha256": "a6a8758b9116984d62fe4b7bc31fa9cf5da2479d57b7da9a3e31a00385ed303f",
+      "bytes": 25268606,
+      "passage_prefix": "HIDH"
+    },
+    {
+      "doc_id": "NTRS-20160003864",
+      "title": "Evidence Report: Risk of Performance Decrements and Adverse Health Outcomes Resulting from Sleep Loss, Circadian Desynchronization, and Work Overload",
+      "document_number": "JSC-CN-35774 (NTRS 20160003864)",
+      "revision": "2016 revision",
+      "published": "2016-01-01",
+      "authority": "research",
+      "provenance": "extracted",
+      "url": "https://ntrs.nasa.gov/citations/20160003864",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20160003864/downloads/20160003864.pdf",
+      "path": "sources/ntrs-20160003864-hrp-sleep-evidence-report.pdf",
+      "retrieved": "2026-08-18",
+      "verified_on": "2026-08-18",
+      "verification": "NTRS record 20160003864, read 2026-08-18: distribution PUBLIC, copyright PUBLIC_USE_PERMITTED, status CURATED, publication date 2016-01-01, report number JSC-CN-35774. NTRS also holds an earlier issue of the same Evidence Report as 20150016964 (2015, JSC-CN-34196, one additional author); the 2016 issue is the later of the two and the one ingested. A search of NTRS for this risk title returned no issue later than 2016.",
+      "supersedes": [
+        "NTRS 20150016964 (2015, JSC-CN-34196)"
+      ],
+      "rationale": "NASA's own evidence base for exactly the risk HAVEN scores: sleep loss, circadian desynchronization and work overload as causes of crew performance decrement. It is why the deterministic tier models homeostatic pressure, circadian phase and workload at all, and it is the document a reviewer would open to challenge that modelling. Chosen over the individual studies it summarises because one review with NASA's own risk framing is worth more here than five primary papers.",
+      "scope": [
+        {
+          "pages": [
+            4,
+            15
+          ],
+          "label": "II Executive Summary, III Introduction, and the opening of IV Evidence"
+        }
+      ],
+      "sha256": "252d4993a040ab8b989664b1da7a3143a5fd8169fac65b67f1f43231250ef1f5",
+      "bytes": 967704,
+      "passage_prefix": "EVID"
+    },
+    {
+      "doc_id": "NTRS-19950006379",
+      "title": "Crew Factors in Flight Operations IX: Effects of Planned Cockpit Rest on Crew Performance and Alertness in Long-Haul Operations",
+      "document_number": "NASA-TM-108839 (NTRS 19950006379)",
+      "revision": "final",
+      "published": "1994-09-01",
+      "authority": "research",
+      "provenance": "extracted",
+      "url": "https://ntrs.nasa.gov/citations/19950006379",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/19950006379/downloads/19950006379.pdf",
+      "path": "sources/ntrs-19950006379-nasa-tm-108839-planned-cockpit-rest.pdf",
+      "retrieved": "2026-08-18",
+      "verified_on": "2026-08-18",
+      "verification": "NTRS record 19950006379, read 2026-08-18: distribution PUBLIC, copyright GOV_PUBLIC_USE_PERMITTED, status CURATED, publication date 1994-09-01, report numbers NASA-TM-108839 / DOT-FAA-92-24 / A-94134. A final technical memorandum with no later revision in NTRS.",
+      "supersedes": [],
+      "rationale": "The measurement behind HAVEN's short_rest_then_proceed action. Rosekind et al. gave one group a planned 40-minute rest in cruise and measured the effect on EEG sleep, psychomotor vigilance and physiological alertness against a no-rest control. HAVEN's forward projection claims a protected rest raises predicted alertness; this is the study that says whether a planned rest of that order does anything, and it is the right document to cite when somebody asks where the claim comes from.",
+      "scope": [
+        {
+          "pages": [
+            13,
+            16
+          ],
+          "label": "Summary and 1.0 Operational Summary"
+        },
+        {
+          "pages": [
+            62,
+            72
+          ],
+          "label": "5.0 Discussion: study limitations, findings, and scientific and operational issues"
+        }
+      ],
+      "sha256": "6d93c0589e4e94ae530e0693e861d6822346acbde87e722f8a6eb6203c1c1002",
+      "bytes": 5714281,
+      "passage_prefix": "REST"
+    },
+    {
+      "doc_id": "NTRS-20020078410",
+      "title": "Crew Factors in Flight Operations X: Alertness Management in Flight Operations Education Module",
+      "document_number": "NASA/TM-2001-211385 (NTRS 20020078410)",
+      "revision": "2001 edition",
+      "published": "2001-11-01",
+      "authority": "research",
+      "provenance": "extracted",
+      "url": "https://ntrs.nasa.gov/citations/20020078410",
+      "pdf_url": "https://ntrs.nasa.gov/api/citations/20020078410/downloads/20020078410.pdf",
+      "path": "sources/ntrs-20020078410-nasa-tm-2001-211385-alertness-management.pdf",
+      "retrieved": "2026-08-18",
+      "verified_on": "2026-08-18",
+      "verification": "NTRS record 20020078410, read 2026-08-18: distribution PUBLIC, copyright GOV_PUBLIC_USE_PERMITTED, status CURATED, publication date 2001-11-01, report numbers NASA/TM-2001-211385 / DOT-FAA-AR-01-01 / IH-022. NTRS holds an earlier edition of the same module as 19990116851 (NASA/TM-1999-208780, 1999-04-01, same four authors); the 2001 edition is the later and is the one ingested.",
+      "supersedes": [
+        "NASA/TM-1999-208780 (NTRS 19990116851, 1999-04-01)"
+      ],
+      "rationale": "The operational countermeasure taxonomy HAVEN's action types map onto: preventive strategies taken before duty, and operational strategies taken during it. HAVEN can recommend a second operator, a short rest, a rotation or a deferral, and this is the NASA document that says what such countermeasures are for and what they do not fix. Included over the broader Fatigue Countermeasures Program literature because it is the one that states the strategies operationally rather than reporting a single experiment.",
+      "scope": [
+        {
+          "pages": [
+            9,
+            12
+          ],
+          "label": "Introduction: the Fatigue Countermeasures Program and its goals"
+        },
+        {
+          "pages": [
+            54,
+            64
+          ],
+          "label": "Alertness Management Strategies: preventive and operational countermeasures"
+        }
+      ],
+      "sha256": "bca74e54829212a47839f30b1bc31688fa011ef984145e1d0ba1f4ddc34c6c82",
+      "bytes": 4251626,
+      "passage_prefix": "ALERT"
+    }
+  ]
+}

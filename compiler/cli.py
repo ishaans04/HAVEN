@@ -17,11 +17,10 @@ standard in bulk is precisely the thing this pipeline is built to prevent.
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
-from compiler import emit, review
+from compiler import emit, registry, review
 from compiler.chunk import chunk_document
 from compiler.chunk import summarise as summarise_chunks
 from compiler.extract import SourceDocument, blank_pages, extract_pages
@@ -30,28 +29,23 @@ from haven.reasoning.llm import build_llm
 
 
 def load_sources(path: Path) -> list[SourceDocument]:
-    """Read the source manifest: which documents, which revision, from where."""
-    if not path.exists():
+    """Read the source registry: which documents, which revision, from where."""
+    try:
+        records = registry.read(path)
+    except registry.RegistryError as exc:
+        raise SystemExit(f"registry: {exc}") from exc
+
+    missing = [r.doc_id for r in records if not r.path.exists()]
+    if missing:
+        # The PDFs are not in the repository, so this is the expected first-run
+        # state rather than a fault. Naming the command that fixes it beats a
+        # FileNotFoundError raised three frames deeper.
         raise SystemExit(
-            f"no source manifest at {path}.\n"
-            f"Create one listing the documents to compile, for example:\n"
-            f'  [{{"doc_id": "NASA-STD-3001-V2", "title": "...", "path": "corpus/sources/v2.pdf",\n'
-            f'     "revision": "D", "url": "https://...", "retrieved": "2026-08-15"}}]'
+            f"not acquired: {missing}. Run `uv run python -m scripts.fetch_corpus` to "
+            f"download the documents the registry names and verify them against their "
+            f"pinned checksums."
         )
-    entries = json.loads(path.read_text(encoding="utf-8"))
-    root = path.parent
-    return [
-        SourceDocument(
-            doc_id=entry["doc_id"],
-            title=entry["title"],
-            path=(root / entry["path"]) if not Path(entry["path"]).is_absolute() else Path(entry["path"]),
-            revision=entry.get("revision", ""),
-            url=entry.get("url", ""),
-            retrieved=entry.get("retrieved", ""),
-            provenance=entry.get("provenance", "extracted"),
-        )
-        for entry in entries
-    ]
+    return [r.to_source_document() for r in records]
 
 
 def _chunk_all(sources: list[SourceDocument]) -> list:
@@ -59,8 +53,11 @@ def _chunk_all(sources: list[SourceDocument]) -> list:
     for source in sources:
         pages = extract_pages(source)
         blanks = blank_pages(pages)
-        found = chunk_document(pages)
-        print(f"  {source.doc_id:<24} {len(pages):>3} pages, {len(found):>3} rules")
+        # Research sources carry no rule structure to follow and no rule to
+        # widen -- see compiler.chunk._prose for why that makes a character
+        # window acceptable there and nowhere else.
+        found = chunk_document(pages, prose_fallback=source.authority == "research")
+        print(f"  {source.doc_id:<24} {source.authority:<14} {len(pages):>3} pages, {len(found):>3} passages")
         if blanks:
             # Named rather than counted: these pages hold rules the compiler
             # cannot see, and that is a gap in the corpus, not a statistic.
@@ -114,17 +111,29 @@ def cmd_propose(args: argparse.Namespace) -> int:
 
 def cmd_emit(args: argparse.Namespace) -> int:
     proposals = review.read_reviewed(Path(args.review))
+    # The emitted artefact records the registry's provenance verbatim, not a
+    # summary of it. A corpus that says which documents it came from but not
+    # which revision, nor how that revision was verified to be current, is one
+    # nobody can re-derive a decision from a year later.
     sources = (
         [
             {
-                "doc_id": s.doc_id,
-                "title": s.title,
-                "revision": s.revision,
-                "url": s.url,
-                "retrieved": s.retrieved,
-                "sha256": s.sha256(),
+                "doc_id": r.doc_id,
+                "title": r.title,
+                "document_number": r.document_number,
+                "revision": r.revision,
+                "published": r.published,
+                "authority": r.authority,
+                "url": r.url,
+                "retrieved": r.retrieved,
+                "verified_on": r.verified_on,
+                "verification": r.verification,
+                "supersedes": list(r.supersedes),
+                "rationale": r.rationale,
+                "scope": [dict(entry) for entry in r.scope],
+                "sha256": r.sha256,
             }
-            for s in load_sources(Path(args.sources))
+            for r in registry.read(Path(args.sources))
         ]
         if args.sources
         else []
