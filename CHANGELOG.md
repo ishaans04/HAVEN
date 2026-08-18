@@ -56,9 +56,9 @@ that enforce them.
 | S4 | The reasoning tier never receives compiled preconditions | Phase 1B, green |
 | S5 | No citation without independent checker confirmation | Phase 1B, green |
 | S6 | Model/checker disagreement fails closed, both directions | Phase 1B, green |
-| S7 | No entry forgeable without the key; no silent deletion | Phase 2 |
-| S8 | Every outcome records its corpus manifest | Phase 2 |
-| S9 | The graph is static: no LLM routes, no tool nodes, no cycles | Phase 1A |
+| S7 | No entry forgeable without the key; no silent deletion | Phase 2, green |
+| S8 | Every outcome records its corpus manifest | Phase 2, green |
+| S9 | The graph is static: no LLM routes, no tool nodes, no cycles | Phase 1A, green |
 
 ---
 
@@ -104,6 +104,97 @@ in place; if it ever fails, read it as a display question, not a safety one.
 ---
 
 ## [Unreleased]
+
+### Phase 2 — The ledger
+
+**Landed**, in five verified milestones. 411 tests passing, up from 330 at the
+end of Phase 1B. Closes gaps 3 and 5; delivers **S7** and **S8**.
+
+Gap 5 was not in v1's honesty statement. It was found by inspection during
+design review, and it is the more interesting of the two: v1's chain detected
+*corruption* but not *tampering*. An unkeyed SHA-256 is a digest anyone can
+recompute, so an attacker with write access could edit an entry, re-digest it,
+re-chain everything after it, and leave a record that verified perfectly. The v1
+test named itself after tamper-detection while proving only corruption-detection,
+because it mutated a field and never recomputed anything.
+
+#### 2.1 — Keyed, globally chained
+
+- HMAC-SHA256 replaces the bare digest, compared with `compare_digest`. Key from
+  `HAVEN_AUDIT_KEY`, or generated on first use into a gitignored `.audit_key` —
+  generated, because the offline path must need no configuration.
+- The signature covers every field that is a *claim about what happened*, plus
+  position in trail and ledger, plus the link to the predecessor.
+  **`duration_ms` is excluded**: wall-clock noise, not a claim, and signing it
+  would make a faithful re-run fail against its own record — turning
+  reproducibility into an integrity failure.
+- **The chain is global, not per-trail.** Deleting a whole trail now leaves
+  broken links and a sequence gap. Under v1 it was invisible: every trail
+  restarted from GENESIS, so the survivors still verified.
+
+#### 2.2 — Persistent
+
+- SQLite, INSERT-only, WAL. No UPDATE and no DELETE anywhere in `AuditStore`, so
+  the only way to alter a written record is to go around the application.
+- The connection opens **lazily**, so importing `haven.api.main` no longer
+  creates a database. But laziness alone was wrong and a test caught it: entries
+  are built by `append` (which advances the chain) and only handed to `put`
+  afterwards, so deferring adoption of the stored head to first database access
+  made the first entry after a restart link to GENESIS — the ledger read as two
+  unrelated histories. The head is now adopted eagerly when a file exists.
+- Verified against a real server: evaluate, record a decision, stop the process,
+  start it again, and `GET /api/audit/{ref}` returns all ten steps with
+  `chain_valid` true.
+
+#### 2.3 — Distinct identity, named rulebook
+
+- `situation_id` derives from an evaluation id minted in INGEST, with a random
+  suffix as well as the clock. Two evaluations of the same window inside one
+  second are ordinary — a demo clicking between scenarios does it constantly.
+- Deriving ids from a digest of the request was rejected despite being
+  reproducible: re-running a scenario would reuse its `audit_ref` and append a
+  second set of steps to the trail already on disk.
+- **S8**: a corpus manifest digest on every Situation and on `TierStatus`.
+  `near_miss_note` is excluded — commentary for the corpus's readers that never
+  reaches a decision.
+
+#### 2.4 — Audit completeness as a property
+
+- A committed registry maps every situation-graph node to the steps it may
+  write; a node in the graph but not the registry fails a test.
+- Per scenario: steps belong to declared nodes, appear in an order consistent
+  with a topological walk of the compiled graph, are contiguous from one, and
+  always begin with TRIGGER.
+- **Deliberately a test rather than the instrumentation wrapper the plan
+  sketched.** Each entry is written where its work happens, carrying detail only
+  that step can supply. Hoisting the writes into a generic wrapper would buy the
+  structural guarantee at the cost of the detail that makes the trail worth
+  reading; the guarantee is the part that matters, and it is enforced either way.
+
+#### 2.5 — The limit, stated
+
+- The v1 tamper test is split into three: corruption, forgery, and a test that
+  asserts the **residual limit** directly — an entry re-tagged *with* the key
+  verifies. Named in the README rather than left implied.
+
+#### Deliberately not done
+
+- **Real tamper-proofing.** An attacker holding the key *and* write access can
+  still rewrite an entry, re-sign it, re-chain forward, and rewrite the
+  checkpoints. Checkpoints narrow the window; they do not close it. Closing it
+  needs storage the attacker cannot reach — WORM media or an external notary —
+  which this build does not have.
+
+#### Notes
+
+- `tests/conftest.py` gives the suite its own database and key under pytest's
+  temp root, so a test run cannot write into a developer's ledger or leave the
+  global chain advanced.
+- Locally, pytest's temp root needed redirecting via `PYTEST_DEBUG_TEMPROOT`:
+  a stale `pytest-of-inder` directory on this machine has an ACL that denies
+  even reading it. A machine fault, not a project one — no workaround was
+  committed.
+
 
 ### Phase 1B — Propose / dispose
 

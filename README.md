@@ -5,8 +5,8 @@
 A runnable prototype of the system specified in *HAVEN Product Requirements Document v1.0* (IBM AI Builders Challenge, Space Exploration category). It couples a deterministic fatigue-and-workload engine with a retrieval-augmented reasoning tier that interprets mission operating procedures, produces cited recommendations, and **refuses when no procedure governs the situation**.
 
 > **The architectural invariant**
-> The maths owns the numbers. The AI owns the rulebook reasoning. The human owns the decision.
-> No code path lets the reasoning tier emit a safety-critical figure or take an irreversible action.
+> The maths owns the numbers. **The compiler owns the rules; the AI proposes; a deterministic checker disposes.** The human owns the decision.
+> No code path lets the reasoning tier emit a safety-critical figure, cite a rule the checker rejected, or take an irreversible action.
 
 ---
 
@@ -79,35 +79,45 @@ The console renders one Situation across six zones. Eight scenarios along the to
 
 ## Architecture
 
-```
+```text
  PRESENTATION   Next.js 14 · React 18 · TypeScript · Tailwind · Recharts
                 six-zone operator console
                       |
-                      |  REST / JSON — the locked contract
+                      |  REST / JSON — the locked contract, generated both sides
                       v
- API            FastAPI (async, Python 3.12+)
-                      |
-      +---------------+----------------+
-      v               v                v
- DETERMINISTIC   ORCHESTRATION    RETRIEVAL (RAG)
- Three-Process   + AUDIT          top-k over the
- Model, NASA-    retrieve→select  procedure corpus,
- TLX, triggers,  →gate→fuse→      near-misses
- screens         generate|refuse  included
-      ^               |
-      |               v
-      |          REASONING LLM
-      +--------- Granite (mock | Ollama | watsonx.ai)
+ API            FastAPI (Python 3.12+)
+                      v
+ ORCHESTRATION  LangGraph — a compiled, static state machine
+                INGEST → SCORE → TRIGGER → SITUATIONS → PRESENT
+                                              |
+                        per raised Situation: |
+                CONFIDENCE → RETRIEVE → ADMISSIBILITY → SELECT → VERIFY
+                     |                        ^            |        |
+                     ↘ WITHHOLD               |            |        ↘ FUSE → GENERATE
+                                              |            |          ↘ REFUSE
+                                              |            |                 |
+      +---------------------------------------+            |                 v
+      |                                                     |            SCREEN
+ DETERMINISTIC                                        REASONING LLM
+ Three-Process Model, NASA-TLX, triggers,             Granite
+ both screens, and the precondition checker           (mock | Ollama | watsonx.ai)
+ that disposes of what the model proposes             sees passage prose only
+
+ LEDGER         HMAC-SHA256, globally chained across trails, SQLite, INSERT-only
 ```
+
+The model is consulted at exactly three nodes — SELECT, FUSE, GENERATE — and
+routes nothing. Every branch in the graph is decided by a deterministic
+predicate, and the topology is asserted against a committed snapshot.
 
 ### Tier boundaries
 
 | Tier | Owns | Never does |
 |---|---|---|
-| **Deterministic** | Alertness, workload, sleep debt, circadian phase, every threshold, both screens. | Any language generation or rule interpretation. |
+| **Deterministic** | Alertness, workload, sleep debt, circadian phase, every threshold, both screens, **and rule admissibility**. | Any language generation. **Select** a rule — it can only veto one. |
 | **Retrieval** | Chunking, embedding, top-k candidates — including confusable near-misses, on purpose. | Decide which candidate governs. |
-| **Orchestration + audit** | Sequencing the flow; a hash-chained record of every step, input, and output. | Produce safety numbers or make the final decision. |
-| **Reasoning LLM** | Select the governing rule, fuse facts, generate cited text, or refuse. | Invent or override any number. |
+| **Orchestration + audit** | Sequencing, as a compiled graph; a signed, globally-chained, persistent ledger. | Produce safety numbers or make the final decision. |
+| **Reasoning LLM** | **Read passage prose**, propose a governing rule, fuse facts, generate cited text, or refuse. | Invent a number. **See compiled preconditions.** **Promote a passage the checker rejected.** |
 | **Presentation** | Rendering and capturing human approval. | Any logic decision. |
 
 ### Layout
@@ -123,22 +133,28 @@ haven/
   offline.py                    the offline guarantee, enforced at import time
   config.py                     every safety threshold, in one reviewable place
   contracts.py                  the locked JSON contract (Pydantic)
-  engine.py                     the seven-stage evaluation cycle
+  engine.py                     binds the adapters and invokes the graph
   api/
     main.py                     FastAPI routes
-  deterministic/                owns every safety number
+  graph/                        the cycle as a compiled state machine
+    evaluation_graph.py         INGEST → SCORE → TRIGGER → SITUATIONS → PRESENT
+    situation_graph.py          CONFIDENCE → RETRIEVE → ADMISSIBILITY → SELECT → VERIFY → …
+    nodes/                      one module per node
+  deterministic/                owns every safety number, and admissibility
     three_process_model.py      Åkerstedt & Folkard, published parameters
     nasa_tlx.py                 Hart & Staveland weighted formula
-    triggers.py                 stage 3 — raise a Situation, or archive
-    screens.py                  stage 6 — confidence gate + schedule impact
+    triggers.py                 raise a Situation, or archive
+    screens.py                  confidence gate + schedule impact
+    preconditions.py            the checker that disposes of the model's proposal
   rag/                          retrieves candidates; decides nothing
-    corpus.py                   procedures, near-misses, and one deliberate gap
+    corpus.py                   procedures, near-misses, one deliberate gap, manifest
     vector_store.py             in-process TF-IDF | real ChromaDB
     retriever.py                LangChain-shaped retriever interface
-  reasoning/                    reads, selects, explains, or refuses
+  reasoning/                    reads, proposes, explains, or refuses
     llm.py                      mock | Ollama | watsonx adapters + numeric guard
-    orchestrator.py             the reasoning flow
-    audit.py                    hash-chained append-only trail
+    orchestrator.py             what each reasoning step does
+    audit.py                    the signed, globally-chained, persistent ledger
+    signing.py                  the ledger's key
   data/
     crew.py                     representative roster, synthetic sleep/duty
     scenarios.py                the eight demo scenarios
@@ -160,7 +176,16 @@ The three hard rules are executable, not aspirational. `tests/test_safety_invari
 2. **The system flags risk; it never acts.** Every Situation resolves to exactly one of a recommendation or a refusal. There is no third, self-actioning state.
 3. **No citation, no recommendation.** Every citation is asserted to resolve to a real passage whose document and section match.
 
-Plus: refusals must record what was searched and why the best candidate failed; the audit chain must verify for every Situation; and tampering with a logged step must break it.
+Since v2 they are joined by six more, each with a named enforcement point:
+
+4. **The reasoning tier never receives compiled preconditions.** The model selects from passage prose alone; `applies_when` and `prescribes` are redacted from every provider-bound payload. Asserted on the rendered prompt, not on behaviour.
+5. **No citation without independent confirmation.** A passage the deterministic checker rejects cannot be cited, whatever the model proposed.
+6. **Disagreement fails closed, in both directions.** A model refusal is never overridden upward, even when the checker believes something is admissible.
+7. **No entry is forgeable without the key, and none is deletable undetectably.**
+8. **Every recommendation and refusal records the corpus manifest** it was made under.
+9. **The graph is static** — no LLM routes, no tool nodes, no unbounded cycles; topology asserted against a committed snapshot.
+
+Plus: refusals must record what was searched and why the best candidate failed; the ledger must verify for every Situation; corrupting a logged step must break it, and so must forging one.
 
 Alongside them, the offline guarantee is executable too: `tests/test_offline_guard.py`
 imports the API tier in a subprocess with tracing forced *on* and every socket
@@ -191,7 +216,7 @@ The prompts in `reasoning/llm.py` are the real prompts — the mock receives the
 
 Named explicitly, because the system's whole thesis is that flagging uncertainty beats asserting false confidence.
 
-**Real:** the Three-Process Model and NASA-TLX with their published parameters; the retrieval, precondition-checked rule selection, refusal path, deterministic screens, and hash-chained audit trail, all executing live on every evaluation; the watsonx and Ollama adapters.
+**Real:** the Three-Process Model and NASA-TLX with their published parameters; retrieval, model-proposed and checker-verified rule selection, the refusal path, both deterministic screens, and a persistent HMAC-signed globally-chained ledger, all executing live on every evaluation; the watsonx and Ollama adapters.
 
 **Simulated, and labelled in the UI:**
 
@@ -199,6 +224,8 @@ Named explicitly, because the system's whole thesis is that flagging uncertainty
 - **Sleep, duty, and task timelines are synthetic.** No public live crew-timeline feed exists. The structure follows NASA scheduling literature; the values are generated from explicit per-night parameters so every scenario is reproducible.
 - **The procedure corpus text is written for this prototype.** Document numbering, precondition style, and structure follow NASA flight-rule convention; the prose is not verbatim NASA procedure. Provenance is carried on every passage.
 - **The reasoning model is a scripted stand-in by default**, so the console runs offline and a demo cannot fail on a network call.
+
+**The audit ledger is tamper-evident, not tamper-proof.** Entries are signed with HMAC-SHA256 and chained globally across every trail, so an entry cannot be rewritten, and a whole trail cannot be deleted, without the key — either leaves a break the ledger reports, with the sequence number where it happened. What that does *not* stop is an attacker who holds the signing key **and** write access: they can rewrite an entry, re-sign it, re-chain everything after it, and re-write the checkpoints too. Closing that needs storage the attacker cannot reach — WORM media, or an external notary — which this build does not have. The periodic checkpoints narrow the window; they do not close it. A test asserts this limit explicitly rather than leaving it implied.
 
 **Deferred:** the closed verification loop — confirming after the fact that alertness and coverage actually improved — needs a time-simulation layer beyond this build. Named rather than half-built.
 

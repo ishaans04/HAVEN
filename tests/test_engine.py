@@ -296,9 +296,75 @@ def test_audit_chain_verifies_for_every_situation() -> None:
             assert trail.verify(), f"{situation.audit_ref} chain does not verify"
 
 
-def test_tampering_with_a_logged_step_breaks_the_chain() -> None:
+def test_corrupting_a_logged_step_breaks_the_chain() -> None:
+    """An entry edited in place, with its tag left stale.
+
+    This was v1's whole tamper story, under a name that claimed more than it
+    proved. It is a real property and worth keeping -- but it only catches an
+    attacker who does not bother to recompute anything.
+    """
     response = run("burn_fatigue")
     trail = AUDIT.get(response.situations[0].audit_ref)
     assert trail.verify()
     trail.entries[0].outputs["alertness_score"] = 0.99
     assert not trail.verify(), "an altered audit entry must not still verify"
+
+
+def test_forging_a_logged_step_breaks_the_chain() -> None:
+    """An entry edited *and* re-tagged, by someone without the key.
+
+    The case v1 could not catch, because its digest was unkeyed and therefore
+    recomputable by anyone. The forger here does everything right except possess
+    the key: edits the value, recomputes the digest over the edited body, and
+    writes it back.
+
+    The last entry is forged deliberately. Forging an earlier one also breaks
+    the link to its successor, so the chain would catch it even unkeyed and the
+    test would pass while proving nothing about the key.
+    """
+    import hashlib
+
+    from haven.reasoning.audit import _canonical
+
+    response = run("burn_fatigue")
+    trail = AUDIT.get(response.situations[0].audit_ref)
+    assert trail.verify()
+
+    entry = trail.entries[-1]
+    entry.outputs["alertness_score"] = 0.99
+    entry.entry_hash = hashlib.sha256(
+        _canonical(
+            {
+                "seq": entry.seq,
+                "global_seq": entry.global_seq,
+                "step": entry.step,
+                "tier": entry.tier,
+                "detail": entry.detail,
+                "inputs": entry.inputs,
+                "outputs": entry.outputs,
+                "started_at": entry.started_at.isoformat(),
+                "prev_hash": entry.prev_hash,
+            }
+        ).encode("utf-8")
+    ).hexdigest()
+
+    assert not trail.verify(), "a forgery without the key must not verify"
+
+
+def test_the_ledger_key_is_what_makes_forgery_fail() -> None:
+    """Names the property directly: the same edit verifies *with* the key.
+
+    Without this, the forgery test above could pass for an incidental reason and
+    nobody would notice the key had stopped doing anything.
+    """
+    response = run("burn_fatigue")
+    trail = AUDIT.get(response.situations[0].audit_ref)
+
+    entry = trail.entries[-1]
+    entry.outputs["alertness_score"] = 0.99
+    entry.entry_hash = entry.compute_mac()  # re-tagged *with* the key
+
+    assert trail.verify(), (
+        "an entry re-tagged with the key verifies -- which is the residual limit "
+        "recorded in the README: a keyed chain stops forgery, not an attacker who holds the key"
+    )
