@@ -50,6 +50,31 @@ runs green with no Ollama and no watsonx credentials. Opt in with
 uv run python -m scripts.calibrate
 ```
 
+**Measure the reasoning tier** against the labelled golden set:
+
+```bash
+uv run python -m evaluation.run_eval --provider mock --verbose
+```
+
+Two accuracies are reported and the distance between them is the point: what the
+provider *proposed*, and what HAVEN *did* after the deterministic checker
+disposed of that proposal. Unsafe citations — a recommendation citing a passage
+that does not govern — must be zero for every provider, and CI gates on it.
+
+**Run against a real model.** Both need the optional extra:
+
+```bash
+uv sync --extra providers
+
+ollama pull granite3.3:8b
+HAVEN_LLM_PROVIDER=ollama HAVEN_LLM_MODEL=granite3.3:8b uv run python -m evaluation.run_eval --provider ollama
+```
+
+Providers can be chained, which is what a demo should do — `HAVEN_LLM_CHAIN=watsonx,ollama,mock`
+tries each in turn and always terminates in the offline stand-in, so a run
+cannot fail open. Any answer from below the head of the chain marks the
+evaluation degraded and names the link that served it.
+
 **Regenerate the contract** after changing `haven/contracts.py` — CI fails if
 these are stale:
 

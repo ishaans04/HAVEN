@@ -126,6 +126,90 @@ in place; if it ever fails, read it as a display question, not a safety one.
 
 ## [Unreleased]
 
+### Phase 3 — Real providers, offline path intact
+
+**Landed**, in five verified milestones. 559 tests passing, up from 411 at the
+end of Phase 2. Closes gap 4. **M1 is complete.**
+
+Gap 4 was that the watsonx and Ollama adapters were `# pragma: no cover` — never
+executed, never tested — and `json.loads(completion)` would fail on the first
+real model response. The reasoning tier was built around a model it had never
+actually spoken to.
+
+#### 3.1 — Measure before switching
+
+- `evaluation/` — 20 labelled Situations and a runner. Refusal cases outnumber
+  governing ones deliberately: selection accuracy is the easy metric, and a
+  system that always takes the top-ranked candidate scores respectably on it.
+- **Two accuracies, and the gap between them is the point.** Model accuracy is
+  what the provider proposed; system accuracy is what HAVEN did after VERIFY
+  disposed of it. That gap is the checker's value as a number rather than an
+  argument. Against the mock: model 85.0%, system 90.0%, refusal recall 100%,
+  unsafe citations 0.
+- The harness found three things on its first run. Two are real weaknesses in
+  the mock's prose reading — it refuses where the sustained-duty and science-ops
+  rules govern — and both fail *closed*, which is the safe direction. The third
+  was my own labelling error, recorded as **O4**.
+- Tests hold the harness to the checker rather than to my opinion: every
+  governing label must name a passage the checker admits, every refusal label
+  must offer nothing admissible. A corpus change that alters what governs now
+  breaks the labels instead of silently moving the score.
+
+#### 3.2 — Survive what a real model returns
+
+- A ladder: extract from fences and prose → validate against a Pydantic model →
+  one repair with the specific fault handed back → **refuse**. No rung guesses.
+- Extraction scans with a depth counter, not a regex. Greedy runs past the first
+  object, non-greedy stops inside a nested one, and neither knows a brace inside
+  a string is not structure.
+- **Parsing judges shape only.** I first had it reject an out-of-candidate
+  identifier; an existing test caught that the flow then recorded the proposal
+  as *absent* rather than as *invented*, losing the evidence a reviewer needs.
+  Membership belongs to VERIFY.
+- The numeric guard gets one repair then a `numeric_integrity_failure` refusal.
+  Previously it raised straight out of the flow — a 500 for what a real model
+  does routinely. This is the thesis in its most direct form: the evidence is
+  intact, the prose about it is not, so the recommendation is withheld.
+
+#### 3.3 — Real providers on IBM's own LangChain packages
+
+- `ChatWatsonx` and `ChatOllama` behind the existing interface. `langchain-ibm`
+  specifically, because the challenge scores the watsonx integration and a
+  generic gateway would hide it.
+- Fixes the old adapter caching the IAM token forever, which would 401 partway
+  through a long session.
+- **LangChain owns the transport, not the ladder.** `with_structured_output`
+  raises on a malformed response, and "raise" is not an outcome this system may
+  have. Only SELECT is constrained to JSON; FUSE and GENERATE write prose.
+- The packages stay an optional extra and clients build lazily, so the offline
+  path installs neither.
+
+#### 3.4 — A chain that falls back without lying
+
+- `provider_chain` and `served_by` on `TierStatus`. Any answer from below the
+  head marks the evaluation degraded and names why the earlier links failed.
+- The audit trail records the provider that *answered*, not the one at the head.
+- Circuit breaker after three consecutive failures, because otherwise a chain
+  with a dead head pays its timeout once per Situation.
+- The mock is appended if not configured: a chain that could run out of links
+  would make an outage a crash rather than a state.
+
+#### 3.5 — Gated and documented
+
+- CI runs the harness and fails on any unsafe citation. Accuracy is reported;
+  this is enforced.
+
+#### Deliberately not done
+
+- **No live provider numbers yet.** watsonx credentials are not available, and
+  the Ollama extra is not installed in this environment, so the reported figures
+  are the mock's. The harness exists precisely so those numbers can be produced
+  and compared the moment there is something to measure — running it is a
+  command, not a build.
+- **The mock's two selection misses are not tuned away.** They are honest
+  measurements of a stand-in, and both fail closed.
+
+
 ### Phase 2 — The ledger
 
 **Landed**, in five verified milestones. 411 tests passing, up from 330 at the

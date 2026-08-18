@@ -59,6 +59,12 @@ jobs:
       - name: Every scenario reaches its intended branch
         run: uv run python -m scripts.calibrate
 
+      # Exits non-zero on an unsafe citation -- a recommendation citing a
+      # passage that does not govern. Accuracy varies by provider and is
+      # reported rather than gated; this one must be zero for all of them.
+      - name: Reasoning tier evaluation (offline provider)
+        run: uv run python -m evaluation.run_eval --provider mock --verbose
+
   contract:
     name: Contract — generated types must not drift
     runs-on: ubuntu-latest
