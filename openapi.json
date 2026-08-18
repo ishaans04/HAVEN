@@ -768,13 +768,40 @@
         "type": "object"
       },
       "ProcedureSummary": {
+        "description": "One passage of the corpus, as the console's procedure browser shows it.\n\n``provenance`` and ``reviewed_by`` are the fields that make the browser worth\nhaving. A corpus that cannot say which of its rules were extracted from a\nreal document and which were written for this prototype is not one anybody\nshould reason over, and burying that distinction in a docstring is how it\ndisappears.",
         "properties": {
           "doc": {
             "title": "Doc",
             "type": "string"
           },
+          "near_miss_note": {
+            "default": "",
+            "title": "Near Miss Note",
+            "type": "string"
+          },
           "passage_id": {
             "title": "Passage Id",
+            "type": "string"
+          },
+          "prescribes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prescribes"
+          },
+          "provenance": {
+            "default": "synthesised",
+            "title": "Provenance",
+            "type": "string"
+          },
+          "reviewed_by": {
+            "default": "",
+            "title": "Reviewed By",
             "type": "string"
           },
           "section": {

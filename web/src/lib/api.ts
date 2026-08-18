@@ -1,4 +1,9 @@
-import type { AuditRecord, EvaluationResponse, ScenarioSummary } from "./types";
+import type {
+  AuditRecord,
+  EvaluationResponse,
+  ProcedureSummary,
+  ScenarioSummary,
+} from "./types";
 
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
@@ -15,6 +20,9 @@ export const fetchScenarios = () => get<ScenarioSummary[]>("/api/scenarios");
 
 export const fetchEvaluation = (scenarioId: string) =>
   get<EvaluationResponse>(`/api/scenarios/${scenarioId}/evaluate`);
+
+/** The corpus itself. Implemented since v1; nothing called it until now. */
+export const fetchProcedures = () => get<ProcedureSummary[]>("/api/procedures");
 
 export const fetchAudit = (auditRef: string) =>
   get<AuditRecord>(`/api/audit/${auditRef}`);

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AuditBar } from "@/components/AuditBar";
 import { DecisionPanel } from "@/components/DecisionPanel";
+import { ProcedureBrowser } from "@/components/ProcedureBrowser";
 import { ProcedureReasoning } from "@/components/ProcedureReasoning";
 import { ReadinessOverview } from "@/components/ReadinessOverview";
 import { ScenarioBar } from "@/components/ScenarioBar";
@@ -25,6 +26,7 @@ export default function Console() {
   const [situationId, setSituationId] = useState<string | null>(null);
   const [crewId, setCrewId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showProcedures, setShowProcedures] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -110,7 +112,10 @@ export default function Console() {
         onSelect={setScenarioId}
         note={evaluation?.scenario_note ?? ""}
         loading={loading}
+        onOpenProcedures={() => setShowProcedures(true)}
       />
+
+      {showProcedures ? <ProcedureBrowser onClose={() => setShowProcedures(false)} /> : null}
 
       {!evaluation ? (
         <div className="p-8 text-[12px] text-[var(--hv-muted)]">Evaluating window…</div>

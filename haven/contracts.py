@@ -414,6 +414,15 @@ class ScenarioSummary(BaseModel):
 
 
 class ProcedureSummary(BaseModel):
+    """One passage of the corpus, as the console's procedure browser shows it.
+
+    ``provenance`` and ``reviewed_by`` are the fields that make the browser worth
+    having. A corpus that cannot say which of its rules were extracted from a
+    real document and which were written for this prototype is not one anybody
+    should reason over, and burying that distinction in a docstring is how it
+    disappears.
+    """
+
     passage_id: str
     doc: str
     section: str
@@ -421,3 +430,9 @@ class ProcedureSummary(BaseModel):
     task_types: list[str]
     source: str
     text: str
+    provenance: str = "synthesised"
+    reviewed_by: str = ""
+    prescribes: str | None = None
+    # Present only on passages written to be confusable. The corpus carries
+    # these so a reader can see which rules exist to be rejected.
+    near_miss_note: str = ""

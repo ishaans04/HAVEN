@@ -524,12 +524,38 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
-        /** ProcedureSummary */
+        /**
+         * ProcedureSummary
+         * @description One passage of the corpus, as the console's procedure browser shows it.
+         *
+         *     ``provenance`` and ``reviewed_by`` are the fields that make the browser worth
+         *     having. A corpus that cannot say which of its rules were extracted from a
+         *     real document and which were written for this prototype is not one anybody
+         *     should reason over, and burying that distinction in a docstring is how it
+         *     disappears.
+         */
         ProcedureSummary: {
             /** Doc */
             doc: string;
+            /**
+             * Near Miss Note
+             * @default
+             */
+            near_miss_note: string;
             /** Passage Id */
             passage_id: string;
+            /** Prescribes */
+            prescribes?: string | null;
+            /**
+             * Provenance
+             * @default synthesised
+             */
+            provenance: string;
+            /**
+             * Reviewed By
+             * @default
+             */
+            reviewed_by: string;
             /** Section */
             section: string;
             /** Source */

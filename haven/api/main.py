@@ -28,7 +28,8 @@ from haven.data.scenarios import BY_ID as SCENARIO_BY_ID
 from haven.data.scenarios import SCENARIOS
 from haven.rag.corpus import CORPUS, DOCS
 from haven.reasoning.audit import AUDIT
-from haven.reasoning.llm import LLMUnavailable, ReasoningLLM, build_llm
+from haven.reasoning.chain import build_chain
+from haven.reasoning.llm import LLMUnavailable, ReasoningLLM
 
 app = FastAPI(
     title="HAVEN",
@@ -102,6 +103,10 @@ def list_procedures() -> list[ProcedureSummary]:
             task_types=p.task_types,
             source=f"{DOCS.get(p.doc, p.doc)} -- {p.source}",
             text=p.text,
+            provenance=p.provenance,
+            reviewed_by=p.reviewed_by,
+            prescribes=p.prescribes,
+            near_miss_note=p.near_miss_note,
         )
         for p in CORPUS
     ]
@@ -109,7 +114,12 @@ def list_procedures() -> list[ProcedureSummary]:
 
 @app.post("/api/evaluate", response_model=EvaluationResponse)
 def post_evaluate(request: EvaluationRequest) -> EvaluationResponse:
-    llm = UnavailableLLM() if request.scenario_id == "provider_outage" else build_llm()
+    # The chain rather than a single provider, so a watsonx outage falls through
+    # to local Granite and then to the offline stand-in -- loudly, with
+    # TierStatus naming the link that answered. The outage scenario keeps its
+    # own unreachable provider, since demonstrating the degraded path is the
+    # entire point of it.
+    llm = UnavailableLLM() if request.scenario_id == "provider_outage" else build_chain()
     response = engine.evaluate(request, llm=llm)
     scenario = SCENARIO_BY_ID.get(request.scenario_id or "")
     if scenario:

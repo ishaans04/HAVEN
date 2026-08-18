@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import clsx from "clsx";
-import { ChevronDown, Info } from "lucide-react";
+import { BookOpen, ChevronDown, Info } from "lucide-react";
 import type { ScenarioSummary } from "@/lib/types";
 
 export function ScenarioBar({
@@ -11,12 +11,14 @@ export function ScenarioBar({
   onSelect,
   note,
   loading,
+  onOpenProcedures,
 }: {
   scenarios: ScenarioSummary[];
   selected: string;
   onSelect: (id: string) => void;
   note: string;
   loading: boolean;
+  onOpenProcedures: () => void;
 }) {
   const [showHonesty, setShowHonesty] = useState(false);
   const active = scenarios.find((s) => s.id === selected);
@@ -39,8 +41,16 @@ export function ScenarioBar({
         </p>
 
         <button
-          onClick={() => setShowHonesty((v) => !v)}
+          onClick={onOpenProcedures}
           className="ml-auto flex items-center gap-1.5 rounded border border-[var(--hv-line-bright)] px-2 py-1 text-[10px] text-[var(--hv-muted)] transition-colors hover:text-[var(--hv-text)]"
+        >
+          <BookOpen size={11} />
+          The corpus
+        </button>
+
+        <button
+          onClick={() => setShowHonesty((v) => !v)}
+          className="flex items-center gap-1.5 rounded border border-[var(--hv-line-bright)] px-2 py-1 text-[10px] text-[var(--hv-muted)] transition-colors hover:text-[var(--hv-text)]"
         >
           <Info size={11} />
           Real vs simulated

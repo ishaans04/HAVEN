@@ -47,6 +47,7 @@ export type EvaluationRequest = Schemas["EvaluationRequest"];
 export type Citation = Schemas["Citation"];
 export type ClauseDetail = Schemas["ClauseDetail"];
 export type ScheduleImpact = Schemas["ScheduleImpact"];
+export type Projection = Schemas["Projection"];
 export type Recommendation = Schemas["Recommendation"];
 export type BestCandidate = Schemas["BestCandidate"];
 export type Refusal = Schemas["Refusal"];

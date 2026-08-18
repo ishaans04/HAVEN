@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { AlertTriangle, Check, ShieldAlert, X } from "lucide-react";
 import type { Situation } from "@/lib/types";
 import { recordDecision } from "@/lib/api";
+import { ProjectionPanel } from "./ProjectionPanel";
 import { Meter, Panel, Stat, Tag, utcTime } from "./ui";
 
 const CONFIDENCE_TONE: Record<string, "good" | "warn" | "bad"> = {
@@ -208,6 +209,13 @@ export function DecisionPanel({ situation }: { situation: Situation | null }) {
             <div className="mono mt-2 text-[10px] text-[var(--hv-dim)]">
               Cost — {rec.resource_cost}
             </div>
+            {/* What the cost buys. Rendered next to it deliberately: a cost
+                without a benefit is half an argument. */}
+            {rec.projection ? (
+              <div className="mt-3">
+                <ProjectionPanel projection={rec.projection} />
+              </div>
+            ) : null}
           </div>
         ) : null}
 
