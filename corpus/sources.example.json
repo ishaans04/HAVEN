@@ -1,0 +1,20 @@
+[
+  {
+    "doc_id": "NASA-STD-3001-V2",
+    "title": "NASA Space Flight Human-System Standard, Volume 2: Human Factors, Habitability, and Environmental Health",
+    "path": "sources/nasa-std-3001-vol2.pdf",
+    "revision": "D",
+    "url": "https://standards.nasa.gov/standard/NASA/NASA-STD-3001-VOL-2",
+    "retrieved": "2026-08-15",
+    "provenance": "extracted"
+  },
+  {
+    "doc_id": "NASA-HIDH",
+    "title": "NASA Human Integration Design Handbook (HIDH)",
+    "path": "sources/nasa-hidh.pdf",
+    "revision": "Rev 1",
+    "url": "https://www.nasa.gov/feature/human-integration-design-handbook",
+    "retrieved": "2026-08-15",
+    "provenance": "extracted"
+  }
+]

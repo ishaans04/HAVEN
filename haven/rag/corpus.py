@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import pathlib
 from dataclasses import dataclass, field
 
 
@@ -41,6 +43,16 @@ class Passage:
     fallback_action: str | None = None
     source: str = "Representative corpus (synthesised; structure per NASA flight rule convention)"
     near_miss_note: str = ""
+    # Where this passage came from, and who signed off on its preconditions.
+    #
+    # "extracted" means compiled from a real source document under review;
+    # "synthesised" means written for this prototype because the public record
+    # contains no execution-time gating rule for the case. The distinction is a
+    # field rather than a convention because it is exactly the kind of thing
+    # that quietly disappears otherwise -- and a corpus that cannot say which of
+    # its rules are real is not one anybody should reason over.
+    provenance: str = "synthesised"
+    reviewed_by: str = ""
 
 
 CORPUS: list[Passage] = [
@@ -286,9 +298,17 @@ def compute_manifest(passages: list[Passage]) -> str:
     corpus becomes something that changes between deployments, and a decision
     that does not name its rulebook is not fully auditable.
 
-    Covers every field that could change an admissibility verdict or a citation.
-    ``near_miss_note`` is excluded: it is commentary for the reader of the
-    corpus and never reaches a decision.
+    Covers every field that could change an admissibility verdict, a citation,
+    or the claim made about where a rule came from. ``provenance`` is in the
+    digest for that last reason: two corpora with identical rules, one claiming
+    to be extracted from a standard and the other admitting it was written for
+    this prototype, are materially different rulebooks to anyone auditing a
+    decision made under them.
+
+    ``near_miss_note`` is excluded -- commentary for the corpus's readers that
+    never reaches a decision -- and so is ``reviewed_by``, which records process
+    rather than content: a second reviewer re-approving an unchanged encoding
+    has not changed the rules.
     """
     digest = hashlib.sha256()
     for passage in sorted(passages, key=lambda p: p.passage_id):
@@ -305,6 +325,7 @@ def compute_manifest(passages: list[Passage]) -> str:
                     "prescribes": passage.prescribes,
                     "fallback_action": passage.fallback_action,
                     "source": passage.source,
+                    "provenance": passage.provenance,
                 },
                 sort_keys=True,
                 separators=(",", ":"),
@@ -313,5 +334,63 @@ def compute_manifest(passages: list[Passage]) -> str:
         )
     return digest.hexdigest()
 
+
+def _load_compiled() -> list[Passage] | None:
+    """A compiled corpus, when one is configured.
+
+    ``HAVEN_CORPUS`` points at an artefact produced by ``compiler.cli emit``.
+    Unset, the hand-authored corpus above is used -- which keeps a fresh clone
+    working with no compilation step, and keeps the demo scenarios reproducible.
+
+    The import is deliberately local and narrow. The compiler must not be
+    reachable from the request path, and a test asserts that; this reads the
+    artefact directly rather than importing anything under ``compiler/``.
+    """
+    configured = os.getenv("HAVEN_CORPUS", "").strip()
+    if not configured:
+        return None
+
+    path = pathlib.Path(configured)
+    if not path.exists():
+        raise RuntimeError(f"HAVEN_CORPUS points at {path}, which does not exist")
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    passages = [
+        Passage(
+            passage_id=item["passage_id"],
+            doc=item["doc"],
+            section=item["section"],
+            title=item.get("title", ""),
+            text=item["text"],
+            task_types=list(item.get("task_types", [])),
+            applies_when=dict(item.get("applies_when", {})),
+            prescribes=item.get("prescribes"),
+            fallback_action=item.get("fallback_action"),
+            source=item.get("source", ""),
+            near_miss_note=item.get("near_miss_note", ""),
+            provenance=item.get("provenance", "extracted"),
+            reviewed_by=item.get("reviewed_by", ""),
+        )
+        for item in payload.get("passages", [])
+    ]
+
+    # Recomputed, never trusted. An artefact edited after compilation -- a
+    # precondition widened by hand -- would otherwise load as though a reviewer
+    # had approved it, and every decision made under it would record a manifest
+    # naming a corpus that never existed.
+    claimed = payload.get("manifest", "")
+    recomputed = compute_manifest(passages)
+    if claimed and claimed != recomputed:
+        raise RuntimeError(
+            f"{path.name} has been edited since it was compiled: it claims manifest "
+            f"{claimed[:16]} but its passages digest to {recomputed[:16]}. Recompile."
+        )
+    return passages
+
+
+_compiled = _load_compiled()
+if _compiled is not None:
+    CORPUS = _compiled
+    BY_ID = {p.passage_id: p for p in CORPUS}
 
 CORPUS_MANIFEST: str = compute_manifest(CORPUS)

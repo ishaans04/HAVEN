@@ -27,6 +27,8 @@ haven_ledger.db*
 # Source documents for the corpus compiler (Phase 4) — redistributable only
 # from their original publishers, so the manifest is tracked and the PDFs are not
 corpus/sources/
+corpus/review.json
+corpus/compiled/
 
 # Editors / OS
 .DS_Store

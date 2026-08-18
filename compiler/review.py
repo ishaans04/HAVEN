@@ -100,12 +100,18 @@ def gate(proposals: list[Proposal]) -> list[Proposal]:
     unconditional: list[str] = []
 
     for proposal in proposals:
-        if not proposal.governs_fatigue:
-            # Reviewed and deliberately excluded. Not an error, and recorded as
-            # a decision rather than an absence.
-            continue
+        # Approval is checked *before* exclusion, and the order is load-bearing.
+        # A proposal the model failed to draft arrives with governs_fatigue
+        # false, so skipping exclusions first would silently drop every rule the
+        # extraction could not read -- the corpus quietly losing rules with
+        # nobody deciding to, which is the exact failure this gate exists to
+        # prevent. An exclusion only counts once a person has made it.
         if not (proposal.approved and proposal.reviewed_by):
             unapproved.append(proposal.passage_id)
+            continue
+        if not proposal.governs_fatigue:
+            # A reviewed decision to exclude. Not an error, and recorded as a
+            # decision rather than an absence.
             continue
         if proposal.warnings:
             warned.append(f"{proposal.passage_id}: {proposal.warnings[0]}")
