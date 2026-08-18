@@ -776,10 +776,20 @@ export interface components {
             deterministic: string;
             /** Orchestration */
             orchestration: string;
+            /**
+             * Provider Chain
+             * @default []
+             */
+            provider_chain: string[];
             /** Reasoning */
             reasoning: string;
             /** Retrieval */
             retrieval: string;
+            /**
+             * Served By
+             * @default
+             */
+            served_by: string;
         };
         /**
          * TimelineTask

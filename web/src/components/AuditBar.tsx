@@ -53,6 +53,13 @@ export function AuditBar({
         <TierPill label="Deterministic" value={tierStatus.deterministic} tone="good" />
         <TierPill label="Retrieval" value={tierStatus.retrieval} tone="info" />
         <TierPill label="Reasoning" value={tierStatus.reasoning} tone="violet" />
+        {tierStatus.provider_chain && tierStatus.provider_chain.length > 1 ? (
+          <ProviderChainPill
+            chain={tierStatus.provider_chain}
+            servedBy={tierStatus.served_by ?? ""}
+            degraded={tierStatus.degraded}
+          />
+        ) : null}
         <TierPill label="Orchestration" value={tierStatus.orchestration} tone="warn" />
 
         <span className="mono ml-auto text-[10px] text-[var(--hv-dim)]">{evaluationId}</span>
@@ -128,6 +135,62 @@ export function AuditBar({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Which providers were tried, and which one answered.
+ *
+ * Shown whenever there is more than one link, because a fallback that is not
+ * visible is a system quietly telling the operator less than it knows. The link
+ * that served is marked; the ones passed over are struck through, so "watsonx
+ * was unreachable and Granite answered locally" reads at a glance rather than
+ * requiring the audit trail to be opened.
+ */
+function ProviderChainPill({
+  chain,
+  servedBy,
+  degraded,
+}: {
+  chain: string[];
+  servedBy: string;
+  degraded: boolean;
+}) {
+  // served_by is a provider's own name ("ollama-granite"); the chain holds
+  // configured keys ("ollama"). Match on prefix rather than equality.
+  const servedIndex = chain.findIndex((name) => servedBy.startsWith(name));
+
+  return (
+    <span className="flex items-center gap-1.5" title={`Provider chain: ${chain.join(" → ")}`}>
+      <span
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ background: degraded ? "var(--hv-watch)" : "var(--hv-violet)" }}
+      />
+      <span className="hv-zone-label">Chain</span>
+      <span className="mono flex items-center gap-1 text-[10px]">
+        {chain.map((name, index) => (
+          <span key={name} className="flex items-center gap-1">
+            {index > 0 ? <span className="text-[var(--hv-dim)]">→</span> : null}
+            <span
+              className={clsx(
+                index === servedIndex && "font-semibold",
+                servedIndex >= 0 && index < servedIndex && "line-through opacity-50",
+              )}
+              style={{
+                color:
+                  index === servedIndex
+                    ? degraded
+                      ? "var(--hv-watch)"
+                      : "var(--hv-nominal)"
+                    : "var(--hv-muted)",
+              }}
+            >
+              {name}
+            </span>
+          </span>
+        ))}
+      </span>
+    </span>
   );
 }
 

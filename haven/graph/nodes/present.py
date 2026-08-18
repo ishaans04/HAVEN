@@ -24,6 +24,8 @@ def present_node(state: HavenState) -> dict[str, Any]:
     request = state["request"]
     llm = state["llm"]
     retriever = state["retriever"]
+    # Only a ProviderChain reports a chain; a single adapter reports itself.
+    chain_status = llm.status() if hasattr(llm, "status") else {}
 
     return {
         "response": EvaluationResponse(
@@ -40,9 +42,14 @@ def present_node(state: HavenState) -> dict[str, Any]:
                 retrieval=retriever.backend_name,
                 reasoning=f"{llm.provider} / {llm.model_id}",
                 orchestration=f"Bob reasoning flow, hash-chained audit ({BUILD_MODE})",
-                degraded=state["degraded"],
-                degraded_reason=state["degraded_reason"],
+                # A fallback inside the chain degrades the evaluation just as a
+                # total outage does. The operator asked for interpretation from
+                # a particular model; being handed another is worth saying.
+                degraded=state["degraded"] or bool(chain_status.get("degraded")),
+                degraded_reason=state["degraded_reason"] or chain_status.get("degraded_reason"),
                 corpus_manifest=state["corpus_manifest"],
+                provider_chain=list(chain_status.get("chain", [])),
+                served_by=str(chain_status.get("served_by", "") or llm.provider),
             ),
         )
     }

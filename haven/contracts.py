@@ -303,6 +303,12 @@ class TierStatus(BaseModel):
     degraded: bool = False
     degraded_reason: str | None = None
     corpus_manifest: str = ""
+    # Which providers were tried, in order, and which one actually answered.
+    # Present so a fallback is visible rather than silent: an operator reading a
+    # recommendation is entitled to know it came from the offline stand-in
+    # rather than from the model they configured.
+    provider_chain: list[str] = []
+    served_by: str = ""
 
 
 class EvaluationResponse(BaseModel):

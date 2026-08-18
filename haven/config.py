@@ -72,6 +72,10 @@ class LLMSettings:
     """
 
     provider: str = field(default_factory=lambda: os.getenv("HAVEN_LLM_PROVIDER", "mock"))
+    # An ordered fallback chain, e.g. "watsonx,ollama,mock". Empty means the
+    # single ``provider`` above heads a chain terminating in the mock, so an
+    # existing single-provider configuration keeps working unchanged.
+    chain: str = field(default_factory=lambda: os.getenv("HAVEN_LLM_CHAIN", ""))
     model_id: str = field(default_factory=lambda: os.getenv("HAVEN_LLM_MODEL", "ibm/granite-3-8b-instruct"))
     watsonx_url: str = field(default_factory=lambda: os.getenv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com"))
     watsonx_api_key: str = field(default_factory=lambda: os.getenv("WATSONX_API_KEY", ""))

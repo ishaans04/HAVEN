@@ -1284,12 +1284,25 @@
             "title": "Orchestration",
             "type": "string"
           },
+          "provider_chain": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Provider Chain",
+            "type": "array"
+          },
           "reasoning": {
             "title": "Reasoning",
             "type": "string"
           },
           "retrieval": {
             "title": "Retrieval",
+            "type": "string"
+          },
+          "served_by": {
+            "default": "",
+            "title": "Served By",
             "type": "string"
           }
         },
