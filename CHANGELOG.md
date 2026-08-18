@@ -62,6 +62,47 @@ that enforce them.
 
 ---
 
+## Open decisions carried forward
+
+Recorded here so a later phase cannot resolve them by accident.
+
+### O1 — An empty `applies_when` is vacuously admissible *(decide in Phase 4)*
+
+`preconditions.check` treats a passage declaring no preconditions as applying
+always. For the hand-authored corpus that is defensible and deliberate: an empty
+clause set is the author's explicit "this always applies", and all 11 current
+passages declare clauses, so nothing is affected today.
+
+It becomes dangerous the moment **Phase 4's compiler** authors preconditions from
+real PDFs, because then an empty `applies_when` means "the extraction produced
+nothing and a human approved it without noticing" — and the passage would be
+admissible for *every* Situation. Fail-open, in a system whose thesis is
+fail-closed.
+
+**Decision:** do not change the checker. Its semantic is clean, tested, and
+correct for authored input. Put the guard where the risk actually is —
+**the Phase 4 review tool must refuse to emit an `extracted` passage with an
+empty `applies_when`.** This is a Phase 4 acceptance criterion, not a
+suggestion.
+
+### O2 — Silent task drop on unknown `assigned_to` *(needs a decision)*
+
+Raised in Phase 1A. A task whose `assigned_to` matches no crew member is dropped
+before scoring and appears nowhere in the response. A mistyped crew id silently
+hides a high-criticality task. Still unfixed, because fixing it changes
+behaviour and needs a chosen shape: most likely a Situation with a new refusal
+reason, since "the roster does not contain this operator" is exactly the kind of
+gap this system exists to surface.
+
+### O3 — `best_candidate.relevance < relevance_gate` now holds incidentally
+
+The v1 assertion in `test_refusals_record_what_was_searched` survived Phase 1B,
+but the gate no longer decides anything, so the relationship it asserts is a
+coincidence of the retrieval scores rather than a structural guarantee. Left
+in place; if it ever fails, read it as a display question, not a safety one.
+
+---
+
 ## [Unreleased]
 
 ### Phase 1B — Propose / dispose
