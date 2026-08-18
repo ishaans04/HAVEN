@@ -85,6 +85,27 @@ correct for authored input. Put the guard where the risk actually is —
 empty `applies_when`.** This is a Phase 4 acceptance criterion, not a
 suggestion.
 
+### O4 — `P-FAT-4.4` is an execution gate that declares no phase *(decide in Phase 4)*
+
+Surfaced by the evaluation harness, which is exactly what it is for.
+
+`P-FAT-4.4` reads as an execution-time gate — *"Extravehicular activity shall
+not commence where the predicted alertness…"* — and `P-SLP-2.1` contrasts itself
+against *"alertness shortfall detected during execution"*, which only makes
+sense if 4.4 is the execution rule. But 4.4's `applies_when` declares no `phase`
+clause, so the checker finds it admissible during planning too. The same is true
+of 4.2 and 6.3.
+
+Unreachable today: the engine hardcodes `phase="execution"`, so nothing ever
+evaluates at planning. It stops being unreachable the moment anything evaluates
+a plan.
+
+**Not fixed here.** Adding `phase: execution` to those three passages is a
+change to safety-relevant data on my reading of the prose, and the corpus is
+about to be replaced wholesale by Phase 4's compiler — which has to decide how
+phase scope is extracted from real documents anyway. The golden set records the
+gap explicitly rather than assuming it away, so it cannot be forgotten.
+
 ### O2 — Silent task drop on unknown `assigned_to` *(needs a decision)*
 
 Raised in Phase 1A. A task whose `assigned_to` matches no crew member is dropped

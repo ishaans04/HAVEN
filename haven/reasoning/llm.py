@@ -454,9 +454,21 @@ class WatsonxGraniteLLM(ReasoningLLM):
         return response.json()["choices"][0]["message"]["content"].strip()
 
 
-def build_llm() -> ReasoningLLM:
-    if LLM.provider == "watsonx":
-        return WatsonxGraniteLLM()
-    if LLM.provider == "ollama":
-        return OllamaGraniteLLM()
-    return MockGraniteLLM()
+PROVIDERS: dict[str, type[ReasoningLLM]] = {
+    "watsonx": WatsonxGraniteLLM,
+    "ollama": OllamaGraniteLLM,
+    "mock": MockGraniteLLM,
+}
+
+
+def build_llm(provider: str | None = None) -> ReasoningLLM:
+    """The configured provider, or a named one.
+
+    The override exists so the evaluation harness can measure a provider without
+    mutating process configuration, and so the provider chain can construct each
+    link by name. An unknown name falls back to the mock rather than raising:
+    the offline stand-in is always a safe answer to "which provider?", and
+    failing to start over a typo in an environment variable would be worse.
+    """
+    name = (provider or LLM.provider or "mock").strip().lower()
+    return PROVIDERS.get(name, MockGraniteLLM)()

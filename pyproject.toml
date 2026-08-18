@@ -89,7 +89,7 @@ ignore = [
 "scripts/calibrate.py" = ["T201"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["haven", "scripts", "eval", "compiler"]
+known-first-party = ["haven", "scripts", "evaluation", "compiler"]
 
 # --------------------------------------------------------------------------
 # pytest
