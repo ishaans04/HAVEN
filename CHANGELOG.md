@@ -66,7 +66,7 @@ that enforce them.
 
 Recorded here so a later phase cannot resolve them by accident.
 
-### O1 — An empty `applies_when` is vacuously admissible *(decide in Phase 4)*
+### O1 — ~~An empty `applies_when` is vacuously admissible~~ *(resolved, Phase 4.2)*
 
 `preconditions.check` treats a passage declaring no preconditions as applying
 always. For the hand-authored corpus that is defensible and deliberate: an empty
@@ -84,6 +84,9 @@ correct for authored input. Put the guard where the risk actually is —
 **the Phase 4 review tool must refuse to emit an `extracted` passage with an
 empty `applies_when`.** This is a Phase 4 acceptance criterion, not a
 suggestion.
+
+**Resolved as specified.** `compiler.review.gate` refuses, the checker is
+untouched, and a hand-authored passage may still declare none.
 
 ### O4 — `P-FAT-4.4` is an execution gate that declares no phase *(decide in Phase 4)*
 
@@ -127,6 +130,111 @@ in the searched set. Its score decides nothing.
 ---
 
 ## [Unreleased]
+
+### Phases 4–8 — M2
+
+**Landed.** 651 tests passing, up from 559 at the end of M1. Closes gap 2, the
+one the architecture design calls "the deepest architectural question in the
+project".
+
+#### Phase 4 — The compiler
+
+- `compiler/` turns source PDFs into passages carrying machine-checkable
+  preconditions, under human review, and never runs at request time. Two tests
+  enforce that separation: an AST scan, and a subprocess that loads a compiled
+  corpus with `compiler` imports poisoned.
+- **Chunking follows the document's structure, not a character count.** A rule
+  ending "This requirement does not apply during launch, entry, or declared
+  contingency operations" split at 400 characters loses its exception to a
+  different chunk — and the corpus then looks healthy while containing a rule
+  that has been quietly widened. That failure has a test.
+- `pypdf`/`pdfplumber` are called directly rather than through LangChain's
+  loaders: **`langchain-community` is being sunset**, and depending on an
+  unmaintained package for a thin wrapper buys nothing. Dropped from the `rag`
+  extra. The maintained packages — `langchain-core`, `langchain-text-splitters`,
+  `langchain-chroma` — carry the rest.
+- The review gate refuses rather than filters, and names every offender at once.
+  **O1 is enforced here.**
+- `Passage` gained `provenance` and `reviewed_by`. Provenance is *in* the
+  manifest digest: two corpora with identical rules, one claiming to be
+  extracted from a standard and one admitting it was written for this prototype,
+  are materially different rulebooks to anyone auditing a decision.
+- Loading recomputes the manifest rather than trusting it, so an artefact edited
+  after review is caught.
+
+**A real fail-open, found by the end-to-end tests:** a proposal the model failed
+to draft arrives with `governs_fatigue=False`, and the gate was skipping those as
+"deliberately excluded" *before* checking whether anyone had reviewed them. Every
+rule the extraction could not read would have been dropped silently. Approval is
+now checked first, and the ordering says why.
+
+#### Phase 5 — Hybrid retrieval
+
+- BM25 (`rank_bm25`) fused with optional dense retrieval (Chroma + fastembed
+  ONNX) by reciprocal rank. **BM25 alone is the offline terminal**; dense
+  downloads its model, so the tier degrades and records why rather than refusing
+  to start.
+- RRF is written rather than imported: `EnsembleRetriever` returns fused
+  documents without fused scores, and Zone 3 renders that number.
+- **Retrieval recall over the golden set is total**, and must be — selection
+  cannot recover from a miss. The near-miss test asserts the opposite direction:
+  P-SLP-2.1 *must* be retrieved, or the model's rejection is a tautology.
+- The index sees title and text only. S4 by another route.
+- **O3 resolved**, exactly as predicted.
+
+#### Phase 6 — Forward projection
+
+- A recommendation now says what its cost buys. Deterministic tier, necessarily.
+- **The projection found two modelling errors of mine.** A 90-minute rest ending
+  at task start projected alertness *falling* (0.649 → 0.383) because sleep
+  inertia peaks at waking; and a fixed 12-hour deferral of a noon task landed at
+  midnight in the circadian trough (0.666 → 0.37). In both the model was right
+  and my encoding of the procedure's intent was wrong. Rest now ends three hours
+  before the task — a constant taken from the scoring node's existing precedent,
+  not chosen, because a constant picked to make a recommendation project well is
+  tuning evidence to fit a conclusion. Deferral is a forward sweep for the first
+  window that actually works.
+- **The performance work was deliberately not done, on measurement.** A full
+  evaluation is 87.6 ms of which `curve()` is 1.6 ms; `Send` fan-out gains
+  nothing when every scenario raises one Situation. Measuring and declining is
+  better than optimising because a plan said so.
+
+#### Phase 7 — The console
+
+- Zone 3 renders propose/dispose: the model's proposal beside the checker's
+  clause-by-clause verdict, satisfied clauses included, with disagreement shown
+  as a first-class event.
+- Zone 4 shows the projection next to the cost. "Predicted", never "achieved",
+  with the basis rendered rather than hidden.
+- The procedure browser finally calls `GET /api/procedures`, implemented in v1
+  and never called. Shows provenance and labels the near-misses.
+- A live check caught the API still using a single provider rather than the
+  chain, so `provider_chain` arrived empty at the console.
+
+#### Phase 8 — Ship
+
+- Static export served by FastAPI from one origin; one process, one port. The
+  mount is declared last (it sits at `/`) and only when the export exists.
+- Dockerfile: Node build stage discarded, `--frozen` install, no extras,
+  telemetry pinned off, non-root, health-checked, ledger on a volume.
+- `DEMO.md` — six scenarios, ordered so each answers the doubt the last raises.
+- CI asserts the export is produced.
+
+#### Not claimed
+
+- **No live-provider figures.** watsonx credentials were unavailable and the
+  Ollama extra is not installed here, so every reported number is the offline
+  stand-in's. The harness exists to produce the comparison the moment there is
+  something to measure; running it is a command, not a build.
+- **The image is unbuilt.** Docker is not installed in this environment. What is
+  verified is everything it depends on: the export is produced, FastAPI serves
+  it, and one port answers both `/` and `/api/health` against a running server.
+- **The corpus is still hand-authored.** The compiler that replaces it is tested
+  end to end against generated PDFs, not against NASA's — those are gitignored
+  and must be fetched from their publishers.
+- **O2 and O4 remain open**, deliberately. Both change behaviour and need a
+  decision rather than a quiet fix.
+
 
 ### Phase 3 — Real providers, offline path intact
 
