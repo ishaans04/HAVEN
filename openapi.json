@@ -919,7 +919,8 @@
               "roster_conflict",
               "provider_unavailable",
               "precondition_unmet",
-              "checker_model_disagreement"
+              "checker_model_disagreement",
+              "numeric_integrity_failure"
             ],
             "title": "Reason",
             "type": "string"

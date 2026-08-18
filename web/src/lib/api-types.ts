@@ -590,7 +590,7 @@ export interface components {
              * Reason
              * @enum {string}
              */
-            reason: "no_governing_procedure" | "insufficient_input" | "roster_conflict" | "provider_unavailable" | "precondition_unmet" | "checker_model_disagreement";
+            reason: "no_governing_procedure" | "insufficient_input" | "roster_conflict" | "provider_unavailable" | "precondition_unmet" | "checker_model_disagreement" | "numeric_integrity_failure";
             /** Reason Label */
             reason_label: string;
             /** Searched */

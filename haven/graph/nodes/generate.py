@@ -14,7 +14,7 @@ from typing import Any
 
 from haven.graph.state import SituationState
 from haven.rag.corpus import BY_ID
-from haven.reasoning.llm import LLMUnavailable
+from haven.reasoning.llm import LLMUnavailable, NumericIntegrityError
 
 
 def generate_node(state: SituationState) -> dict[str, Any]:
@@ -38,4 +38,7 @@ def generate_node(state: SituationState) -> dict[str, Any]:
             "degraded": True,
             "degraded_reason": str(exc),
         }
+    except NumericIntegrityError as exc:
+        # As in FUSE: withheld, not raised. See flow.refuse_numeric_integrity.
+        return {"outcome": flow.refuse_numeric_integrity(facts, state["candidates"], "GENERATE", str(exc))}
     return {"outcome": outcome}

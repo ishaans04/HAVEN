@@ -170,6 +170,7 @@ class Refusal(BaseModel):
         # The reasoning tier and the checker reached different conclusions about
         # whether anything governs. Both directions fail closed (S6).
         "checker_model_disagreement",
+        "numeric_integrity_failure",
     ]
     reason_label: str
     searched: list[str]

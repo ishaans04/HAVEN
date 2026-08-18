@@ -62,9 +62,11 @@ from haven.reasoning.llm import (
     GENERATE_PROMPT,
     SELECT_PROMPT,
     LLMUnavailable,
+    NumericIntegrityError,
     ReasoningLLM,
     assert_no_novel_numbers,
 )
+from haven.reasoning.parsing import ParseFailure, parse_selection, repair_prompt
 
 _NUMBER = re.compile(r"\d+(?:\.\d+)?")
 
@@ -268,8 +270,49 @@ class ReasoningFlow:
             facts=json.dumps(facts, indent=2, default=str),
             candidates=json.dumps(redacted, indent=2, default=str),
         )
-        completion, latency = self._call("SELECT", prompt, {"facts": facts, "candidates": redacted})
-        selection = json.loads(completion)
+        context = {"facts": facts, "candidates": redacted}
+
+        completion, latency = self._call("SELECT", prompt, context)
+        attempts = 1
+        repair_note = ""
+        try:
+            selection = parse_selection(completion)
+        except ParseFailure as first:
+            # One repair, with the specific fault handed back. A model that
+            # returns prose where JSON was asked for usually returns JSON when
+            # told exactly that; a model that does it twice is not going to.
+            repair_note = str(first)
+            retry_prompt = repair_prompt(prompt, repair_note)
+            retry, retry_latency = self._call("SELECT", retry_prompt, context)
+            latency += retry_latency
+            attempts = 2
+            try:
+                selection = parse_selection(retry)
+            except ParseFailure as second:
+                # Fail closed. An unreadable selection is not a weak answer, it
+                # is an absent one, and the honest response to not knowing which
+                # rule governs is to escalate rather than to guess.
+                self.trail.append(
+                    step="SELECT",
+                    tier="reasoning",
+                    detail=(
+                        f"Model response could not be read as a selection after {attempts} attempts: "
+                        f"{second}. Treating the selection as absent."
+                    ),
+                    inputs={"prompt": prompt, "provider": self.llm.provider, "model_id": self.llm.model_id},
+                    outputs={
+                        "governing_passage_id": None,
+                        "parse_failure": str(second),
+                        "first_failure": repair_note,
+                        "attempts": attempts,
+                        "raw_completion": completion[:2000],
+                        "latency_ms": round(latency, 1),
+                    },
+                    duration_ms=latency,
+                    started_at=started_at,
+                )
+                return {"governing_passage_id": None, "rejected": [], "unreadable": True}
+
         governing_id = selection.get("governing_passage_id")
         rejected = selection.get("rejected", [])
 
@@ -286,6 +329,11 @@ class ReasoningFlow:
                 "governing_passage_id": governing_id,
                 "reason": selection.get("reason", ""),
                 "rejected": rejected,
+                "attempts": attempts,
+                # Present only when the first response was unusable, so a
+                # provider that needs repairing shows up in the record rather
+                # than being quietly absorbed.
+                **({"repaired_after": repair_note} if repair_note else {}),
                 "latency_ms": round(latency, 1),
             },
             duration_ms=latency,
@@ -422,6 +470,52 @@ class ReasoningFlow:
         return verdict
 
     # -- STEP 5: FUSE -----------------------------------------------------
+    def _generate_guarded(
+        self,
+        task: str,
+        prompt: str,
+        context: dict[str, Any],
+        allowed: set[str],
+    ) -> tuple[str, float, int, str]:
+        """Call the provider, and hold the result to the numeric guard.
+
+        S1 says every numeral in operator-facing text traces to a value the
+        deterministic tier supplied. Until now the guard raised straight out of
+        the flow, which was fine against a mock that never invents a figure and
+        a 500 against a real model, which will: an instruction-tuned model
+        rounds, restates a threshold, or writes "within 30 minutes" because the
+        passage said so.
+
+        So: one repair attempt naming the offending numeral, then fail closed.
+        The retry is worth making because the fault is usually incidental and
+        the model corrects it when told. What is never acceptable is keeping the
+        text -- a fabricated figure in a safety recommendation is the specific
+        harm this system was built to prevent.
+
+        Returns the text, cumulative latency, attempts, and the first violation
+        if there was one, so the trail can record that a repair happened rather
+        than silently absorbing it.
+        """
+        text, latency = self._call(task, prompt, context)
+        try:
+            assert_no_novel_numbers(text, allowed)
+            return text, latency, 1, ""
+        except NumericIntegrityError as first:
+            violation = str(first)
+
+        retry_prompt = (
+            f"{prompt}\n\n"
+            f"Your previous response was rejected: {violation}\n"
+            f"Every figure must be one of the values given above, written exactly as given. "
+            f"Do not round, restate, or introduce any other number."
+        )
+        retry, retry_latency = self._call(task, retry_prompt, context)
+        latency += retry_latency
+        # Deliberately not caught. The caller turns this into a refusal; the
+        # guard has now fired twice, and a third opinion is not going to help.
+        assert_no_novel_numbers(retry, allowed)
+        return retry, latency, 2, violation
+
     def fuse(self, facts: dict, passage) -> str:
         started_at = _now()
         allowed = _allowed_numbers(facts, f"{passage.doc} {passage.section} {passage.text}")
@@ -432,7 +526,7 @@ class ReasoningFlow:
             section=passage.section,
             passage_text=passage.text,
         )
-        justification, latency = self._call(
+        justification, latency, attempts, violation = self._generate_guarded(
             "FUSE",
             fuse_prompt,
             {
@@ -444,14 +538,24 @@ class ReasoningFlow:
                     "text": passage.text,
                 },
             },
+            allowed,
         )
-        assert_no_novel_numbers(justification, allowed)
         self.trail.append(
             step="FUSE",
             tier="reasoning",
-            detail="Fused crew alertness state, task criticality, and the verified rule into one justification.",
+            detail=(
+                "Fused crew alertness state, task criticality, and the verified rule into one justification."
+                if attempts == 1
+                else (f"Fused the justification after the numeric guard rejected a first attempt: {violation}")
+            ),
             inputs={"prompt": fuse_prompt},
-            outputs={"justification": justification, "numeric_integrity": "verified", "latency_ms": round(latency, 1)},
+            outputs={
+                "justification": justification,
+                "numeric_integrity": "verified",
+                "attempts": attempts,
+                **({"repaired_after": violation} if violation else {}),
+                "latency_ms": round(latency, 1),
+            },
             duration_ms=latency,
             started_at=started_at,
         )
@@ -476,7 +580,7 @@ class ReasoningFlow:
             justification=justification,
             facts=json.dumps(facts, indent=2, default=str),
         )
-        rationale, latency = self._call(
+        rationale, latency, gen_attempts, gen_violation = self._generate_guarded(
             "GENERATE",
             gen_prompt,
             {
@@ -485,8 +589,8 @@ class ReasoningFlow:
                 "section": passage.section,
                 "justification": justification,
             },
+            allowed,
         )
-        assert_no_novel_numbers(rationale, allowed)
 
         citation = {
             "doc": passage.doc,
@@ -526,6 +630,52 @@ class ReasoningFlow:
         )
 
     # -- refusal ---------------------------------------------------------
+    def refuse_numeric_integrity(
+        self,
+        facts: dict,
+        payloads: list[dict],
+        stage: str,
+        violation: str,
+    ) -> ReasoningOutcome:
+        """The generated text failed S1 twice. Escalate rather than publish it.
+
+        This is the most direct expression of the project's thesis that exists
+        in the code. The deterministic evidence is intact and correct; what
+        failed is the prose written about it. Publishing a recommendation whose
+        text contains a figure nobody computed would be exactly the harm the
+        architecture is built to prevent, so the recommendation is withheld and
+        the operator gets the evidence plus a statement of what went wrong.
+
+        A refusal here is not the system breaking. It is the system working.
+        """
+        self.trail.append(
+            step="NUMERIC_INTEGRITY_FAILURE",
+            tier="orchestration",
+            detail=(
+                f"{stage} produced a figure the deterministic tier never supplied, twice. "
+                f"{violation} Withholding the recommendation."
+            ),
+            inputs={"stage": stage, "provider": self.llm.provider, "model_id": self.llm.model_id},
+            outputs={"violation": violation, "outcome": "refusal"},
+        )
+        return self.refuse(
+            facts,
+            payloads,
+            None,
+            "the generated text contained a figure the deterministic tier never supplied",
+            candidates=payloads,
+            reason="numeric_integrity_failure",
+            reason_label="Generated text failed numeric integrity",
+            explanation=(
+                f"A governing rule was found and verified, but the text written about it introduced a "
+                f"figure that no part of the deterministic tier produced ({violation}) The model was "
+                f"asked once to correct it and did not. Every number in an operator-facing recommendation "
+                f"must trace to a computed value, so the recommendation is withheld rather than shown "
+                f"with a figure nobody can account for. The deterministic evidence below is unaffected "
+                f"and remains valid."
+            ),
+        )
+
     def refuse_verdict(
         self,
         facts: dict,
@@ -664,7 +814,7 @@ class ReasoningFlow:
             justification=justification,
             facts=json.dumps(facts, indent=2, default=str),
         )
-        rationale, latency = self._call(
+        rationale, latency, fallback_attempts, fallback_violation = self._generate_guarded(
             "GENERATE",
             prompt,
             {
@@ -673,8 +823,8 @@ class ReasoningFlow:
                 "section": passage.section,
                 "justification": justification,
             },
+            allowed,
         )
-        assert_no_novel_numbers(rationale, allowed)
         self.trail.append(
             step="GENERATE_FALLBACK",
             tier="reasoning",

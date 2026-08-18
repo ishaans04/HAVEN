@@ -5,7 +5,9 @@ this node runs the citation is already lawful and the passage may be handed over
 in full. What the model does here is write, not choose.
 
 Numbers remain the deterministic tier's: ``assert_no_novel_numbers`` rejects any
-numeral the fact set did not supply, and it raises rather than warns.
+numeral the fact set did not supply. The provider gets one chance to correct it,
+with the offending figure named; a second violation withholds the recommendation
+and escalates, because a figure nobody computed must never reach an operator.
 """
 
 from __future__ import annotations
@@ -14,7 +16,7 @@ from typing import Any
 
 from haven.graph.state import SituationState
 from haven.rag.corpus import BY_ID
-from haven.reasoning.llm import LLMUnavailable
+from haven.reasoning.llm import LLMUnavailable, NumericIntegrityError
 
 
 def fuse_node(state: SituationState) -> dict[str, Any]:
@@ -28,3 +30,8 @@ def fuse_node(state: SituationState) -> dict[str, Any]:
             "degraded": True,
             "degraded_reason": str(exc),
         }
+    except NumericIntegrityError as exc:
+        # The guard fired twice. Caught rather than raised: an invented figure
+        # is an operational condition with a correct response -- withhold and
+        # escalate -- not a program error deserving a 500.
+        return {"outcome": flow.refuse_numeric_integrity(facts, state["candidates"], "FUSE", str(exc))}
