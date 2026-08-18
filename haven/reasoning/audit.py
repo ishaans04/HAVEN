@@ -29,12 +29,23 @@ from __future__ import annotations
 
 import hmac
 import json
+import os
+import sqlite3
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from hashlib import sha256
+from pathlib import Path
 
 from haven.reasoning.signing import audit_key
+
+_DEFAULT_DB = Path(__file__).resolve().parents[2] / "haven_ledger.db"
+
+
+def default_db_path() -> Path:
+    """Where the ledger lives unless ``HAVEN_LEDGER_DB`` says otherwise."""
+    override = os.getenv("HAVEN_LEDGER_DB")
+    return Path(override) if override else _DEFAULT_DB
 
 
 def _now() -> datetime:
@@ -158,6 +169,18 @@ class _GlobalChain:
         with self._lock:
             self._head, self._seq = GENESIS, 0
 
+    def restore(self, head: str, seq: int) -> None:
+        """Adopt a head recovered from durable storage.
+
+        Called when a store opens an existing ledger, so a restart continues the
+        chain instead of starting a second one beside it. Without this the first
+        entry after a restart would link to GENESIS and the ledger would read as
+        two unrelated histories -- exactly the per-trail blindness the global
+        chain exists to remove.
+        """
+        with self._lock:
+            self._head, self._seq = head, seq
+
 
 CHAIN = _GlobalChain()
 
@@ -254,42 +277,302 @@ class LedgerVerdict:
         return self.ok
 
 
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS ledger_entries (
+    global_seq  INTEGER PRIMARY KEY,
+    audit_ref   TEXT    NOT NULL,
+    seq         INTEGER NOT NULL,
+    step        TEXT    NOT NULL,
+    tier        TEXT    NOT NULL,
+    detail      TEXT    NOT NULL,
+    inputs      TEXT    NOT NULL,
+    outputs     TEXT    NOT NULL,
+    started_at  TEXT    NOT NULL,
+    duration_ms REAL    NOT NULL,
+    prev_hash   TEXT    NOT NULL,
+    entry_hash  TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ledger_entries_by_ref ON ledger_entries (audit_ref, seq);
+
+CREATE TABLE IF NOT EXISTS trails (
+    audit_ref    TEXT PRIMARY KEY,
+    situation_id TEXT NOT NULL,
+    created_at   TEXT NOT NULL,
+    provider     TEXT NOT NULL,
+    model_id     TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS decisions (
+    decision_id TEXT PRIMARY KEY,
+    payload     TEXT NOT NULL,
+    recorded_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS checkpoints (
+    at_global_seq INTEGER PRIMARY KEY,
+    head_hash     TEXT NOT NULL,
+    recorded_at   TEXT NOT NULL
+);
+"""
+
+
 class AuditStore:
-    """In-memory store. A production deployment writes to append-only storage."""
+    """A durable, append-only ledger backed by SQLite.
 
-    def __init__(self) -> None:
+    v1 kept trails in a dict, so a restart lost every trail and every human
+    decision. "Append-only audit trail" described an intent rather than a
+    property of the system.
+
+    Durability here means INSERT and nothing else. There is no UPDATE and no
+    DELETE anywhere in this class, so the only way to alter a written record is
+    to go around the application to the file -- which is exactly what the keyed
+    global chain exists to make evident.
+
+    The in-memory map is a cache, not the record. ``get`` falls back to the
+    database, so a trail written before a restart still resolves.
+    """
+
+    # Every this many entries, record where the chain had reached.
+    CHECKPOINT_INTERVAL = 25
+
+    def __init__(self, db_path: str | Path | None = None) -> None:
+        self._configured_path = Path(db_path) if db_path is not None else None
+        self._path: Path | None = None
         self._trails: dict[str, AuditTrail] = {}
-        self._decisions: list[dict] = []
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
+        self._connection: sqlite3.Connection | None = None
+        self._adopt_if_present()
 
+    def _adopt_if_present(self) -> None:
+        """Pick up an existing ledger's chain head before anything is appended.
+
+        Timing matters here. Entries are built by ``AuditTrail.append``, which
+        advances the global chain, and only handed to ``put`` afterwards -- so
+        waiting for the first database access to adopt the head would let the
+        first entry after a restart link to GENESIS. The ledger would then read
+        as two unrelated histories laid end to end, which is the exact
+        per-trail blindness the global chain exists to remove.
+
+        Opening only when the file already exists keeps the lazy behaviour that
+        matters: a fresh checkout still creates no database merely by importing.
+        """
+        if self.path.exists():
+            self._conn  # noqa: B018 - opening is the point; it adopts the head
+
+    @property
+    def path(self) -> Path:
+        """Where this store writes. Resolved on first use, not at construction."""
+        if self._path is None:
+            self._path = self._configured_path or default_db_path()
+        return self._path
+
+    @property
+    def _conn(self) -> sqlite3.Connection:
+        """The database handle, opened on first use.
+
+        Deliberately lazy. Connecting in ``__init__`` would mean that merely
+        importing ``haven.api.main`` created a database file -- an import with a
+        side effect on the filesystem, which is both surprising and awkward to
+        test around, since the module-level singleton is built at import time
+        and any redirection of the path necessarily happens after that.
+        """
+        with self._lock:
+            if self._connection is None:
+                path = self.path
+                path.parent.mkdir(parents=True, exist_ok=True)
+                # check_same_thread=False because Phase 6 fans Situations out
+                # across a threadpool; every write is serialised by self._lock.
+                self._connection = sqlite3.connect(str(path), check_same_thread=False)
+                self._connection.row_factory = sqlite3.Row
+                self._init_schema()
+                self._adopt_chain_head()
+            return self._connection
+
+    def reopen(self, db_path: str | Path | None = None) -> None:
+        """Drop the cache and point at a (possibly different) database.
+
+        Used by tests to redirect the singleton, and by the round-trip test to
+        prove a trail survives the process that wrote it.
+        """
+        with self._lock:
+            if self._connection is not None:
+                self._connection.close()
+            self._connection = None
+            self._trails.clear()
+            self._configured_path = Path(db_path) if db_path is not None else None
+            self._path = None
+        self._adopt_if_present()
+
+    # -- schema ----------------------------------------------------------
+    def _init_schema(self) -> None:
+        conn = self._connection
+        assert conn is not None  # only ever called while opening
+        # WAL so a reader verifying the ledger never blocks a writer appending.
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=FULL")
+        conn.executescript(SCHEMA)
+        conn.commit()
+
+    def _adopt_chain_head(self) -> None:
+        conn = self._connection
+        assert conn is not None  # only ever called while opening
+        row = conn.execute(
+            "SELECT global_seq, entry_hash FROM ledger_entries ORDER BY global_seq DESC LIMIT 1"
+        ).fetchone()
+        if row is not None:
+            CHAIN.restore(row["entry_hash"], row["global_seq"])
+
+    # -- writing ---------------------------------------------------------
     def put(self, trail: AuditTrail) -> None:
+        """Persist a trail and any of its entries not yet written.
+
+        Safe to call more than once for the same trail: entries already on disk
+        are skipped by primary key, so a later append -- the human decision, for
+        instance -- is flushed by calling this again rather than by rewriting
+        anything.
+        """
         with self._lock:
             self._trails[trail.audit_ref] = trail
+            self._conn.execute(
+                "INSERT OR IGNORE INTO trails (audit_ref, situation_id, created_at, provider, model_id) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (
+                    trail.audit_ref,
+                    trail.situation_id,
+                    trail.created_at.isoformat(),
+                    trail.provider,
+                    trail.model_id,
+                ),
+            )
+            for entry in trail.entries:
+                self._conn.execute(
+                    "INSERT OR IGNORE INTO ledger_entries "
+                    "(global_seq, audit_ref, seq, step, tier, detail, inputs, outputs, "
+                    " started_at, duration_ms, prev_hash, entry_hash) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        entry.global_seq,
+                        trail.audit_ref,
+                        entry.seq,
+                        entry.step,
+                        entry.tier,
+                        entry.detail,
+                        _canonical(entry.inputs),
+                        _canonical(entry.outputs),
+                        entry.started_at.isoformat(),
+                        entry.duration_ms,
+                        entry.prev_hash,
+                        entry.entry_hash,
+                    ),
+                )
+            self._conn.commit()
+            self._maybe_checkpoint()
 
-    def get(self, audit_ref: str) -> AuditTrail | None:
-        return self._trails.get(audit_ref)
+    def _maybe_checkpoint(self) -> None:
+        """Record where the chain had reached, at intervals.
 
-    def recent(self, limit: int = 25) -> list[AuditTrail]:
-        return sorted(self._trails.values(), key=lambda t: t.created_at, reverse=True)[:limit]
+        A partial anchor, and no more than that. It narrows the window in which
+        a rewrite passes unnoticed -- a forger must reproduce every checkpoint
+        too -- but an attacker holding the key and write access can rewrite the
+        checkpoints as easily as the entries. Real tamper-evidence needs storage
+        the attacker cannot reach: WORM media, or an external notary. Named here
+        rather than implied, because a ledger that overstates its guarantees is
+        worse than one that admits their edge.
+        """
+        head, length = CHAIN.head, CHAIN.length
+        if length == 0 or length % self.CHECKPOINT_INTERVAL:
+            return
+        self._conn.execute(
+            "INSERT OR IGNORE INTO checkpoints (at_global_seq, head_hash, recorded_at) VALUES (?, ?, ?)",
+            (length, head, _now().isoformat()),
+        )
+        self._conn.commit()
 
     def record_decision(self, decision: dict) -> None:
         """Human-decision learning loop (PRD 8.2): every accept/override is kept."""
         with self._lock:
-            self._decisions.append(decision)
+            self._conn.execute(
+                "INSERT OR IGNORE INTO decisions (decision_id, payload, recorded_at) VALUES (?, ?, ?)",
+                (
+                    str(decision.get("decision_id", "")),
+                    _canonical(decision),
+                    str(decision.get("recorded_at", _now().isoformat())),
+                ),
+            )
+            self._conn.commit()
+
+    # -- reading ---------------------------------------------------------
+    def get(self, audit_ref: str) -> AuditTrail | None:
+        """The trail, from cache if it is there and from disk if it is not."""
+        with self._lock:
+            cached = self._trails.get(audit_ref)
+            if cached is not None:
+                return cached
+            trail = self._load(audit_ref)
+            if trail is not None:
+                self._trails[audit_ref] = trail
+            return trail
+
+    def _load(self, audit_ref: str) -> AuditTrail | None:
+        head = self._conn.execute("SELECT * FROM trails WHERE audit_ref = ?", (audit_ref,)).fetchone()
+        if head is None:
+            return None
+        trail = AuditTrail(
+            audit_ref=head["audit_ref"],
+            situation_id=head["situation_id"],
+            provider=head["provider"],
+            model_id=head["model_id"],
+            created_at=datetime.fromisoformat(head["created_at"]),
+        )
+        rows = self._conn.execute(
+            "SELECT * FROM ledger_entries WHERE audit_ref = ? ORDER BY seq", (audit_ref,)
+        ).fetchall()
+        trail.entries = [self._row_to_entry(r) for r in rows]
+        return trail
+
+    @staticmethod
+    def _row_to_entry(row: sqlite3.Row) -> AuditEntry:
+        return AuditEntry(
+            seq=row["seq"],
+            step=row["step"],
+            tier=row["tier"],
+            detail=row["detail"],
+            inputs=json.loads(row["inputs"]),
+            outputs=json.loads(row["outputs"]),
+            started_at=datetime.fromisoformat(row["started_at"]),
+            duration_ms=row["duration_ms"],
+            prev_hash=row["prev_hash"],
+            entry_hash=row["entry_hash"],
+            global_seq=row["global_seq"],
+        )
+
+    def recent(self, limit: int = 25) -> list[AuditTrail]:
+        rows = self._conn.execute("SELECT audit_ref FROM trails ORDER BY created_at DESC LIMIT ?", (limit,)).fetchall()
+        return [t for t in (self.get(r["audit_ref"]) for r in rows) if t is not None]
 
     def decisions(self) -> list[dict]:
-        return list(self._decisions)
+        rows = self._conn.execute("SELECT payload FROM decisions ORDER BY rowid").fetchall()
+        return [json.loads(r["payload"]) for r in rows]
 
     def entries_in_order(self) -> list[AuditEntry]:
-        """Every entry the store holds, in global ledger order."""
+        """Every entry in the ledger, in global order, read from disk."""
+        rows = self._conn.execute("SELECT * FROM ledger_entries ORDER BY global_seq").fetchall()
+        return [self._row_to_entry(r) for r in rows]
+
+    def checkpoints(self) -> list[tuple[int, str]]:
+        rows = self._conn.execute("SELECT at_global_seq, head_hash FROM checkpoints ORDER BY at_global_seq").fetchall()
+        return [(r["at_global_seq"], r["head_hash"]) for r in rows]
+
+    def close(self) -> None:
         with self._lock:
-            trails = list(self._trails.values())
-        return sorted((e for t in trails for e in t.entries), key=lambda e: e.global_seq)
+            if self._connection is not None:
+                self._connection.close()
+                self._connection = None
 
     def verify_ledger(self) -> LedgerVerdict:
         """Walk the whole chain, across trails, and report the first divergence.
 
-        Catches three distinct failures a per-trail check cannot:
+        Catches three failures a per-trail check cannot:
 
         * a forged or corrupted entry, wherever it sits;
         * a broken link between two entries, including across a trail boundary;
@@ -302,13 +585,14 @@ class AuditStore:
 
         for entry in entries:
             if entry.global_seq != expected:
+                missing = entry.global_seq - expected
                 return LedgerVerdict(
                     False,
                     expected - 1,
                     entry.global_seq,
-                    f"ledger jumps from {expected - 1} to {entry.global_seq}; "
-                    f"{entry.global_seq - expected} entr"
-                    f"{'y is' if entry.global_seq - expected == 1 else 'ies are'} missing",
+                    f"ledger jumps from {expected - 1} to {entry.global_seq}; {missing} entries are missing"
+                    if missing != 1
+                    else f"ledger jumps from {expected - 1} to {entry.global_seq}; 1 entry is missing",
                 )
             if not entry.mac_is_valid():
                 return LedgerVerdict(

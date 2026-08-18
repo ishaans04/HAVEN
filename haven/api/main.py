@@ -161,6 +161,10 @@ def record_decision(request: DecisionRequest) -> DecisionRecord:
             inputs={"operator": request.operator},
             outputs={"decision": request.decision, "reason": request.reason, "decision_id": record.decision_id},
         )
+        # The trail was sealed when the Situation was raised; this entry is
+        # appended afterwards, so it needs flushing. put() inserts only what is
+        # not already stored, so re-storing the trail rewrites nothing.
+        AUDIT.put(trail)
     return record
 
 
