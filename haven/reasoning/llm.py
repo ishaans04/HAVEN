@@ -373,85 +373,153 @@ class MockGraniteLLM(ReasoningLLM):
 # --------------------------------------------------------------------------
 # Real providers
 # --------------------------------------------------------------------------
-class OllamaGraniteLLM(ReasoningLLM):
-    """Local Granite via Ollama. Free, unlimited, used for development."""
+class _LangChainProvider(ReasoningLLM):
+    """A real provider, behind HAVEN's own interface.
+
+    LangChain supplies the transport, the retry semantics, and -- for watsonx --
+    IAM token management, which the hand-rolled adapter got wrong: it cached the
+    token forever, so a demo session outliving the token's lifetime would start
+    401-ing partway through.
+
+    What LangChain does *not* get to own is the ladder above it. The provider is
+    asked for JSON natively where it supports it, but the extraction, validation,
+    repair and fail-closed refusal stay in ``haven.reasoning.parsing``. Those are
+    safety behaviours: ``with_structured_output`` would raise on a malformed
+    response, and "raise" is not one of the outcomes this system is allowed to
+    have. Refusing is.
+
+    The client is built lazily and cached. Constructing it eagerly would make the
+    provider packages a hard dependency of importing ``haven.reasoning.llm``, and
+    they are deliberately an optional extra -- the offline path installs neither.
+    """
+
+    provider = "langchain"
+    #: Names of exception types that mean "try later", not "this request was bad".
+    _TRANSIENT = ("RateLimit", "Timeout", "Connect", "ServiceUnavailable", "TooManyRequests", "APIError")
+
+    def __init__(self) -> None:
+        self._client: Any | None = None
+
+    @property
+    def model_id(self) -> str:
+        return LLM.model_id
+
+    def _build_client(self) -> Any:  # pragma: no cover - overridden
+        raise NotImplementedError
+
+    def _client_or_build(self) -> Any:
+        if self._client is None:
+            self._client = self._build_client()
+        return self._client
+
+    @staticmethod
+    def _wants_json(task: str) -> bool:
+        """SELECT is the only step whose answer is a structure, not prose."""
+        return task == "SELECT"
+
+    def complete(self, task: str, prompt: str, context: dict[str, Any]) -> str:
+        from langchain_core.messages import HumanMessage, SystemMessage
+
+        client = self._client_or_build()
+        if self._wants_json(task):
+            client = self._as_json_mode(client)
+
+        try:
+            response = client.invoke([SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=prompt)])
+        except Exception as exc:
+            raise self._as_unavailable(exc) from exc
+
+        content = getattr(response, "content", response)
+        if isinstance(content, list):
+            # Some providers return content parts rather than a single string.
+            content = "".join(part.get("text", "") if isinstance(part, dict) else str(part) for part in content)
+        return str(content).strip()
+
+    def _as_json_mode(self, client: Any) -> Any:  # pragma: no cover - overridden
+        return client
+
+    def _as_unavailable(self, exc: Exception) -> LLMUnavailable:
+        """Every provider failure becomes the one condition the flow handles.
+
+        A 429 is called out because the watsonx Lite tier is token-limited and
+        exhausting it mid-demo is a foreseeable operational event, not a bug. It
+        degrades like any other outage: the deterministic evidence stands, the
+        procedure interpretation is missing, and the Situation is escalated.
+        """
+        name = type(exc).__name__
+        text = str(exc)
+        if "429" in text or "rate limit" in text.lower() or "quota" in text.lower():
+            return LLMUnavailable(f"{self.provider} rate-limited or out of quota: {exc}")
+        if any(marker in name for marker in self._TRANSIENT):
+            return LLMUnavailable(f"{self.provider} temporarily unavailable ({name}): {exc}")
+        return LLMUnavailable(f"{self.provider} unreachable ({name}): {exc}")
+
+
+class OllamaGraniteLLM(_LangChainProvider):
+    """Local Granite via Ollama, through ``langchain-ollama``.
+
+    Free and unmetered, which is why development and every evaluation sweep run
+    here rather than against watsonx.
+    """
 
     provider = "ollama-granite"
 
-    def complete(self, task: str, prompt: str, context: dict[str, Any]) -> str:  # pragma: no cover
-        import httpx
-
+    def _build_client(self) -> Any:
         try:
-            response = httpx.post(
-                f"{LLM.ollama_url}/api/chat",
-                json={
-                    "model": LLM.model_id,
-                    "stream": False,
-                    "options": {"temperature": 0.0},
-                    "messages": [
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": prompt},
-                    ],
-                },
-                timeout=LLM.request_timeout_s,
-            )
-            response.raise_for_status()
-        except Exception as exc:
-            raise LLMUnavailable(f"Ollama unreachable: {exc}") from exc
-        return response.json()["message"]["content"].strip()
+            from langchain_ollama import ChatOllama
+        except ImportError as exc:
+            raise LLMUnavailable(
+                "HAVEN_LLM_PROVIDER=ollama requires the provider extra: `uv sync --extra providers`"
+            ) from exc
+
+        return ChatOllama(
+            model=LLM.model_id,
+            base_url=LLM.ollama_url,
+            # Zero, because a safety recommendation should not vary between two
+            # runs over identical evidence. Reproducibility is a stated metric.
+            temperature=0.0,
+            timeout=LLM.request_timeout_s,
+        )
+
+    def _as_json_mode(self, client: Any) -> Any:
+        # Ollama constrains generation to valid JSON when asked. It cannot
+        # enforce our schema, so the ladder still validates -- this only removes
+        # the fences and the preamble.
+        return client.bind(format="json")
 
 
-class WatsonxGraniteLLM(ReasoningLLM):
-    """IBM watsonx.ai Granite. Reserved for integration and the live demo.
+class WatsonxGraniteLLM(_LangChainProvider):
+    """IBM watsonx.ai Granite, through ``langchain-ibm``.
 
-    The Lite tier is token-limited, which is why development runs on the mock or
-    on local Ollama (PRD section 3, cost constraints).
+    IBM's own LangChain package, deliberately: the challenge scores the watsonx
+    integration, and a generic gateway would hide the one thing worth showing.
+    The Lite tier is token-limited, which is why the eval harness runs on Ollama
+    and watsonx is reserved for integration and the recorded demo.
     """
 
     provider = "watsonx-granite"
 
-    def __init__(self) -> None:  # pragma: no cover
+    def _build_client(self) -> Any:
         if not (LLM.watsonx_api_key and LLM.watsonx_project_id):
             raise LLMUnavailable("WATSONX_API_KEY and WATSONX_PROJECT_ID must be set")
-        self._token: str | None = None
-
-    def _access_token(self) -> str:  # pragma: no cover
-        import httpx
-
-        if self._token:
-            return self._token
-        response = httpx.post(
-            "https://iam.cloud.ibm.com/identity/token",
-            data={"grant_type": "urn:ibm:params:oauth:grant-type:apikey", "apikey": LLM.watsonx_api_key},
-            timeout=LLM.request_timeout_s,
-        )
-        response.raise_for_status()
-        self._token = response.json()["access_token"]
-        return self._token
-
-    def complete(self, task: str, prompt: str, context: dict[str, Any]) -> str:  # pragma: no cover
-        import httpx
 
         try:
-            response = httpx.post(
-                f"{LLM.watsonx_url}/ml/v1/text/chat?version=2024-10-10",
-                headers={"Authorization": f"Bearer {self._access_token()}"},
-                json={
-                    "model_id": LLM.model_id,
-                    "project_id": LLM.watsonx_project_id,
-                    "temperature": 0.0,
-                    "max_tokens": 500,
-                    "messages": [
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": prompt},
-                    ],
-                },
-                timeout=LLM.request_timeout_s,
-            )
-            response.raise_for_status()
-        except Exception as exc:
-            raise LLMUnavailable(f"watsonx.ai unreachable: {exc}") from exc
-        return response.json()["choices"][0]["message"]["content"].strip()
+            from langchain_ibm import ChatWatsonx
+        except ImportError as exc:
+            raise LLMUnavailable(
+                "HAVEN_LLM_PROVIDER=watsonx requires the provider extra: `uv sync --extra providers`"
+            ) from exc
+
+        return ChatWatsonx(
+            model_id=LLM.model_id,
+            url=LLM.watsonx_url,
+            apikey=LLM.watsonx_api_key,
+            project_id=LLM.watsonx_project_id,
+            params={"temperature": 0.0, "max_tokens": 700},
+        )
+
+    def _as_json_mode(self, client: Any) -> Any:
+        return client.bind(response_format={"type": "json_object"})
 
 
 PROVIDERS: dict[str, type[ReasoningLLM]] = {
