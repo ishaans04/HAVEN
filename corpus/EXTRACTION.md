@@ -106,4 +106,69 @@ Supersedes: NASA/TM-1999-208780 (NTRS 19990116851, 1999-04-01)
 **Why this document:** The operational countermeasure taxonomy HAVEN's action types map onto: preventive strategies taken before duty, and operational strategies taken during it. HAVEN can recommend a second operator, a short rest, a rotation or a deferral, and this is the NASA document that says what such countermeasures are for and what they do not fix. Included over the broader Fatigue Countermeasures Program literature because it is the one that states the strategies operationally rather than reporting a single experiment.
 
 **Version check:** NTRS record 20020078410, read 2026-08-18: distribution PUBLIC, copyright GOV_PUBLIC_USE_PERMITTED, status CURATED, publication date 2001-11-01, report numbers NASA/TM-2001-211385 / DOT-FAA-AR-01-01 / IH-022. NTRS holds an earlier edition of the same module as 19990116851 (NASA/TM-1999-208780, 1999-04-01, same four authors); the 2001 edition is the later and is the one ingested.
+## What retrieval finds
 
+BM25 over the extracted passages, before review. Nothing here has been
+approved, so none of it could be cited — a passage with no preconditions and
+no prescribed action is refused by the checker. What the probe shows is which
+documents a real fatigue query reaches, and how much of what it reaches is
+guidance or research that may never ground an action.
+
+**predicted operator alertness below threshold before a propulsive manoeuvre**
+
+| Rank | Document | Section | Authority |
+|---|---|---|---|
+| 1 | NASA-STD-3001-V2 | V2 5053 | authoritative |
+| 2 | NASA-STD-3001-V2 | V2 5051 | authoritative |
+| 3 | NASA-STD-3001-V2 | V2 6084 | authoritative |
+| 4 | NASA-STD-3001-V2 | V2 10028 | authoritative |
+| 5 | NTRS-20020078410 | p54-1 | research |
+
+**extravehicular activity with accumulated sleep debt across consecutive duty days**
+
+| Rank | Document | Section | Authority |
+|---|---|---|---|
+| 1 | NTRS-19950006379 | 5.2.4 | research |
+| 2 | NASA-STD-3001-V1 | 4.1 | authoritative |
+| 3 | NTRS-19950006379 | p16-2 | research |
+| 4 | NTRS-20160003864 | p8-2 | research |
+| 5 | NTRS-19950006379 | p70-1 | research |
+
+**protected rest period before resuming a safety-critical task**
+
+| Rank | Document | Section | Authority |
+|---|---|---|---|
+| 1 | NTRS-19950006379 | p70-2 | research |
+| 2 | NTRS-19950006379 | p68-1 | research |
+| 3 | NTRS-19950006379 | p70-1 | research |
+| 4 | NTRS-19950006379 | 5.2.5 | research |
+| 5 | NASA-STD-3001-V1 | V1 6001 | authoritative |
+
+**safety-critical task scheduled during the circadian trough**
+
+| Rank | Document | Section | Authority |
+|---|---|---|---|
+| 1 | NTRS-20160003864 | p14-2 | research |
+| 2 | NTRS-20160003864 | p8-1 | research |
+| 3 | NTRS-20160003864 | p8-2 | research |
+| 4 | NTRS-20160003864 | p15-1 | research |
+| 5 | NTRS-20160003864 | p13-1 | research |
+
+**sustained crew workload above the limit for the planned duty period**
+
+| Rank | Document | Section | Authority |
+|---|---|---|---|
+| 1 | NTRS-20160003864 | p8-2 | research |
+| 2 | NASA-STD-3001-V2 | V2 6082 | authoritative |
+| 3 | NTRS-20020078410 | p56-1 | research |
+| 4 | NASA-STD-3001-V1 | V1 6001 | authoritative |
+| 5 | NASA-STD-3001-V2 | V2 5007 | authoritative |
+
+This is the argument for S10, run rather than asserted. Ask about the circadian
+trough — the thing HAVEN's `requires_circadian_flag` clause exists for — and every
+one of the top five is a research paper. Ask about a protected rest period and four
+of five are the cockpit-rest study, with the one actual requirement fifth. Retrieval
+is doing its job: those passages are the most relevant text in the corpus. They are
+also not rules, and a system that grounded an action in them would produce a
+citation an operator could look up and find, pointing at a sentence that requires
+nothing of anyone.

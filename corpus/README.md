@@ -71,6 +71,12 @@ proposed by a model, and enforced at two independent points:
 because it exists precisely to stand in for the execution-time flight rules the
 public record does not contain, and it says so everywhere it surfaces.
 
+`EXTRACTION.md` ends with the probe that settled this: BM25 over the real
+passages, five ordinary fatigue queries. Ask about the circadian trough and all
+five top hits are research papers. Ask about a protected rest period and four of
+five are the cockpit-rest study, with the one actual requirement fifth. The gate
+is not protecting against a hypothetical.
+
 ## A requirement is not its rationale
 
 The same mistake, at passage scale, and the compiler would have made it. Here is

@@ -189,6 +189,25 @@ catches it if it gets in. Each was confirmed to fail when its guard is removed.
 exists precisely to stand in for the execution-time flight rules the public
 record does not contain, and says so everywhere it surfaces.
 
+#### The probe, which settled the argument
+
+`extract --report` now ends with BM25 run over the real passages against five
+ordinary fatigue queries. It was meant as documentation and turned out to be the
+strongest evidence in the phase:
+
+| Query | Top five |
+|---|---|
+| safety-critical task during the circadian trough | **5 of 5 research** |
+| protected rest before resuming a critical task | 4 research, then [V1 6001] fifth |
+| EVA with accumulated sleep debt | 4 research, 1 authoritative |
+
+Retrieval is behaving correctly — those passages *are* the most relevant text in
+the corpus. They are also not rules. Without the authority clause, the query that
+HAVEN's own `requires_circadian_flag` exists to serve would ground its
+recommendation in a research paper, every time. A test asserts the probe still
+shows this, so that if a future corpus makes every top hit authoritative somebody
+has to decide out loud whether the gate still earns its place.
+
 #### A requirement is not its rationale
 
 The same mistake at passage scale, and the compiler would have made it. [V1 6001]

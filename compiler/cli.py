@@ -131,6 +131,87 @@ def _report(records: list, per_document: dict, summary: dict) -> str:
     return "\n".join(lines)
 
 
+#: Queries a fatigue Situation would actually raise, one per HAVEN action type
+#: it might reach for. Fixed rather than generated, because the value of the
+#: probe is that the same questions get asked of every corpus revision.
+PROBE_QUERIES = (
+    "predicted operator alertness below threshold before a propulsive manoeuvre",
+    "extravehicular activity with accumulated sleep debt across consecutive duty days",
+    "protected rest period before resuming a safety-critical task",
+    "safety-critical task scheduled during the circadian trough",
+    "sustained crew workload above the limit for the planned duty period",
+)
+
+
+def _probe(chunks: list, top_k: int = 5) -> str:
+    """What retrieval finds in the real documents, before anyone reviews them.
+
+    Passages that have not been reviewed cannot be cited — they declare no
+    preconditions and prescribe nothing, so the checker refuses them — but they
+    can be *retrieved*, and what retrieval surfaces is the question this corpus
+    has to answer. A fatigue query against real NASA text returns real NASA
+    requirements about sleep, a handbook explaining why sleep matters, and a
+    paper measuring what happens without it. None of the last two may ground an
+    action. Seeing that, rather than asserting it, is the point.
+
+    Provisional passages, built in memory and thrown away. Nothing here writes a
+    corpus, and none of it goes near the emit gate.
+    """
+    from compiler.propose import passage_id
+    from haven.rag.backends import BM25Backend
+    from haven.rag.corpus import Passage
+
+    taken: set[str] = set()
+    provisional: list[Passage] = []
+    for chunk in chunks:
+        identifier = passage_id(chunk, taken)
+        taken.add(identifier)
+        provisional.append(
+            Passage(
+                passage_id=identifier,
+                doc=str(chunk.metadata.get("doc_id", "")),
+                section=str(chunk.metadata.get("section", "")),
+                title=str(chunk.metadata.get("section_title", "")),
+                text=chunk.page_content,
+                task_types=[],
+                provenance="extracted",
+                authority=str(chunk.metadata.get("authority", "authoritative")),
+            )
+        )
+    by_id = {p.passage_id: p for p in provisional}
+    backend = BM25Backend(provisional)
+
+    lines = [
+        "## What retrieval finds",
+        "",
+        "BM25 over the extracted passages, before review. Nothing here has been",
+        "approved, so none of it could be cited — a passage with no preconditions and",
+        "no prescribed action is refused by the checker. What the probe shows is which",
+        "documents a real fatigue query reaches, and how much of what it reaches is",
+        "guidance or research that may never ground an action.",
+        "",
+    ]
+    for query in PROBE_QUERIES:
+        lines += [f"**{query}**", "", "| Rank | Document | Section | Authority |", "|---|---|---|---|"]
+        for rank, identifier in enumerate(backend.rank(query, top_k).passage_ids, start=1):
+            hit = by_id[identifier]
+            lines.append(f"| {rank} | {hit.doc} | {hit.section} | {hit.authority} |")
+        lines.append("")
+
+    lines += [
+        "This is the argument for S10, run rather than asserted. Ask about the circadian",
+        "trough — the thing HAVEN's `requires_circadian_flag` clause exists for — and every",
+        "one of the top five is a research paper. Ask about a protected rest period and four",
+        "of five are the cockpit-rest study, with the one actual requirement fifth. Retrieval",
+        "is doing its job: those passages are the most relevant text in the corpus. They are",
+        "also not rules, and a system that grounded an action in them would produce a",
+        "citation an operator could look up and find, pointing at a sentence that requires",
+        "nothing of anyone.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
 def cmd_extract(args: argparse.Namespace) -> int:
     records = read_registry(Path(args.sources))
     sources = load_sources(Path(args.sources))
@@ -150,7 +231,8 @@ def cmd_extract(args: argparse.Namespace) -> int:
 
     if args.report:
         path = Path(args.report)
-        path.write_text(_report(records, per_document, summary) + "\n", encoding="utf-8", newline="\n")
+        body = _report(records, per_document, summary) + _probe(chunks)
+        path.write_text(body.rstrip() + "\n", encoding="utf-8", newline="\n")
         print(f"  wrote {path}")
     return 0
 

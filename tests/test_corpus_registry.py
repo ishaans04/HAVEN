@@ -159,3 +159,32 @@ def test_a_future_registry_version_is_refused(tmp_path) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(RegistryError, match="registry version"):
         read(path)
+
+
+def test_the_retrieval_probe_still_shows_why_the_authority_gate_exists() -> None:
+    """S10 is load-bearing, not theoretical — and this is where that is checked.
+
+    The probe in `EXTRACTION.md` runs BM25 over the real documents and records
+    what five ordinary fatigue queries surface. What it surfaces is mostly
+    research: ask about the circadian trough and every one of the top five is a
+    paper. Retrieval is behaving correctly — those passages *are* the most
+    relevant text in the corpus — and every one of them would, without the
+    authority clause, be eligible to ground an action.
+
+    Asserted on the committed report rather than by re-running the probe, so it
+    needs neither the PDFs nor the compiler extra. If a future corpus revision
+    makes every top hit authoritative, this fails and someone has to decide
+    whether the gate still earns its place. That is the right conversation to be
+    forced into.
+    """
+    report = REPORT.read_text(encoding="utf-8")
+    probe = report[report.index("## What retrieval finds") :]
+    rows = [line for line in probe.splitlines() if line.startswith("| ") and line.rstrip().endswith(" |")]
+    ranked = [line for line in rows if line.split("|")[1].strip().isdigit()]
+
+    assert ranked, "the probe recorded no retrieval results"
+    non_prescriptive = [line for line in ranked if line.split("|")[4].strip() in ("guidance", "research")]
+    assert non_prescriptive, (
+        "no probe query surfaces a guidance or research passage, which would mean the "
+        "authority clause is currently protecting against nothing"
+    )
