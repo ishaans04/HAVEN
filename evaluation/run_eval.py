@@ -129,7 +129,12 @@ def evaluate_case(case: GoldenCase, llm: ReasoningLLM) -> CaseResult:
 
     # The checker's independent view, over the full candidate set.
     admissibility = {
-        pid: preconditions.check(BY_ID[pid].applies_when, BY_ID[pid].prescribes, case.facts)
+        pid: preconditions.check(
+            BY_ID[pid].applies_when,
+            BY_ID[pid].prescribes,
+            case.facts,
+            authority=BY_ID[pid].authority,
+        )
         for pid in case.candidate_ids
     }
     verdict = flow.verify(admissibility, selection)

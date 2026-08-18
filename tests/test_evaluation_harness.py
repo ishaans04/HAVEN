@@ -36,7 +36,8 @@ def admissible_ids(case) -> set[str]:
     found = set()
     for passage_id in case.candidate_ids:
         passage = BY_ID[passage_id]
-        if preconditions.check(passage.applies_when, passage.prescribes, case.facts).admissible:
+        verdict = preconditions.check(passage.applies_when, passage.prescribes, case.facts, authority=passage.authority)
+        if verdict.admissible:
             found.add(passage_id)
     return found
 

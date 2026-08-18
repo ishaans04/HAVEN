@@ -339,7 +339,7 @@ def test_no_recommendation_cites_a_passage_the_checker_would_reject(scenario_id:
             "workload_score": situation.workload_score,
             "circadian_flag": situation.circadian_flag,
         }
-        verdict = check(passage.applies_when, passage.prescribes, facts)
+        verdict = check(passage.applies_when, passage.prescribes, facts, authority=passage.authority)
         assert verdict.admissible, (
             f"{situation.situation_id} cites {passage.passage_id}, which fails {[c.clause for c in verdict.unmet]}"
         )
