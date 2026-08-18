@@ -27,7 +27,7 @@ def present_node(state: HavenState) -> dict[str, Any]:
 
     return {
         "response": EvaluationResponse(
-            evaluation_id=f"EVAL-{state['window_start'].strftime('%Y%m%d')}-{_now().strftime('%H%M%S')}",
+            evaluation_id=state["evaluation_id"],
             generated_at=_now(),
             scenario_id=request.scenario_id,
             window=request.evaluation_window,
@@ -42,6 +42,7 @@ def present_node(state: HavenState) -> dict[str, Any]:
                 orchestration=f"Bob reasoning flow, hash-chained audit ({BUILD_MODE})",
                 degraded=state["degraded"],
                 degraded_reason=state["degraded_reason"],
+                corpus_manifest=state["corpus_manifest"],
             ),
         )
     }

@@ -74,6 +74,10 @@ class HavenState(TypedDict, total=False):
     retriever: ProcedureRetriever
 
     # -- INGEST -------------------------------------------------------------
+    # Minted once in INGEST. Situation identifiers derive from it, so it has to
+    # exist before TRIGGER runs -- not be invented again in PRESENT.
+    evaluation_id: str
+    corpus_manifest: str
     window_start: datetime
     window_end: datetime
     models: dict[str, ThreeProcessModel]
@@ -115,6 +119,7 @@ class SituationState(TypedDict, total=False):
     workload: WorkloadResult
     trigger: TriggerResult
     situation_id: str
+    corpus_manifest: str
 
     # -- CONFIDENCE ---------------------------------------------------------
     audit_ref: str

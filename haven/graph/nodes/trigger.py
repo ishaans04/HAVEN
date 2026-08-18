@@ -15,8 +15,6 @@ from haven.graph.state import HavenState, RaisedSituation
 
 
 def trigger_node(state: HavenState) -> dict[str, Any]:
-    window_start = state["window_start"]
-
     timeline: list[TimelineTask] = []
     archived: list[str] = []
     raised: list[RaisedSituation] = []
@@ -31,7 +29,9 @@ def trigger_node(state: HavenState) -> dict[str, Any]:
             criticality=task.criticality,
         )
 
-        situation_id = f"S-{window_start.strftime('%Y%m%d')}-{entry.index:02d}"
+        # Derived from the evaluation's own identifier rather than from the
+        # window date alone, which every scenario shares.
+        situation_id = f"S-{state['evaluation_id'].removeprefix('EVAL-')}-{entry.index:02d}"
         timeline.append(
             TimelineTask(
                 task_id=task.id,

@@ -48,4 +48,5 @@ def record_situation(
         refusal=refusal,
         evidence=state["evidence"],
         audit_ref=state["audit_ref"],
+        corpus_manifest=state["corpus_manifest"],
     )

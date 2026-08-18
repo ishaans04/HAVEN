@@ -1060,6 +1060,11 @@
             "title": "Confidence",
             "type": "string"
           },
+          "corpus_manifest": {
+            "default": "",
+            "title": "Corpus Manifest",
+            "type": "string"
+          },
           "crew_member": {
             "title": "Crew Member",
             "type": "string"
@@ -1249,6 +1254,11 @@
       "TierStatus": {
         "description": "Zone 6 payload: which tier is live, which is mocked, which is degraded.",
         "properties": {
+          "corpus_manifest": {
+            "default": "",
+            "title": "Corpus Manifest",
+            "type": "string"
+          },
           "degraded": {
             "default": false,
             "title": "Degraded",

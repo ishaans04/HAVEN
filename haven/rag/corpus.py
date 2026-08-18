@@ -17,6 +17,8 @@ The corpus is built to exercise the reasoning tier, not just to be retrievable:
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass, field
 
 
@@ -272,3 +274,44 @@ DOCS: dict[str, str] = {
     "OPS-HATCH-05": "Pressurised Element Hatch Operations",
     "OPS-SCI-14": "Science Payload Operations",
 }
+
+
+def compute_manifest(passages: list[Passage]) -> str:
+    """A digest identifying exactly this rulebook.
+
+    Every decision records the manifest of the corpus it was made under (S8).
+    Without it, two evaluations that disagree cannot be told apart: was the
+    reasoning different, or was the rulebook? Once Phase 4 compiles the corpus
+    from source PDFs and versions it, that stops being a hypothetical -- the
+    corpus becomes something that changes between deployments, and a decision
+    that does not name its rulebook is not fully auditable.
+
+    Covers every field that could change an admissibility verdict or a citation.
+    ``near_miss_note`` is excluded: it is commentary for the reader of the
+    corpus and never reaches a decision.
+    """
+    digest = hashlib.sha256()
+    for passage in sorted(passages, key=lambda p: p.passage_id):
+        digest.update(
+            json.dumps(
+                {
+                    "passage_id": passage.passage_id,
+                    "doc": passage.doc,
+                    "section": passage.section,
+                    "title": passage.title,
+                    "text": passage.text,
+                    "task_types": passage.task_types,
+                    "applies_when": passage.applies_when,
+                    "prescribes": passage.prescribes,
+                    "fallback_action": passage.fallback_action,
+                    "source": passage.source,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+                default=str,
+            ).encode("utf-8")
+        )
+    return digest.hexdigest()
+
+
+CORPUS_MANIFEST: str = compute_manifest(CORPUS)

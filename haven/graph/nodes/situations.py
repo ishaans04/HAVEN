@@ -41,6 +41,7 @@ def situations_node(state: HavenState) -> dict[str, Any]:
                 "workload": scored.workload,
                 "trigger": entry.trigger,
                 "situation_id": entry.situation_id,
+                "corpus_manifest": state["corpus_manifest"],
             }
         )
         if result.get("degraded"):

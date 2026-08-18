@@ -231,6 +231,10 @@ class Situation(BaseModel):
     refusal: Refusal | None = None
     evidence: Evidence
     audit_ref: str
+    # The exact rulebook this decision was made under. Two evaluations that
+    # disagree are only comparable if they were reasoning over the same corpus,
+    # and after Phase 4 the corpus is compiled and versioned rather than fixed.
+    corpus_manifest: str = ""
 
 
 class CurvePoint(BaseModel):
@@ -297,6 +301,7 @@ class TierStatus(BaseModel):
     orchestration: str
     degraded: bool = False
     degraded_reason: str | None = None
+    corpus_manifest: str = ""
 
 
 class EvaluationResponse(BaseModel):

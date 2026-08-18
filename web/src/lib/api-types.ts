@@ -653,6 +653,11 @@ export interface components {
              * @enum {string}
              */
             confidence: "high" | "moderate" | "low" | "insufficient";
+            /**
+             * Corpus Manifest
+             * @default
+             */
+            corpus_manifest: string;
             /** Crew Member */
             crew_member: string;
             /**
@@ -755,6 +760,11 @@ export interface components {
          * @description Zone 6 payload: which tier is live, which is mocked, which is degraded.
          */
         TierStatus: {
+            /**
+             * Corpus Manifest
+             * @default
+             */
+            corpus_manifest: string;
             /**
              * Degraded
              * @default false
