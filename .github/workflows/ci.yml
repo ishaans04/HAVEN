@@ -42,6 +42,25 @@ jobs:
       - name: Sync base + dev dependencies only
         run: uv sync --frozen --python 3.12
 
+      # The offline path is not just "the tests pass" -- it is that the engine
+      # runs at all with nothing optional installed. Phase 5 broke this by
+      # declaring rank-bm25 optional while making BM25 the offline terminal, and
+      # a passing test suite would not have caught it if collection had not
+      # failed first.
+      - name: The engine runs with no extras
+        run: |
+          uv run python -c "
+          import os
+          os.environ['HAVEN_LEDGER_DB'] = '/tmp/ci-probe.db'
+          from haven import engine
+          from haven.contracts import EvaluationRequest
+          from haven.data.scenarios import BY_ID
+          from haven.reasoning.llm import MockGraniteLLM
+          r = engine.evaluate(EvaluationRequest.model_validate(BY_ID['burn_fatigue'].build()), llm=MockGraniteLLM())
+          assert r.situations[0].recommendation.action == 'second_operator_verify'
+          print('offline path OK:', r.tier_status.retrieval)
+          "
+
       - name: Ruff lint
         run: uv run ruff check --output-format=github .
 
@@ -64,6 +83,40 @@ jobs:
       # reported rather than gated; this one must be zero for all of them.
       - name: Reasoning tier evaluation (offline provider)
         run: uv run python -m evaluation.run_eval --provider mock --verbose
+
+  # The engine job above proves the offline path: base install, no extras, no
+  # network. This one proves nothing was lost to that constraint -- every
+  # optional subsystem installed, and the complete suite run including the
+  # compiler tests the base job skips.
+  #
+  # Both are required. Without the first, an optional dependency could quietly
+  # become mandatory and break the offline guarantee, which is exactly what
+  # happened to rank-bm25 in Phase 5. Without the second, tests could be skipped
+  # everywhere and nobody would notice.
+  full:
+    name: Full — every extra installed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install Python 3.12
+        run: uv python install 3.12
+
+      - name: Sync every extra
+        run: uv sync --frozen --all-extras --python 3.12
+
+      - name: Complete test suite
+        run: uv run pytest -q
+
+      # The compiler tests are the reason this job exists; a run that skipped
+      # them would report success while proving less than the base job does.
+      - name: The compiler tests actually ran
+        run: uv run pytest tests/test_compiler_extract.py tests/test_compiler_end_to_end.py -q --no-header
 
   contract:
     name: Contract — generated types must not drift

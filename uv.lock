@@ -785,11 +785,13 @@ dependencies = [
     { name = "langgraph" },
     { name = "numpy" },
     { name = "pydantic" },
+    { name = "rank-bm25" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.optional-dependencies]
 compiler = [
+    { name = "langchain-text-splitters" },
     { name = "pdfplumber" },
     { name = "pypdf" },
 ]
@@ -801,7 +803,6 @@ rag = [
     { name = "chromadb" },
     { name = "fastembed" },
     { name = "langchain-chroma" },
-    { name = "langchain-text-splitters" },
     { name = "rank-bm25" },
 ]
 
@@ -822,12 +823,13 @@ requires-dist = [
     { name = "langchain-core", specifier = ">=1.0,<2.0" },
     { name = "langchain-ibm", marker = "extra == 'providers'", specifier = ">=1.0" },
     { name = "langchain-ollama", marker = "extra == 'providers'", specifier = ">=1.0" },
-    { name = "langchain-text-splitters", marker = "extra == 'rag'", specifier = ">=1.0" },
+    { name = "langchain-text-splitters", marker = "extra == 'compiler'", specifier = ">=1.0" },
     { name = "langgraph", specifier = ">=1.0,<2.0" },
     { name = "numpy", specifier = ">=2.0" },
     { name = "pdfplumber", marker = "extra == 'compiler'", specifier = ">=0.11" },
     { name = "pydantic", specifier = ">=2.8" },
     { name = "pypdf", marker = "extra == 'compiler'", specifier = ">=5.0" },
+    { name = "rank-bm25", specifier = ">=0.2" },
     { name = "rank-bm25", marker = "extra == 'rag'", specifier = ">=0.2" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]

@@ -19,6 +19,18 @@ import pathlib
 
 import pytest
 
+# The compiler is an optional subsystem: it never runs at request time, and its
+# dependencies (pypdf, pdfplumber, langchain-text-splitters) are an extra. These
+# tests are skipped when it is absent so a base install is not blocked from
+# running the rest of the suite.
+#
+# Not a weakening. CI installs every extra in a dedicated job and runs this file
+# in full; skipping here only spares a developer who has not asked for the
+# compiler, and `uv sync --extra compiler` turns it back on.
+pytest.importorskip("pypdf", reason="the compiler extra is not installed")
+pytest.importorskip("pdfplumber", reason="the compiler extra is not installed")
+pytest.importorskip("langchain_text_splitters", reason="the compiler extra is not installed")
+
 from compiler import emit, review
 from compiler.chunk import chunk_document
 from compiler.cli import main as cli_main

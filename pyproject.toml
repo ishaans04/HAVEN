@@ -19,6 +19,12 @@ dependencies = [
     # calls of its own. See app/config.py for the LangSmith tracing guard.
     "langgraph>=1.0,<2.0",
     "langchain-core>=1.0,<2.0",
+    # Phase 5 — BM25 is the *offline terminal* of the retrieval tier: the path
+    # that must work with no extras, no download and no service. It was declared
+    # in the `rag` extra by mistake, which made the engine unimportable on a base
+    # install -- the offline guarantee broken by the very phase that named BM25
+    # as the thing guaranteeing it. CI caught it.
+    "rank-bm25>=0.2",
 ]
 
 [project.optional-dependencies]
@@ -30,7 +36,6 @@ providers = [
 # Phase 5 — hybrid retrieval. `fastembed` is ONNX (~50MB), deliberately not
 # sentence-transformers/PyTorch (~2GB). BM25 alone remains the offline terminal.
 rag = [
-    "langchain-text-splitters>=1.0",
     "langchain-chroma>=1.0",
     "chromadb>=0.5",
     "fastembed>=0.4",
@@ -48,6 +53,9 @@ rag = [
 compiler = [
     "pypdf>=5.0",
     "pdfplumber>=0.11",
+    # Only compiler/chunk.py uses this, for the prose between numbered rules.
+    # It sat in `rag` until CI showed nothing there imported it.
+    "langchain-text-splitters>=1.0",
 ]
 
 [dependency-groups]
