@@ -535,6 +535,11 @@ export interface components {
          *     disappears.
          */
         ProcedureSummary: {
+            /**
+             * Authority
+             * @default prototype
+             */
+            authority: string;
             /** Doc */
             doc: string;
             /**

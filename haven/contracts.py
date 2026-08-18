@@ -431,6 +431,11 @@ class ProcedureSummary(BaseModel):
     source: str
     text: str
     provenance: str = "synthesised"
+    # "authoritative" | "guidance" | "research" | "prototype". Two passages can
+    # read almost identically and differ entirely in whether either may ground
+    # an action, so the browser labels it rather than leaving a reader to infer
+    # it from the document name.
+    authority: str = "prototype"
     reviewed_by: str = ""
     prescribes: str | None = None
     # Present only on passages written to be confusable. The corpus carries

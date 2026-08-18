@@ -206,7 +206,12 @@ def test_the_checker_speaks_before_the_model_and_disposes_after(scenario_id: str
 def test_the_admissibility_entry_records_the_whole_verdict_not_only_failures() -> None:
     situation = situation_for(run("burn_fatigue"), "T-119")
     clauses = entry(situation, "ADMISSIBILITY").outputs["clauses"]["P-FAT-4.2"]
-    assert [c["clause"] for c in clauses] == ["task_types", "criticality_in", "alertness_below"]
+    assert [c["clause"] for c in clauses] == [
+        "authority",
+        "task_types",
+        "criticality_in",
+        "alertness_below",
+    ]
     assert all(c["satisfied"] for c in clauses)
 
 

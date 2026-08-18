@@ -322,3 +322,97 @@ def test_the_runtime_reads_a_compiled_corpus_without_importing_the_compiler(sour
     count, digest = result.stdout.split()
     assert int(count) == len(proposals)
     assert len(digest) == 8
+
+
+# --------------------------------------------------------------------------
+# Guidance and research are never promoted to requirements
+#
+# The corpus holds NASA-STD-3001 saying "shall", the HIDH explaining why, and
+# NTRS papers reporting what was measured. Only the first states a rule. Two
+# independent things stop the other two from grounding an action -- this gate,
+# which keeps them out of the corpus, and the deterministic checker, which
+# catches them if they get in. Both are tested, because either alone would be a
+# single point of failure in the one place the system cannot afford one.
+# --------------------------------------------------------------------------
+@pytest.mark.parametrize("authority", ["guidance", "research"])
+def test_the_gate_refuses_a_non_requirement_that_prescribes(source, authority, tmp_path) -> None:
+    proposals = [encoded(p) for p in drafted(source)]
+    proposals[0].authority = authority
+
+    with pytest.raises(review.ReviewIncomplete) as excinfo:
+        emit.build(proposals, sources=[], version="test.1")
+    assert proposals[0].passage_id in str(excinfo.value)
+    assert "not requirements" in str(excinfo.value) or "nobody wrote" in str(excinfo.value)
+
+
+@pytest.mark.parametrize("authority", ["guidance", "research"])
+def test_a_non_requirement_that_prescribes_nothing_is_emitted(source, authority) -> None:
+    """Refusing the promotion, not the passage. Guidance belongs in the corpus.
+
+    It is retrievable, readable, and — being topically indistinguishable from
+    the rules it explains — some of the best adversarial material available.
+    What it may not do is prescribe.
+    """
+    proposals = [encoded(p) for p in drafted(source)]
+    for proposal in proposals:
+        proposal.authority = authority
+        proposal.prescribes = None
+        proposal.fallback_action = None
+        proposal.governs_fatigue = False
+        review.approve(proposal, "R. Alvarez")
+
+    # governs_fatigue=False is a reviewed exclusion, so nothing is emitted; the
+    # point is that the gate raised no promotion complaint.
+    corpus = emit.build(proposals, sources=[], version="test.1")
+    assert corpus.passages == []
+
+
+def test_the_validator_flags_the_promotion_before_the_reviewer_sees_it(source) -> None:
+    """The gate is the backstop. The warning is what a reviewer actually reads."""
+    from compiler.propose import validate
+
+    proposal = drafted(source)[0]
+    proposal.authority = "guidance"
+    proposal.prescribes = "short_rest_then_proceed"
+    assert any("not a requirements document" in w for w in validate(proposal))
+
+
+# --------------------------------------------------------------------------
+# A requirement is not its rationale
+# --------------------------------------------------------------------------
+def test_a_rationale_block_is_kept_out_of_the_requirement_text() -> None:
+    """The trap [V1 6001] sets, reduced to its essentials.
+
+    The requirement says a schedule shall include fatigue management. Its
+    rationale then says to avoid critical tasks during the circadian nadir --
+    which is the sentence a fatigue system wants, and is not a requirement. A
+    reader given the concatenation encodes it as one.
+    """
+    from compiler.chunk import split_rationale
+
+    text = (
+        "[V1 6001] Crew schedule planning and operations shall be provided to include "
+        "circadian entrainment, work/rest schedule assessment, task loading assessment, "
+        "countermeasures, and special activities.\n\n"
+        "[Rationale: Crew schedule considerations include, but are not limited to: "
+        "e. Avoid scheduling critical tasks during the circadian nadir (typically between "
+        "1-7 AM relative to one's regular sleep schedule). See [V2 7070].]"
+    )
+    split = split_rationale(text)
+
+    assert split["has_rationale"]
+    assert split["requirement_text"].startswith("[V1 6001]")
+    assert "circadian nadir" not in split["requirement_text"]
+    assert "circadian nadir" in split["rationale_text"]
+    # A bracketed cross-reference inside the rationale must not end it early.
+    assert split["rationale_text"].rstrip().endswith("]")
+
+
+def test_a_passage_with_no_rationale_keeps_all_of_its_text() -> None:
+    from compiler.chunk import split_rationale
+
+    text = "[V1 4014] The planned number of hours for critical tasks shall have established limits."
+    split = split_rationale(text)
+    assert not split["has_rationale"]
+    assert split["requirement_text"] == text
+    assert split["rationale_text"] == ""

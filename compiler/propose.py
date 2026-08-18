@@ -24,7 +24,7 @@ from typing import Any
 
 from langchain_core.documents import Document
 
-from haven.deterministic.preconditions import CLAUSE_VOCABULARY
+from haven.deterministic.preconditions import CLAUSE_VOCABULARY, PRESCRIPTIVE_AUTHORITIES
 from haven.reasoning.llm import ReasoningLLM
 from haven.reasoning.parsing import ParseFailure, extract_json
 
@@ -81,9 +81,9 @@ Also propose:
   governs_fatigue   true or false -- whether this passage bears on crew fatigue
                     during execution at all
 
-PASSAGE ({doc} section {section}):
+{authority_note}PASSAGE ({doc} section {section}):
 {text}
-
+{rationale_note}
 Respond with JSON only:
 {{"applies_when": {{...}}, "prescribes": <string or null>,
   "fallback_action": <string or null>, "governs_fatigue": <bool>,
@@ -110,6 +110,8 @@ class Proposal:
     warnings: list[str] = field(default_factory=list)
     source: str = ""
     provenance: str = "extracted"
+    #: Carried from the source registry, never proposed by the model.
+    authority: str = "authoritative"
     extracted_by: str = ""
     #: Set only by the review tool. Nothing unreviewed may be emitted.
     reviewed_by: str = ""
@@ -164,6 +166,14 @@ def validate(proposal: Proposal) -> list[str]:
             "recommendation. Verify that is what the passage says."
         )
 
+    if proposal.prescribes is not None and proposal.authority not in PRESCRIPTIVE_AUTHORITIES:
+        problems.append(
+            f"prescribes={proposal.prescribes!r} but the source is {proposal.authority}, not a "
+            f"requirements document. A handbook's recommendation and a paper's finding are not "
+            f"rules; encoding one as an action the crew is told to take would enforce a "
+            f"requirement nobody wrote. Set prescribes to null."
+        )
+
     if "domain" in proposal.applies_when and proposal.governs_fatigue:
         problems.append(
             f"declares domain={proposal.applies_when['domain']!r} while also claiming to govern "
@@ -179,12 +189,20 @@ def propose(chunk: Document, llm: ReasoningLLM, *, passage_id: str) -> Proposal:
     doc = str(meta.get("doc_id", ""))
     section = str(meta.get("section", ""))
 
+    # A NASA standard states its requirement and then explains itself in a
+    # bracketed rationale block. The explanation is where the operationally
+    # useful sentences live -- "avoid scheduling critical tasks during the
+    # circadian nadir" is rationale, not requirement -- and encoding one as a
+    # binding precondition produces a rule the standard does not contain. So the
+    # two are named for the model rather than handed over concatenated.
     prompt = EXTRACT_PROMPT.format(
         task_types=json.dumps(list(TASK_TYPES)),
         prescribable=json.dumps(list(PRESCRIBABLE)),
         doc=doc,
         section=section,
-        text=chunk.page_content,
+        authority_note=_authority_note(str(meta.get("authority", "authoritative"))),
+        text=meta.get("requirement_text") or chunk.page_content,
+        rationale_note=_rationale_note(meta),
     )
 
     proposal = Proposal(
@@ -195,6 +213,7 @@ def propose(chunk: Document, llm: ReasoningLLM, *, passage_id: str) -> Proposal:
         text=chunk.page_content,
         source=_source_line(meta),
         provenance=str(meta.get("provenance", "extracted")),
+        authority=str(meta.get("authority", "authoritative")),
         extracted_by=f"{llm.provider} / {llm.model_id}",
     )
 
@@ -219,6 +238,38 @@ def propose(chunk: Document, llm: ReasoningLLM, *, passage_id: str) -> Proposal:
 
     proposal.warnings.extend(validate(proposal))
     return proposal
+
+
+#: What the model is told about a source that cannot impose a requirement.
+#: Stated in the prompt as well as enforced at the gate, because a proposal
+#: drafted and then refused wastes a reviewer's attention on a passage that was
+#: never eligible.
+_AUTHORITY_NOTES = {
+    "guidance": (
+        "NOTE: this passage is from a design handbook. It states rationale and recommended\n"
+        "practice, never requirements. Set prescribes and fallback_action to null: a\n"
+        "recommendation the crew is told to follow may only be grounded in a requirement.\n\n"
+    ),
+    "research": (
+        "NOTE: this passage is from a research paper. It reports what was measured, not what\n"
+        "shall be done. Set prescribes and fallback_action to null: a finding is evidence for\n"
+        "a rule, never the rule itself.\n\n"
+    ),
+}
+
+
+def _authority_note(authority: str) -> str:
+    return _AUTHORITY_NOTES.get(authority, "")
+
+
+def _rationale_note(meta: dict) -> str:
+    """The rationale block, labelled as explanation rather than requirement."""
+    if not meta.get("has_rationale"):
+        return ""
+    return (
+        "\nEXPLANATORY RATIONALE (not a requirement; it explains the rule above,\n"
+        "and may not by itself establish a precondition):\n" + str(meta.get("rationale_text", "")) + "\n"
+    )
 
 
 def _source_line(meta: dict) -> str:

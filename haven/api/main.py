@@ -109,6 +109,7 @@ def list_procedures() -> list[ProcedureSummary]:
             source=f"{DOCS.get(p.doc, p.doc)} -- {p.source}",
             text=p.text,
             provenance=p.provenance,
+            authority=p.authority,
             reviewed_by=p.reviewed_by,
             prescribes=p.prescribes,
             near_miss_note=p.near_miss_note,

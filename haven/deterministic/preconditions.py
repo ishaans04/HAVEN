@@ -59,6 +59,26 @@ SITUATION_DOMAIN = "crew_alertness"
 # the default is one named constant rather than a literal repeated per clause.
 DEFAULT_PHASE = "execution"
 
+# The class of a passage written for this prototype because the public record
+# contains no execution-time equivalent. It is labelled as simulated everywhere
+# it surfaces -- the corpus browser, the "real vs simulated" panel, the manifest.
+PROTOTYPE = "prototype"
+
+# Which sources may impose a requirement on a crew.
+#
+# ``authoritative`` is a standard stating shall-requirements. ``prototype`` is
+# admitted because the synthesised layer exists precisely to stand in for the
+# execution-time flight rules that NASA-STD-3001 does not contain, and it says
+# so in every place it is shown.
+#
+# ``guidance`` and ``research`` are not admitted, and the omission is the point.
+# The HIDH says a sleep environment *should* do something; an NTRS paper reports
+# that a planned 40-minute rest improved vigilance. Neither is a rule. Promoting
+# one would produce a recommendation citing a real NASA document for a
+# requirement that document never states -- which is worse than an uncited
+# guess, because it is checkable and it checks out.
+PRESCRIPTIVE_AUTHORITIES: frozenset[str] = frozenset({"authoritative", PROTOTYPE})
+
 _MISSING = "(not reported by the deterministic tier)"
 
 
@@ -294,17 +314,67 @@ def evaluate_clauses(applies_when: Any, facts: Any) -> list[ClauseDetail]:
     return results
 
 
-def check(applies_when: Any, prescribes: str | None, facts: Any) -> AdmissibilityResult:
+def _authority(authority: str) -> ClauseDetail:
+    """Whether this passage's source may impose a requirement at all.
+
+    Not an ``applies_when`` clause, deliberately. Authority is a property of the
+    document, fixed at acquisition and recorded in the source registry; the
+    compiler never proposes it and a corpus author cannot declare it. Keeping it
+    out of :data:`CLAUSE_VOCABULARY` is what stops a passage from claiming the
+    force of a requirement for itself.
+    """
+    label = str(authority or "").strip() or "(unstated)"
+    if label in PRESCRIPTIVE_AUTHORITIES:
+        return _clause(
+            "authority",
+            True,
+            f"one of {sorted(PRESCRIPTIVE_AUTHORITIES)}",
+            label,
+            f"source states requirements ({label}), so it may prescribe an action",
+        )
+    return _clause(
+        "authority",
+        False,
+        f"one of {sorted(PRESCRIPTIVE_AUTHORITIES)}",
+        label,
+        f"source is {label}, not a requirements document, so it may inform a decision but "
+        f"may not impose one; treating it as binding would enforce a requirement nobody wrote",
+    )
+
+
+def check(
+    applies_when: Any,
+    prescribes: str | None,
+    facts: Any,
+    *,
+    authority: str = PROTOTYPE,
+) -> AdmissibilityResult:
     """Can a passage with these preconditions lawfully be cited for this Situation?
 
-    Admissible means every declared precondition is satisfied **and** the
-    passage prescribes an action. The second half is a real clause, not a
-    footnote: a passage that governs but states no prescribed action cannot
-    ground a recommendation, which is hard rule 3 ("no citation, no
-    recommendation") seen from the other side. v1 checked it as an afterthought
-    inside the mock's ``_select``, where it was invisible to the audit trail.
+    Admissible means the passage's source may impose a requirement, every
+    declared precondition is satisfied, **and** the passage prescribes an
+    action. The last is a real clause rather than a footnote: a passage that
+    governs but states no prescribed action cannot ground a recommendation,
+    which is hard rule 3 ("no citation, no recommendation") seen from the other
+    side. v1 checked it as an afterthought inside the mock's ``_select``, where
+    it was invisible to the audit trail.
+
+    The first is what keeps a real corpus honest. Once the rulebook is compiled
+    from published documents it holds three kinds of text: NASA-STD-3001 saying
+    *shall*, the HIDH explaining why, and NTRS papers reporting what was
+    measured. Retrieval cannot tell them apart — they share a vocabulary almost
+    word for word — and a recommendation grounded in a handbook's
+    recommendation, or in a paper's finding, is a requirement NASA never wrote,
+    delivered to a crew with a citation that looks exactly as solid as a real
+    one. So it is checked first, and it fails closed on an unstated authority.
+
+    ``authority`` defaults to the hand-authored corpus's class rather than to
+    something inert, because every hand-authored passage stands in for an
+    execution-time flight rule. Production callers pass the passage's own value;
+    a test asserts the orchestrator does, and fails if the argument is dropped.
     """
-    clauses = evaluate_clauses(applies_when, facts)
+    clauses = [_authority(authority)]
+    clauses += evaluate_clauses(applies_when, facts)
     if prescribes is None:
         clauses.append(
             _clause(

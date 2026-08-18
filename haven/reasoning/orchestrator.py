@@ -171,6 +171,10 @@ class ReasoningFlow:
             "task_types": p.task_types,
             "applies_when": p.applies_when,
             "prescribes": p.prescribes,
+            # Withheld from the redacted payload with the preconditions, and for
+            # the same reason: the model's job is to read the passage, not to
+            # read a label saying whether the passage counts.
+            "authority": p.authority,
             "relevance": c.relevance,
             "lexical": round(c.lexical, 3),
             "near_miss_note": p.near_miss_note,
@@ -241,7 +245,10 @@ class ReasoningFlow:
         from the other direction.
         """
         started_at, t0 = _now(), time.perf_counter()
-        results = {p["passage_id"]: check(p["applies_when"], p["prescribes"], facts) for p in payloads}
+        results = {
+            p["passage_id"]: check(p["applies_when"], p["prescribes"], facts, authority=p["authority"])
+            for p in payloads
+        }
         admissible = sorted(pid for pid, r in results.items() if r.admissible)
         self.trail.append(
             step="ADMISSIBILITY",
@@ -251,7 +258,11 @@ class ReasoningFlow:
                 f"independently of the reasoning tier. "
                 + (f"Admissible: {', '.join(admissible)}." if admissible else "None admissible.")
             ),
-            inputs={"checked": sorted(results), "situation_domain": "crew_alertness"},
+            inputs={
+                "checked": sorted(results),
+                "situation_domain": "crew_alertness",
+                "authorities": {p["passage_id"]: p["authority"] for p in payloads},
+            },
             outputs={
                 "admissible": admissible,
                 "clauses": {pid: r.as_dicts() for pid, r in results.items()},

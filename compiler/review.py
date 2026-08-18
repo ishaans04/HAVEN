@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from compiler.propose import Proposal, validate
+from haven.deterministic.preconditions import PRESCRIPTIVE_AUTHORITIES
 
 
 class ReviewIncomplete(RuntimeError):
@@ -82,7 +83,7 @@ def approve(proposal: Proposal, reviewer: str) -> Proposal:
 def gate(proposals: list[Proposal]) -> list[Proposal]:
     """The passages that may be emitted. Raises rather than filtering silently.
 
-    Three refusals, and the third is O1's acceptance criterion, recorded in the
+    Four refusals, and the third is O1's acceptance criterion, recorded in the
     CHANGELOG before this file existed:
 
     * unapproved — nobody signed off;
@@ -93,11 +94,17 @@ def gate(proposals: list[Proposal]) -> list[Proposal]:
       admissible for every Situation. Fail-open, in a system whose entire thesis
       is fail-closed. It is refused at the compiler because that is where the
       risk is: the checker's semantic is correct for authored input.
+    * **guidance or research declaring a prescribed action** — the corpus holds
+      three kinds of text and retrieval cannot tell them apart. The deterministic
+      checker refuses such a citation at request time too, and the duplication is
+      deliberate: this refusal keeps the passage out of the corpus, that one
+      catches it if it ever gets in.
     """
     emitted: list[Proposal] = []
     unapproved: list[str] = []
     warned: list[str] = []
     unconditional: list[str] = []
+    promoted: list[str] = []
 
     for proposal in proposals:
         # Approval is checked *before* exclusion, and the order is load-bearing.
@@ -119,6 +126,11 @@ def gate(proposals: list[Proposal]) -> list[Proposal]:
         if proposal.provenance == "extracted" and not proposal.applies_when:
             unconditional.append(proposal.passage_id)
             continue
+        if proposal.authority not in PRESCRIPTIVE_AUTHORITIES and (
+            proposal.prescribes is not None or proposal.fallback_action is not None
+        ):
+            promoted.append(f"{proposal.passage_id} ({proposal.authority} -> {proposal.prescribes})")
+            continue
         emitted.append(proposal)
 
     problems: list[str] = []
@@ -130,6 +142,12 @@ def gate(proposals: list[Proposal]) -> list[Proposal]:
         problems.append(
             f"extracted passages declaring no preconditions: {sorted(unconditional)} -- these would be "
             f"admissible for every Situation"
+        )
+    if promoted:
+        problems.append(
+            f"guidance or research passages prescribing an action: {sorted(promoted)} -- a handbook's "
+            f"recommendation and a paper's finding are not requirements, and a crew told to take an "
+            f"action on one would be following a rule nobody wrote"
         )
     if problems:
         raise ReviewIncomplete("; ".join(problems))

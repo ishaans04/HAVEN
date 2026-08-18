@@ -46,6 +46,15 @@ export function ProcedureBrowser({ onClose }: { onClose: () => void }) {
   const extracted = (procedures ?? []).filter((p) => p.provenance === "extracted").length;
   const total = procedures?.length ?? 0;
 
+  // Only an authoritative requirement — or a prototype rule standing in for one —
+  // may ground an action. Guidance and research are retrievable and readable and
+  // can never be cited for a recommendation, which is a distinction a reader
+  // should see on the row rather than infer from the document name.
+  const canPrescribe = (authority: string) =>
+    authority === "authoritative" || authority === "prototype";
+  const authorityTone = (authority: string) =>
+    authority === "authoritative" ? "good" : canPrescribe(authority) ? "neutral" : "warn";
+
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/70 p-4 backdrop-blur-sm">
       <div className="hv-panel my-8 w-full max-w-4xl">
@@ -54,8 +63,11 @@ export function ProcedureBrowser({ onClose }: { onClose: () => void }) {
           <div className="min-w-0 flex-1">
             <h2 className="text-[13px] font-semibold">The procedure corpus</h2>
             <p className="mt-0.5 text-[11px] leading-snug text-[var(--hv-muted)]">
-              Every rule the reasoning tier may cite. Near-misses are included on purpose — the
-              corpus is adversarial by construction, and rejecting them is the judgement.
+              Every passage the reasoning tier may read. Only{" "}
+              <span className="text-[var(--hv-text)]">authoritative</span> requirements may ground
+              an action — guidance and research are here to be read and rejected, as are the
+              near-misses. The corpus is adversarial by construction, and rejecting is the
+              judgement.
             </p>
           </div>
           <button
@@ -107,6 +119,9 @@ export function ProcedureBrowser({ onClose }: { onClose: () => void }) {
                               {!procedure.prescribes ? (
                                 <Tag tone="neutral">no action</Tag>
                               ) : null}
+                              <Tag tone={authorityTone(procedure.authority)}>
+                                {procedure.authority}
+                              </Tag>
                               <Tag tone={procedure.provenance === "extracted" ? "good" : "neutral"}>
                                 {procedure.provenance}
                               </Tag>

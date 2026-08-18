@@ -52,6 +52,16 @@ class Passage:
     # that quietly disappears otherwise -- and a corpus that cannot say which of
     # its rules are real is not one anybody should reason over.
     provenance: str = "synthesised"
+    # The force of what the source document says, and the only thing standing
+    # between a handbook's recommendation and a crew being told it is a rule.
+    #
+    # "authoritative" is a standard stating shall-requirements; "guidance" a
+    # handbook; "research" a paper. "prototype" is a rule written for this
+    # prototype, which is the default because that is what the hand-authored
+    # corpus is. Only authoritative and prototype passages may prescribe -- see
+    # haven.deterministic.preconditions.PRESCRIPTIVE_AUTHORITIES, which is where
+    # that is enforced rather than merely documented.
+    authority: str = "prototype"
     reviewed_by: str = ""
 
 
@@ -305,6 +315,10 @@ def compute_manifest(passages: list[Passage]) -> str:
     this prototype, are materially different rulebooks to anyone auditing a
     decision made under them.
 
+    ``authority`` is in for the same reason and a sharper one: a corpus that
+    relabelled a handbook as a standard would otherwise digest identically to
+    one that had not, while permitting recommendations the first would refuse.
+
     ``near_miss_note`` is excluded -- commentary for the corpus's readers that
     never reaches a decision -- and so is ``reviewed_by``, which records process
     rather than content: a second reviewer re-approving an unchanged encoding
@@ -326,6 +340,7 @@ def compute_manifest(passages: list[Passage]) -> str:
                     "fallback_action": passage.fallback_action,
                     "source": passage.source,
                     "provenance": passage.provenance,
+                    "authority": passage.authority,
                 },
                 sort_keys=True,
                 separators=(",", ":"),
@@ -369,6 +384,7 @@ def _load_compiled() -> list[Passage] | None:
             source=item.get("source", ""),
             near_miss_note=item.get("near_miss_note", ""),
             provenance=item.get("provenance", "extracted"),
+            authority=item.get("authority", "authoritative"),
             reviewed_by=item.get("reviewed_by", ""),
         )
         for item in payload.get("passages", [])

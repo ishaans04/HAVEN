@@ -770,6 +770,11 @@
       "ProcedureSummary": {
         "description": "One passage of the corpus, as the console's procedure browser shows it.\n\n``provenance`` and ``reviewed_by`` are the fields that make the browser worth\nhaving. A corpus that cannot say which of its rules were extracted from a\nreal document and which were written for this prototype is not one anybody\nshould reason over, and burying that distinction in a docstring is how it\ndisappears.",
         "properties": {
+          "authority": {
+            "default": "prototype",
+            "title": "Authority",
+            "type": "string"
+          },
           "doc": {
             "title": "Doc",
             "type": "string"

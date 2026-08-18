@@ -68,7 +68,7 @@ def test_the_governing_passage_is_admissible() -> None:
 def test_satisfied_clauses_are_reported_not_only_failures() -> None:
     """The console renders the whole verdict, so the whole verdict is produced."""
     result = check_passage("P-FAT-4.2", BURN_FACTS)
-    assert clauses_of(result) == ["task_types", "criticality_in", "alertness_below"]
+    assert clauses_of(result) == ["authority", "task_types", "criticality_in", "alertness_below"]
     alertness = next(c for c in result.clauses if c.clause == "alertness_below")
     assert alertness.expected == "below 0.7"
     assert alertness.actual == "0.61"

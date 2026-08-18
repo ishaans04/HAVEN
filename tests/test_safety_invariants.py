@@ -393,3 +393,115 @@ def test_a_recorded_disagreement_is_never_a_recommendation(scenario_id: str) -> 
             assert situation.recommendation is None
         if situation.recommendation is not None:
             assert verify.outputs["verified"] is True
+
+
+# --------------------------------------------------------------------------
+# S10: only a requirements document may ground an action
+#
+# Arrives with the real corpus. Until Phase 9 every passage was written for this
+# prototype and stood in for a flight rule, so the question could not come up.
+# Once NASA-STD-3001, the HIDH and three NTRS papers are in the same index, it
+# comes up constantly: the three read alike, retrieval cannot separate them, and
+# only one of them states requirements.
+#
+# The failure this prevents is worse than an uncited guess. A recommendation
+# grounded in the HIDH would carry a real citation to a real NASA document that
+# an operator could look up and find -- and the sentence it cited would say
+# "should", not "shall".
+# --------------------------------------------------------------------------
+NON_PRESCRIPTIVE = ("guidance", "research")
+
+
+@pytest.mark.parametrize("authority", NON_PRESCRIPTIVE)
+def test_a_non_requirement_is_inadmissible_however_well_it_matches(authority: str) -> None:
+    """Every precondition satisfied, an action prescribed, and still refused.
+
+    Isolates the authority clause: the passage is the one that governs the
+    reboost-burn scenario, unchanged except for where it came from.
+    """
+    passage = BY_ID["P-FAT-4.2"]
+    facts = {
+        "task_type": "orbital_burn",
+        "criticality": "high",
+        "phase": "execution",
+        "alertness_score": 0.61,
+        "workload_score": 70.0,
+        "circadian_flag": False,
+    }
+
+    admitted = check(passage.applies_when, passage.prescribes, facts, authority="authoritative")
+    assert admitted.admissible, "the fixture must otherwise be admissible, or this proves nothing"
+
+    verdict = check(passage.applies_when, passage.prescribes, facts, authority=authority)
+    assert not verdict.admissible
+    assert [c.clause for c in verdict.unmet] == ["authority"]
+
+
+def test_an_unstated_authority_fails_closed() -> None:
+    """A passage that does not say what it is cannot be treated as a rule."""
+    facts = {"task_type": "orbital_burn", "criticality": "high", "phase": "execution"}
+    verdict = check({}, "task_deferral", facts, authority="")
+    assert not verdict.admissible
+    assert [c.clause for c in verdict.unmet] == ["authority"]
+
+
+@pytest.mark.parametrize("scenario_id", ALL_SCENARIOS)
+def test_no_recommendation_is_grounded_in_guidance_or_research(scenario_id: str) -> None:
+    """The property over shipped behaviour, for whatever corpus is loaded."""
+    for situation in run(scenario_id).situations:
+        if situation.recommendation is None:
+            continue
+        passage = BY_ID[situation.recommendation.citation.passage_id]
+        assert passage.authority not in NON_PRESCRIPTIVE, (
+            f"{situation.situation_id} grounds an action in {passage.passage_id}, which is "
+            f"{passage.authority} -- a requirement NASA did not write"
+        )
+
+
+def test_the_orchestrator_passes_each_passage_its_own_authority() -> None:
+    """The clause is worthless if the caller lets it default.
+
+    ``check`` defaults to the prototype class so the hand-authored corpus works
+    unchanged, which means dropping the argument at the call site would be
+    invisible -- every passage would silently become prescriptive. Relabelling a
+    real passage as guidance and requiring the refusal is what makes that
+    omission fail loudly.
+    """
+    import dataclasses
+
+    import haven.rag.corpus as corpus_module
+    from haven.rag.retriever import reset_retriever
+
+    index = next(i for i, p in enumerate(CORPUS) if p.passage_id == "P-FAT-4.2")
+    original = CORPUS[index]
+    demoted = dataclasses.replace(original, authority="guidance")
+    # The retrievers hold the CORPUS list itself, so the element is replaced in
+    # place rather than rebound.
+    corpus_module.CORPUS[index] = demoted
+    corpus_module.BY_ID["P-FAT-4.2"] = demoted
+    # The cached retriever holds its own passage map, built when it was first
+    # constructed. Without this the test would pass in isolation and prove
+    # nothing in a full run.
+    reset_retriever()
+    try:
+        situations = run("burn_fatigue").situations
+        cited = [s for s in situations if s.recommendation is not None]
+        assert all(s.recommendation.citation.passage_id != "P-FAT-4.2" for s in cited), (
+            "P-FAT-4.2 was relabelled as guidance and still grounded an action, which means "
+            "the orchestrator is not passing the passage's authority to the checker"
+        )
+    finally:
+        corpus_module.CORPUS[index] = original
+        corpus_module.BY_ID["P-FAT-4.2"] = original
+        reset_retriever()
+
+
+def test_the_reasoning_tier_is_not_told_which_passages_count() -> None:
+    """S4 again, for the field that arrived with the real corpus.
+
+    Authority decides admissibility, so handing it to the model would be the
+    answer key by another name -- and worse, it would let a model pass this
+    corpus by reading a label rather than by reading a rule, which is the skill
+    that has to transfer to a procedure library it has not seen.
+    """
+    assert "authority" not in PROSE_KEYS

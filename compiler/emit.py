@@ -47,6 +47,9 @@ class CompiledCorpus:
             "passages": len(self.passages),
             "extracted": sum(1 for p in self.passages if p.provenance == "extracted"),
             "synthesised": sum(1 for p in self.passages if p.provenance == "synthesised"),
+            "authoritative": sum(1 for p in self.passages if p.authority == "authoritative"),
+            "guidance": sum(1 for p in self.passages if p.authority == "guidance"),
+            "research": sum(1 for p in self.passages if p.authority == "research"),
             "documents": sorted({p.doc for p in self.passages}),
         }
 
@@ -70,6 +73,7 @@ def to_passage(proposal: Proposal) -> Passage:
         fallback_action=proposal.fallback_action,
         source=proposal.source,
         provenance=proposal.provenance,
+        authority=proposal.authority,
         reviewed_by=proposal.reviewed_by,
     )
 
@@ -115,6 +119,7 @@ def write(corpus: CompiledCorpus, directory: Path) -> Path:
                 "fallback_action": p.fallback_action,
                 "source": p.source,
                 "provenance": p.provenance,
+                "authority": p.authority,
                 "reviewed_by": p.reviewed_by,
                 "near_miss_note": p.near_miss_note,
             }
@@ -169,6 +174,7 @@ def load(path: Path) -> list[Passage]:
             source=item.get("source", ""),
             near_miss_note=item.get("near_miss_note", ""),
             provenance=item.get("provenance", "extracted"),
+            authority=item.get("authority", "authoritative"),
             reviewed_by=item.get("reviewed_by", ""),
         )
         for item in payload.get("passages", [])
