@@ -541,6 +541,49 @@ export interface components {
             /** Title */
             title: string;
         };
+        /**
+         * Projection
+         * @description What the recommended action is predicted to achieve.
+         *
+         *     A projection under the Three-Process Model, never a measurement: nothing
+         *     here observes the crew afterwards. The closed verification loop stays
+         *     deferred, and calling this `projected` rather than `achieved` is the
+         *     difference between a prediction and a claim.
+         */
+        Projection: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "second_operator_verify" | "short_rest_then_proceed" | "duty_rotation" | "task_deferral" | "no_action_required";
+            /** After */
+            after: number;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /**
+             * Basis
+             * @default
+             */
+            basis: string;
+            /** Before */
+            before: number;
+            /** Clears Threshold */
+            clears_threshold: boolean;
+            /** Delta */
+            delta: number;
+            /** Subject */
+            subject: string;
+            /**
+             * Subject Name
+             * @default
+             */
+            subject_name: string;
+            /** Threshold */
+            threshold: number;
+        };
         /** Recommendation */
         Recommendation: {
             /**
@@ -551,6 +594,7 @@ export interface components {
             /** Action Label */
             action_label: string;
             citation: components["schemas"]["Citation"];
+            projection?: components["schemas"]["Projection"] | null;
             /** Rationale */
             rationale: string;
             /**

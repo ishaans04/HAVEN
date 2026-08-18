@@ -15,8 +15,9 @@ from __future__ import annotations
 from typing import Any
 
 from haven.config import THRESHOLDS
-from haven.contracts import Citation, Recommendation, Refusal, ScheduleImpact
+from haven.contracts import Citation, Projection, Recommendation, Refusal, ScheduleImpact
 from haven.data.crew import SAFETY_CRITICAL_ROLES
+from haven.deterministic import projection
 from haven.deterministic.screens import CrewSnapshot, screen_schedule_impact
 from haven.graph.nodes.common import record_situation
 from haven.graph.state import SituationState
@@ -37,6 +38,32 @@ RESOURCE_COST = {
     "task_deferral": "Task slips to the next execution window. No crew-hours consumed now.",
     "no_action_required": "None.",
 }
+
+
+def _projection(state: SituationState, action: str, impact) -> Projection | None:
+    """What the action is predicted to achieve, where that question has an answer.
+
+    A recommendation asks an operator to accept a cost. Saying what it buys --
+    "alertness rises from 0.61 to 0.74, above the 0.70 threshold" -- is the same
+    recommendation with its reasoning completed.
+
+    Returns None rather than a number where the action does not move alertness.
+    Inventing one there would be worse than silence.
+    """
+    alternate_model = state["models"].get(impact.alternate) if impact.alternate else None
+
+    projected = projection.project(
+        action=action,
+        model=state["model"],
+        task_time=state["task"].scheduled,
+        threshold=state["trigger"].alertness_threshold,
+        subject=state["member"].id,
+        subject_name=state["member"].name or state["member"].id,
+        alternate_model=alternate_model,
+        alternate_id=impact.alternate or "",
+        alternate_name=impact.alternate_name,
+    )
+    return Projection(**projected.as_dict()) if projected is not None else None
 
 
 def screen_node(state: SituationState) -> dict[str, Any]:
@@ -153,6 +180,7 @@ def screen_node(state: SituationState) -> dict[str, Any]:
                     note=impact.note,
                     blocked_reason=impact.blocked_reason,
                 ),
+                projection=_projection(state, action, impact),
             )
 
     return {

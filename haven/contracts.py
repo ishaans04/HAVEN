@@ -137,6 +137,27 @@ class ScheduleImpact(BaseModel):
     blocked_reason: str | None = None
 
 
+class Projection(BaseModel):
+    """What the recommended action is predicted to achieve.
+
+    A projection under the Three-Process Model, never a measurement: nothing
+    here observes the crew afterwards. The closed verification loop stays
+    deferred, and calling this `projected` rather than `achieved` is the
+    difference between a prediction and a claim.
+    """
+
+    action: ActionType
+    subject: str
+    subject_name: str = ""
+    at: UTCDateTime
+    before: UnitInterval
+    after: UnitInterval
+    delta: float = Field(ge=-1.0, le=1.0)
+    threshold: UnitInterval
+    clears_threshold: bool
+    basis: str = ""
+
+
 class Recommendation(BaseModel):
     action: ActionType
     action_label: str
@@ -144,6 +165,10 @@ class Recommendation(BaseModel):
     rationale: str
     resource_cost: str = ""
     schedule_impact: ScheduleImpact
+    # Absent where the action does not move alertness -- no_action_required
+    # changes nothing, and a verification with no available alternate has
+    # nothing to project. Inventing a figure there would be worse than silence.
+    projection: Projection | None = None
     # Every precondition of the cited passage, as the deterministic checker
     # evaluated it *after* the model proposed the citation. Non-empty and
     # all-satisfied on every recommendation HAVEN issues (safety requirement

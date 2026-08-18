@@ -813,6 +813,81 @@
         "title": "ProcedureSummary",
         "type": "object"
       },
+      "Projection": {
+        "description": "What the recommended action is predicted to achieve.\n\nA projection under the Three-Process Model, never a measurement: nothing\nhere observes the crew afterwards. The closed verification loop stays\ndeferred, and calling this `projected` rather than `achieved` is the\ndifference between a prediction and a claim.",
+        "properties": {
+          "action": {
+            "enum": [
+              "second_operator_verify",
+              "short_rest_then_proceed",
+              "duty_rotation",
+              "task_deferral",
+              "no_action_required"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "after": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "After",
+            "type": "number"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "basis": {
+            "default": "",
+            "title": "Basis",
+            "type": "string"
+          },
+          "before": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Before",
+            "type": "number"
+          },
+          "clears_threshold": {
+            "title": "Clears Threshold",
+            "type": "boolean"
+          },
+          "delta": {
+            "maximum": 1.0,
+            "minimum": -1.0,
+            "title": "Delta",
+            "type": "number"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          },
+          "subject_name": {
+            "default": "",
+            "title": "Subject Name",
+            "type": "string"
+          },
+          "threshold": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Threshold",
+            "type": "number"
+          }
+        },
+        "required": [
+          "action",
+          "subject",
+          "at",
+          "before",
+          "after",
+          "delta",
+          "threshold",
+          "clears_threshold"
+        ],
+        "title": "Projection",
+        "type": "object"
+      },
       "Recommendation": {
         "properties": {
           "action": {
@@ -832,6 +907,16 @@
           },
           "citation": {
             "$ref": "#/components/schemas/Citation"
+          },
+          "projection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Projection"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "rationale": {
             "title": "Rationale",
