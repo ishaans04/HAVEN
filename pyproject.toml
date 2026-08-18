@@ -30,8 +30,6 @@ providers = [
 # Phase 5 — hybrid retrieval. `fastembed` is ONNX (~50MB), deliberately not
 # sentence-transformers/PyTorch (~2GB). BM25 alone remains the offline terminal.
 rag = [
-    # Not yet at 1.0 stable, unlike the rest of the tree. Pinned to the 0.4 line.
-    "langchain-community>=0.4,<1.0",
     "langchain-text-splitters>=1.0",
     "langchain-chroma>=1.0",
     "chromadb>=0.5",
@@ -39,6 +37,14 @@ rag = [
     "rank-bm25>=0.2",
 ]
 # Phase 4 — the offline corpus compiler. Never imported by the request path.
+#
+# pypdf and pdfplumber directly rather than through LangChain's document
+# loaders: `langchain-community`, which holds them, is being sunset and is no
+# longer actively maintained. Depending on an unmaintained package for a thin
+# wrapper buys nothing, and calling the readers directly means controlling the
+# page provenance every citation depends on. The maintained LangChain packages
+# -- langchain-core Documents, langchain-text-splitters, langchain-chroma --
+# carry the rest of the pipeline.
 compiler = [
     "pypdf>=5.0",
     "pdfplumber>=0.11",
