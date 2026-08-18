@@ -75,6 +75,14 @@ jobs:
       - name: Offline guarantee
         run: uv run pytest tests/test_offline_guard.py -v
 
+      # The registry is the part of the corpus that is in the repository, so it
+      # is the part CI can check on a runner that has never downloaded a NASA
+      # document. What degrades silently is exactly what these assert: a stale
+      # revision letter, an unpinned checksum, a verification note reduced to
+      # "checked", an extraction report left behind by a registry edit.
+      - name: Corpus provenance
+        run: uv run pytest tests/test_corpus_registry.py -v
+
       - name: Every scenario reaches its intended branch
         run: uv run python -m scripts.calibrate
 

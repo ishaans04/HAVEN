@@ -215,7 +215,7 @@ The three hard rules are executable, not aspirational. `tests/test_safety_invari
 2. **The system flags risk; it never acts.** Every Situation resolves to exactly one of a recommendation or a refusal. There is no third, self-actioning state.
 3. **No citation, no recommendation.** Every citation is asserted to resolve to a real passage whose document and section match.
 
-Since v2 they are joined by six more, each with a named enforcement point:
+Since v2 they are joined by seven more, each with a named enforcement point:
 
 4. **The reasoning tier never receives compiled preconditions.** The model selects from passage prose alone; `applies_when` and `prescribes` are redacted from every provider-bound payload. Asserted on the rendered prompt, not on behaviour.
 5. **No citation without independent confirmation.** A passage the deterministic checker rejects cannot be cited, whatever the model proposed.
@@ -223,6 +223,7 @@ Since v2 they are joined by six more, each with a named enforcement point:
 7. **No entry is forgeable without the key, and none is deletable undetectably.**
 8. **Every recommendation and refusal records the corpus manifest** it was made under.
 9. **The graph is static** — no LLM routes, no tool nodes, no unbounded cycles; topology asserted against a committed snapshot.
+10. **Only a requirements document may ground an action.** NASA-STD-3001 says *shall*; the HIDH explains why; an NTRS paper reports what was measured. The deterministic checker evaluates authority before any precondition and fails closed on an unstated one, and the compiler's review gate keeps a guidance or research passage that prescribes out of the corpus in the first place.
 
 Plus: refusals must record what was searched and why the best candidate failed; the ledger must verify for every Situation; corrupting a logged step must break it, and so must forging one.
 
@@ -261,7 +262,7 @@ Named explicitly, because the system's whole thesis is that flagging uncertainty
 
 - **The crew roster is representative, not real individuals.** Attaching modelled fatigue states to identifiable astronauts would be the wrong default even in a demo. Substituting a public roster is a data change in `data/crew.py`.
 - **Sleep, duty, and task timelines are synthetic.** No public live crew-timeline feed exists. The structure follows NASA scheduling literature; the values are generated from explicit per-night parameters so every scenario is reproducible.
-- **The procedure corpus text is written for this prototype.** Document numbering, precondition style, and structure follow NASA flight-rule convention; the prose is not verbatim NASA procedure. Provenance is carried on every passage.
+- **The corpus HAVEN reasons over at runtime is still the hand-authored one.** Six real NASA documents are acquired, version-verified and compiled to 131 passages, but nothing has been reviewed and so no compiled artefact exists — the gate refuses without a named reviewer, which is it working. The hand-authored passages follow NASA flight-rule numbering and precondition style; the prose is not verbatim NASA procedure, and every passage carries both its provenance and its authority. See `corpus/README.md`.
 - **The reasoning model is a scripted stand-in by default**, so the console runs offline and a demo cannot fail on a network call.
 
 **The audit ledger is tamper-evident, not tamper-proof.** Entries are signed with HMAC-SHA256 and chained globally across every trail, so an entry cannot be rewritten, and a whole trail cannot be deleted, without the key — either leaves a break the ledger reports, with the sequence number where it happened. What that does *not* stop is an attacker who holds the signing key **and** write access: they can rewrite an entry, re-sign it, re-chain everything after it, and re-write the checkpoints too. Closing that needs storage the attacker cannot reach — WORM media, or an external notary — which this build does not have. The periodic checkpoints narrow the window; they do not close it. A test asserts this limit explicitly rather than leaving it implied.
@@ -283,16 +284,26 @@ is closed and enforced by a test that fails when the protection is removed:
 | Real-provider adapters never executed | Phase 3 — LangChain chat models, tested |
 | The chain detects corruption but not tampering | Phase 2 — HMAC, globally chained |
 
-**651 tests.** Nine safety requirements, each with a named enforcement point.
+**689 tests.** Ten safety requirements, each with a named enforcement point.
 
 What has *not* been done, plainly: no live-provider figures exist, because
 watsonx credentials were not available here — the evaluation harness reports the
 offline stand-in's numbers and exists precisely to produce the comparison the
 moment there is something to measure. The container is written and its parts are
 verified individually, but Docker was not installed in the build environment, so
-the image itself is unbuilt. The corpus is still the hand-authored one; the
-compiler that replaces it is tested end to end against generated PDFs rather
-than against NASA's.
+the image itself is unbuilt.
+
+The corpus is the honest one to read closely. Six real NASA documents are now
+acquired and compiled — NASA-STD-3001 Volumes 1 and 2, the HIDH, and three NTRS
+papers, each version-verified against its publisher before download and pinned
+by SHA-256. What the compile confirms is the thing this project recorded as a
+risk before reading any of them: **design standards are not execution rules.**
+Volume 2 carries 1,579 requirements, fifty-one of which mention sleep, fatigue
+or workload, and not one says what to do when an operator is below threshold
+thirty minutes before a burn. So the passages remain unreviewed and the runtime
+still loads the hand-authored corpus — the emit gate refuses without a named
+reviewer, and no extraction model was available here to draft the encodings a
+reviewer would read.
 
 See `CHANGELOG.md` for what each phase decided and why, and `DEMO.md` for the
 six-scenario walkthrough.

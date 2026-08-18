@@ -46,7 +46,8 @@ Three documents govern this build. Where they disagree, the order below wins.
 ### Safety requirements
 
 S1–S3 are inherited from v1 and already executable. S4–S9 arrive with the phases
-that enforce them.
+that enforce them; S10 arrives with the real corpus, which is the first time the
+question could be asked.
 
 | # | Requirement | Status |
 |---|---|---|
@@ -59,6 +60,7 @@ that enforce them.
 | S7 | No entry forgeable without the key; no silent deletion | Phase 2, green |
 | S8 | Every outcome records its corpus manifest | Phase 2, green |
 | S9 | The graph is static: no LLM routes, no tool nodes, no cycles | Phase 1A, green |
+| S10 | Only a requirements document may ground an action | Phase 9, green |
 
 ---
 
@@ -130,6 +132,111 @@ in the searched set. Its score decides nothing.
 ---
 
 ## [Unreleased]
+
+### Phase 9 — The real NASA corpus
+
+**Landed.** 689 tests, up from 655. Six real NASA documents acquired,
+version-verified and compiled. S10 joins S1–S9.
+
+This phase was mostly reading, and what it read changed the design twice.
+
+#### Acquisition
+
+Every revision was checked against its publisher *before* anything was
+downloaded, and the check is recorded per document rather than asserted —
+`corpus/sources.json` carries the document number, revision, approval date,
+canonical URL, pinned SHA-256, and a prose note naming the page that was read
+and what it said.
+
+- **NASA-STD-3001 Volume 2 Revision F**, approved 2026-07-14. The NTSS summary
+  page says ACTIVE and cleared for public release; the PDF cover independently
+  says "Superseding … Revision E".
+- **NASA-STD-3001 Volume 1 Revision C**, approved 2023-09-15. **Added beyond the
+  Volume 2 specified**, and this is a finding rather than scope creep. Volume 2
+  carries 1,579 requirements; 51 mention sleep, fatigue or workload; none states
+  a work-rest limit. Section 7.9, *Behavioral Health and Sleep*, has three
+  requirements and all three are about the sleep environment. The fatigue
+  requirements are in Volume 1, whose section 6.1 is titled *Circadian Shifting
+  Operations and Fatigue Management*. Compiling a fatigue corpus from the volume
+  with no fatigue requirements in it would have been a thorough job of the wrong
+  thing. Flagged rather than done silently.
+- **HIDH, NASA/SP-2010-3407/REV1.** The partial-supersession case. NASA's OCHMO
+  page publishes Revision 1; the PDF's own history log records a Revision 2 whose
+  only change is Section 4, distributed separately as OCHMO-HB-004 Rev A. So
+  Section 4 is superseded and the compiled scope stops short of it.
+- **Three NTRS papers**, each with its selection rationale written down, and two
+  chosen over an earlier issue of the same document that NTRS still serves.
+
+The PDFs stay out of the repository. A checksum mismatch is **refused**, not
+warned about: a standards body replacing a PDF in place is how a corpus silently
+becomes a corpus of a different revision, citing section numbers that have moved.
+
+#### S10 — authority
+
+The corpus now holds three kinds of text that read almost identically and are
+not the same thing. NASA-STD-3001 says *shall*. The HIDH explains why. A paper
+reports what was measured. Retrieval cannot separate them.
+
+Left alone this produces the worst failure the system is capable of: a
+recommendation grounded in the HIDH, carrying a real citation to a real NASA
+document an operator can look up, where the cited sentence says *should*. **An
+uncited guess would be safer, because it does not check out.**
+
+Enforced at two independent points, and the duplication is deliberate —
+`review.gate` keeps such a passage out of the corpus, `preconditions.check`
+catches it if it gets in. Each was confirmed to fail when its guard is removed.
+`prototype` is admitted alongside `authoritative` because the synthesised layer
+exists precisely to stand in for the execution-time flight rules the public
+record does not contain, and says so everywhere it surfaces.
+
+#### A requirement is not its rationale
+
+The same mistake at passage scale, and the compiler would have made it. [V1 6001]
+requires only that a crew schedule *include* fatigue management. Its rationale
+block then says to avoid critical tasks during the circadian nadir and recommends
+an 8.5-hour sleep period — the sentences a fatigue system most wants, and not the
+requirement. A reader given the concatenation encodes them as binding. The chunker
+now separates them and the extraction prompt receives both, labelled.
+
+#### Three changes the documents forced
+
+- **Scope by named page range.** A corpus is a claim about what is relevant, and
+  an unscoped one makes no claim. Page numbers are safe to pin *because* the file
+  is: a re-issued PDF is refused rather than silently re-paginated. Every range
+  carries a label, because "pages 134–135" is not something a reviewer can check.
+- **A prose fallback, for research sources only.** The requirement-aware splitter
+  found nothing in two of the three papers. The exemption is principled: that
+  splitter exists to stop an exception being severed from the rule it qualifies,
+  and a paper carries no rule to widen, since nothing compiled from one may
+  prescribe.
+- **Passage ids that cannot collide.** Section numbers repeat across documents
+  and a requirement spanning a page break is chunked twice. Two passages sharing
+  an id means one rule silently replaces another in `BY_ID`, through which every
+  citation resolves.
+
+#### Not claimed
+
+- **No compiled corpus exists, and the runtime still loads the hand-authored
+  one.** 131 passages await review; `emit` refuses without a named reviewer,
+  which is the gate working. Two things are missing, neither a matter of running
+  one more command: no extraction model was available here (no Ollama, no
+  watsonx), so all 131 proposals arrive undrafted; and `reviewed_by` must name a
+  person, which is precisely what the thing that drafted them cannot be.
+- **Undrafted is now distinguished from excluded.** A proposal the model could
+  not draft arrives looking exactly like a reviewed decision to leave a rule out.
+  It is counted and reported separately.
+- **C3 is confirmed, not resolved.** "Design standards are not execution rules"
+  was recorded as a risk before any document was read. Four documents later it
+  holds, and more sharply than expected: the standards require that a *system*
+  provide sleep accommodation, a *programme* establish work-hour limits, a
+  *schedule* include fatigue management. None says what to do at T−30 minutes.
+  The compiled corpus will be mostly authoritative rules a reviewer marks as not
+  governing execution-time fatigue — which is not a failed compile. Those rules
+  are the best adversarial material this corpus has ever had: real NASA
+  requirements about sleep that a fatigue query retrieves and the system must
+  decline to cite.
+- **O2 and O4 remain open**, unchanged.
+
 
 ### Phases 4–8 — M2
 

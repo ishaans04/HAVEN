@@ -129,10 +129,20 @@ Twenty labelled Situations, weighted towards cases where *nothing* governs. Two
 accuracies are reported: what the model proposed, and what the system did after
 the checker disposed of it. Unsafe citations must be zero, and CI fails on one.
 
+**"Are the NASA documents real?"** The documents are: NASA-STD-3001 Volumes 1
+and 2, the HIDH, and three NTRS papers, each version-verified against its
+publisher before download and pinned by SHA-256 in `corpus/sources.json`. The
+corpus the console *reasons over* is still the hand-authored one, because the
+131 compiled passages have not been reviewed and the emit gate refuses without a
+named reviewer. Open the corpus browser: every row is labelled with its
+authority, and only `authoritative` and `prototype` rows may ground an action —
+a handbook's recommendation and a paper's finding cannot, and the deterministic
+checker enforces that before it evaluates a single precondition.
+
 **"What is not real?"** The crew roster is representative, not real individuals.
-Sleep and duty timelines are synthetic. The corpus is written for this prototype
-and labelled `synthesised` in the browser — the compiler that turns real NASA
-PDFs into passages exists and is tested, but no live-provider figures have been
-produced because the credentials are not available here. The ledger is
-tamper-evident, not tamper-proof. All of this is in the README under Honest
-limits, and the console has a "Real vs simulated" panel in the header.
+Sleep and duty timelines are synthetic. The runtime corpus is written for this
+prototype and labelled `synthesised` and `prototype` in the browser. No
+live-provider figures have been produced, because the credentials are not
+available here. The ledger is tamper-evident, not tamper-proof. All of this is
+in the README under Honest limits, and the console has a "Real vs simulated"
+panel in the header.
