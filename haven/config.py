@@ -91,6 +91,12 @@ class RetrievalSettings:
     # ``inprocess`` is a dependency-free stand-in with the same interface as the
     # ChromaDB-backed store. Set HAVEN_VECTOR_STORE=chroma to use real Chroma.
     backend: str = field(default_factory=lambda: os.getenv("HAVEN_VECTOR_STORE", "inprocess"))
+    # "lexical" is BM25 alone and is the offline terminal: no download, no
+    # service. "hybrid" adds dense retrieval, which fetches its model on first
+    # use and therefore cannot be part of the offline guarantee.
+    mode: str = field(default_factory=lambda: os.getenv("HAVEN_RETRIEVAL_MODE", "lexical"))
+    dense_model: str = field(default_factory=lambda: os.getenv("HAVEN_DENSE_MODEL", "BAAI/bge-small-en-v1.5"))
+    persist_directory: str = field(default_factory=lambda: os.getenv("HAVEN_CHROMA_DIR", ""))
     collection: str = "haven_procedures"
     embedding_model: str = field(
         default_factory=lambda: os.getenv("HAVEN_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")

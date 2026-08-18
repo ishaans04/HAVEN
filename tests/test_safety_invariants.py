@@ -18,7 +18,6 @@ import pytest
 
 from haven import engine
 from haven.api.main import UnavailableLLM
-from haven.config import THRESHOLDS
 from haven.contracts import EvaluationRequest
 from haven.data.scenarios import SCENARIOS
 from haven.deterministic.preconditions import check
@@ -151,7 +150,21 @@ def test_refusals_record_what_was_searched(scenario_id: str) -> None:
         if refusal.reason == "no_governing_procedure":
             assert refusal.searched, "a procedure refusal must record the searched set"
             if refusal.best_candidate:
-                assert refusal.best_candidate.relevance < THRESHOLDS.relevance_gate
+                # O3, resolved. This used to assert the best candidate scored
+                # below THRESHOLDS.relevance_gate, which was a real guarantee in
+                # v1 -- the gate is what produced the refusal. Phase 1B removed
+                # the gate from the decision path, leaving the assertion true
+                # only by coincidence of the retrieval scores, and the CHANGELOG
+                # recorded that a failure here should be read as a display
+                # question rather than a safety one. Phase 5 changed the display
+                # scale and it duly failed.
+                #
+                # What matters about the best candidate is that it identifies a
+                # real passage a reviewer can go and read, which is what the
+                # refusal panel renders. Its score decides nothing.
+                assert refusal.best_candidate.doc
+                assert refusal.best_candidate.doc in refusal.searched
+                assert 0.0 <= refusal.best_candidate.relevance <= 1.0
 
 
 # --------------------------------------------------------------------------

@@ -115,12 +115,14 @@ behaviour and needs a chosen shape: most likely a Situation with a new refusal
 reason, since "the roster does not contain this operator" is exactly the kind of
 gap this system exists to surface.
 
-### O3 — `best_candidate.relevance < relevance_gate` now holds incidentally
+### O3 — ~~`best_candidate.relevance < relevance_gate` holds incidentally~~ *(resolved, Phase 5)*
 
-The v1 assertion in `test_refusals_record_what_was_searched` survived Phase 1B,
-but the gate no longer decides anything, so the relationship it asserts is a
-coincidence of the retrieval scores rather than a structural guarantee. Left
-in place; if it ever fails, read it as a display question, not a safety one.
+Recorded in Phase 1B as holding only by coincidence of the retrieval scores,
+with the instruction that a failure should be read as a display question rather
+than a safety one. Phase 5 changed the display scale and it duly failed. The
+assertion now checks what actually matters about a best candidate — that it
+names a real passage a reviewer can go and read, and that the document appears
+in the searched set. Its score decides nothing.
 
 ---
 

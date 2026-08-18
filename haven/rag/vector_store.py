@@ -19,7 +19,7 @@ from __future__ import annotations
 import math
 import re
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from haven.config import RETRIEVAL
 from haven.rag.corpus import CORPUS, Passage
@@ -73,7 +73,12 @@ class Candidate:
     lexical: float  # TF-IDF cosine
     tag_match: float  # task-type agreement
     criticality_match: float
-    relevance: float  # blended score used against the gate
+    # A 0-1 figure for display. Nothing branches on it: the float gate was
+    # deleted in Phase 1B because a similarity score was deciding what governs.
+    relevance: float
+    # Which retriever ranked this passage where. "bm25 put it first, dense put
+    # it ninth" is a reviewable statement; one fused number is not.
+    ranked_by: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {
@@ -84,6 +89,7 @@ class Candidate:
             "relevance": round(self.relevance, 3),
             "lexical": round(self.lexical, 3),
             "tag_match": round(self.tag_match, 3),
+            "ranked_by": dict(self.ranked_by),
         }
 
 
