@@ -155,11 +155,20 @@ def gate(proposals: list[Proposal]) -> list[Proposal]:
     return emitted
 
 
+#: The warning :func:`compiler.propose.propose` sets when the model's answer
+#: could not be read at all. Counted separately because such a proposal is not
+#: a reviewed exclusion -- it is a passage nobody has encoded yet, and it
+#: arrives looking exactly like one somebody decided to leave out.
+UNDRAFTED = "the model's response could not be read"
+
+
 def summarise(proposals: list[Proposal]) -> dict:
+    undrafted = [p for p in proposals if any(w.startswith(UNDRAFTED) for w in p.warnings)]
     return {
         "total": len(proposals),
         "approved": sum(1 for p in proposals if p.approved),
         "warned": sum(1 for p in proposals if p.warnings),
         "excluded": sum(1 for p in proposals if not p.governs_fatigue),
-        "awaiting_review": sum(1 for p in proposals if p.governs_fatigue and not p.approved),
+        "undrafted": len(undrafted),
+        "awaiting_review": sum(1 for p in proposals if not p.approved),
     }
