@@ -25,6 +25,12 @@ dependencies = [
     # install -- the offline guarantee broken by the very phase that named BM25
     # as the thing guaranteeing it. CI caught it.
     "rank-bm25>=0.2",
+    # Phase 10 — reads .env into the environment before haven.config resolves.
+    # It arrived transitively via uvicorn[standard] already; declared here
+    # because haven/__init__.py imports it directly, and depending on a package
+    # another package happens to pull in is a build waiting to break quietly.
+    # Pure-Python, reads one local file, opens no socket.
+    "python-dotenv>=1.0",
 ]
 
 [project.optional-dependencies]

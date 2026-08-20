@@ -230,10 +230,13 @@ Plus: refusals must record what was searched and why the best candidate failed; 
 Alongside them, the offline guarantee is executable too: `tests/test_offline_guard.py`
 imports the API tier in a subprocess with tracing forced *on* and every socket
 connection trapped, and asserts that nothing reaches the network and that
-`langchain-core`'s own accessor reports tracing disabled.
+`langchain-core`'s own accessor reports tracing disabled. `tests/test_config_env.py`
+extends that to the `.env` file added in Phase 10 — it may supply credentials, and
+it may not switch telemetry back on.
 
 ```text
-123 passed
+uv run pytest tests/test_safety_invariants.py tests/test_offline_guard.py
+148 passed
 ```
 
 ---
@@ -242,11 +245,36 @@ connection trapped, and asserts that nothing reaches the network and that
 
 Both mocked tiers sit behind interfaces their real counterparts already satisfy. Promoting them is configuration, not a rewrite.
 
+```bash
+uv sync --extra providers      # langchain-ibm / langchain-ollama
+cp .env.example .env           # then fill in the four watsonx values
+uv run python -m scripts.check_providers
+```
+
+`.env` is read at startup by `haven/__init__.py`, before any setting resolves; an
+exported variable still wins over the file.
+
+| What you have | Goes in |
+|---|---|
+| watsonx API key | `WATSONX_API_KEY` |
+| Project ID | `WATSONX_PROJECT_ID` |
+| Region URL | `WATSONX_URL` |
+| Granite model id | `HAVEN_LLM_MODEL` |
+| **Which providers to try** | **`HAVEN_LLM_CHAIN=watsonx,mock`** |
+
+That last row is the one to get right. Without it the chain is `("mock",)`,
+watsonx is never attempted, and **no error is raised** — falling through to the
+offline stand-in is correct behaviour, not a fault, which is exactly why a
+missing chain looks identical to working credentials. `scripts/check_providers`
+exists to tell the two apart for a few dozen tokens instead of an evaluation
+sweep against a ~300k-token/month Lite tier, and it maps watsonx's several
+identical-looking authentication errors onto the thing that is actually wrong.
+
 | Mocked now | Real path | Switch |
 |---|---|---|
-| Scripted Granite stand-in | IBM watsonx.ai Granite | `HAVEN_LLM_PROVIDER=watsonx` + credentials |
-| Scripted Granite stand-in | Local Granite via Ollama | `HAVEN_LLM_PROVIDER=ollama` |
-| In-process TF-IDF store | ChromaDB + sentence-transformers | `HAVEN_VECTOR_STORE=chroma`, after `uv sync --extra rag` |
+| Scripted Granite stand-in | IBM watsonx.ai Granite | `HAVEN_LLM_CHAIN=watsonx,mock` + credentials |
+| Scripted Granite stand-in | Local Granite via Ollama | `HAVEN_LLM_CHAIN=ollama,mock` |
+| BM25 alone | Chroma + fastembed | `HAVEN_RETRIEVAL_MODE=hybrid`, after `uv sync --extra rag` |
 
 The prompts in `reasoning/llm.py` are the real prompts — the mock receives them and returns what Granite is asked to return. See `.env.example`.
 
@@ -284,7 +312,7 @@ is closed and enforced by a test that fails when the protection is removed:
 | Real-provider adapters never executed | Phase 3 — LangChain chat models, tested |
 | The chain detects corruption but not tampering | Phase 2 — HMAC, globally chained |
 
-**689 tests.** Ten safety requirements, each with a named enforcement point.
+**708 tests.** Ten safety requirements, each with a named enforcement point.
 
 What has *not* been done, plainly: no live-provider figures exist, because
 watsonx credentials were not available here — the evaluation harness reports the

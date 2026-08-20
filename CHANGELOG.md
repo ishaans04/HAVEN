@@ -133,6 +133,79 @@ in the searched set. Its score decides nothing.
 
 ## [Unreleased]
 
+### Phase 10 — Credentials that actually load
+
+**Landed.** 708 tests, up from 690.
+
+`.env.example` had opened with *"Copy to .env and edit"* since Phase 0. Nothing
+ever read the result. There is no `load_dotenv()` anywhere in the tree, `uv run`
+does not read a `.env`, and neither does the Dockerfile — so filling it in with
+real watsonx credentials configured nothing at all.
+
+What makes that worth a phase rather than a one-line fix is the shape of the
+failure. It is not an error. `build_llm` falls back to the mock rather than
+refusing to start over a typo, and `configured_chain()` terminates in the mock by
+design; both are right, and both mean that **an unset variable, a missing extra,
+an expired key, and a correctly configured system nobody has asked to use watsonx
+all produce the same outcome** — a working console served by the stand-in. The
+architecture's whole premise is that degrading loudly beats failing open, and
+here it was degrading quietly.
+
+- **`.env` is loaded in `haven/__init__.py`**, before `haven.config` resolves
+  anything — every setting there is a `default_factory` reading `os.getenv` at
+  import, so there is no later point that works.
+- **`override=False`.** An exported variable beats the file, which is what keeps
+  CI, the Dockerfile and `tests/conftest.py` behaving as they did.
+- **dotenv first, telemetry guard second.** A `LANGSMITH_TRACING=true` in
+  somebody's `.env` must be cleared, not honoured. Reversing the two lines breaks
+  the offline guarantee silently, and a test pins the order.
+
+  Worth recording precisely, because the injection test showed it: swapping them
+  breaks only the `LANGCHAIN_API_KEY` / `LANGSMITH_API_KEY` cases. The two
+  tracing switches survive because `haven.offline` pins them to `"false"`
+  *positively* and `override=False` then declines to replace a value already set.
+  The keys are merely cleared, so nothing stops a later load reinstating them.
+  Both halves carry weight; only one depends on the order.
+
+#### `scripts/check_providers.py`
+
+A preflight, because the Lite tier is ~300k tokens/month and the natural way to
+discover a bad key is to burn a twenty-scenario sweep finding out. Reports the
+resolved configuration with credentials masked, checks the extra is installed,
+shows the resolved chain — and calls the model once, for a few dozen tokens.
+
+Its real work is diagnosis. watsonx reports most misconfiguration as an
+authentication error, and running it against a deliberately wrong key surfaced a
+mis-mapping in the first version: **IBM Cloud IAM resolves API keys at one global
+endpoint**, so `BXNIM0415E "Provided API key could not be found"` is not a
+regional problem and `WATSONX_URL` is irrelevant to it. The obvious matcher —
+treat every auth error as possibly-regional — would send somebody to change a URL
+that was already correct. The error strings in the tests are real ones, taken
+from live responses, because a matcher tested against invented text is a matcher
+tested against itself.
+
+#### The suite pins itself to the stand-in
+
+Once `.env` loads, the test suite inherits whatever a developer has configured.
+Nothing reaches a provider today — every test that evaluates passes `llm=`
+explicitly — but that holds by convention, and the cost of the convention lapsing
+is a run billed against a metered account and made non-deterministic by a live
+model. `tests/conftest.py` pins `HAVEN_LLM_CHAIN=mock`, mutating the shared
+settings instance in place because every consumer did `from haven.config import
+LLM` and rebinding the name in `haven.config` would leave them holding the
+original.
+
+#### Not claimed
+
+- **Still no live-provider figures.** The wiring is verified against a real
+  rejection from IBM IAM, not against a successful call — that needs credentials
+  this environment does not have. `evaluation/run_eval.py --provider watsonx` is
+  the command that produces the comparison, and it is now one preflight away.
+- **The default is unchanged.** `mock`, offline, no credentials required.
+  `.env` is opt-in; a build that needed credentials to start would contradict §6
+  and break the CI engine job.
+
+
 ### Phase 9 — The real NASA corpus
 
 **Landed.** 689 tests, up from 655. Six real NASA documents acquired,

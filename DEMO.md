@@ -119,6 +119,13 @@ stand-in so the demo cannot fail on a network call; `HAVEN_LLM_CHAIN=watsonx,oll
 runs real Granite with the stand-in as the last link, and Zone 6 names which one
 answered.
 
+Before demonstrating on watsonx, confirm the credentials are live — a chain that
+silently falls through to the stand-in looks exactly like one that never tried:
+
+```bash
+uv run python -m scripts.check_providers
+```
+
 **"How do you know it works?"**
 
 ```bash

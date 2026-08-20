@@ -785,6 +785,7 @@ dependencies = [
     { name = "langgraph" },
     { name = "numpy" },
     { name = "pydantic" },
+    { name = "python-dotenv" },
     { name = "rank-bm25" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -829,6 +830,7 @@ requires-dist = [
     { name = "pdfplumber", marker = "extra == 'compiler'", specifier = ">=0.11" },
     { name = "pydantic", specifier = ">=2.8" },
     { name = "pypdf", marker = "extra == 'compiler'", specifier = ">=5.0" },
+    { name = "python-dotenv", specifier = ">=1.0" },
     { name = "rank-bm25", specifier = ">=0.2" },
     { name = "rank-bm25", marker = "extra == 'rag'", specifier = ">=0.2" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },

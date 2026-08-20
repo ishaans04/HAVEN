@@ -1,4 +1,4 @@
-"""Test isolation for the audit ledger.
+"""Test isolation: the audit ledger, and the reasoning provider.
 
 From Phase 2 the ledger is durable, which means a test run would otherwise write
 into the same `haven_ledger.db` a developer's console is using, sign it with the
@@ -10,11 +10,58 @@ So the whole session is redirected: its own database, its own signing key, both
 under pytest's temp root and both discarded afterwards. Nothing here weakens
 what is under test -- the ledger is exercised exactly as it is in production,
 just somewhere disposable.
+
+Phase 10 adds the same treatment to the provider chain, for the same reason.
 """
 
 from __future__ import annotations
 
+import os
+
 import pytest
+
+
+@pytest.fixture(scope="session", autouse=True)
+def offline_provider_chain() -> None:
+    """Pin the suite to the offline stand-in, whatever `.env` says.
+
+    Since Phase 10 a `.env` in the working directory is loaded at import, so a
+    developer with real watsonx credentials configured would have the suite
+    inherit them. Nothing reaches a provider today -- every test that evaluates
+    passes ``llm=`` explicitly -- but that holds by convention rather than by
+    construction, and the cost of the convention lapsing is a test run billed
+    against a token-limited account and made non-deterministic by a live model.
+
+    Set rather than merely cleared, so an exported HAVEN_LLM_CHAIN cannot win
+    either: this is the one place where ambient configuration must lose.
+    """
+    previous = {name: os.environ.get(name) for name in ("HAVEN_LLM_CHAIN", "HAVEN_LLM_PROVIDER")}
+    os.environ["HAVEN_LLM_CHAIN"] = "mock"
+    os.environ["HAVEN_LLM_PROVIDER"] = "mock"
+
+    # The settings object resolved at import, so the environment alone is too
+    # late. It is mutated in place rather than replaced because every consumer
+    # did `from haven.config import LLM`, binding this exact instance --
+    # rebinding the name in haven.config would leave chain.py and llm.py holding
+    # the original. LLMSettings is frozen to stop the reasoning tier altering
+    # configuration at runtime; a session fixture pinning the offline provider
+    # is the one place that restriction is deliberately stepped around, and it
+    # is put back below.
+    from haven.config import LLM
+
+    original = {"chain": LLM.chain, "provider": LLM.provider}
+    object.__setattr__(LLM, "chain", "mock")
+    object.__setattr__(LLM, "provider", "mock")
+
+    yield
+
+    for name, value in original.items():
+        object.__setattr__(LLM, name, value)
+    for name, value in previous.items():
+        if value is None:
+            os.environ.pop(name, None)
+        else:
+            os.environ[name] = value
 
 
 @pytest.fixture(scope="session", autouse=True)
