@@ -244,3 +244,18 @@ def test_an_unrecognised_error_says_so_rather_than_guessing() -> None:
     from scripts.check_providers import explain
 
     assert "no specific cause" in " ".join(explain("watsonx", RuntimeError("connection reset by peer")))
+
+
+def test_the_suite_runs_without_watsonx_credentials() -> None:
+    """Pinning the chain was not enough, and the gap was invisible until a real key existed.
+
+    `test_providers.py` builds a watsonx client directly to assert it names the
+    missing variable. With a developer's `.env` loaded that stopped raising —
+    the assertion had quietly inverted into "credentials are present", on
+    exactly the machines where the test mattered. A test about behaviour
+    *without* credentials has to run without them.
+    """
+    from haven.config import LLM
+
+    assert LLM.watsonx_api_key == ""
+    assert LLM.watsonx_project_id == ""

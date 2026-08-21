@@ -34,10 +34,20 @@ def offline_provider_chain() -> None:
 
     Set rather than merely cleared, so an exported HAVEN_LLM_CHAIN cannot win
     either: this is the one place where ambient configuration must lose.
+
+    The credentials go too, and pinning the chain alone was not enough --
+    `test_providers.py` constructs `WatsonxGraniteLLM()._build_client()` directly
+    to assert it names the missing variable, which stopped raising the moment a
+    developer had a real `.env`. The test was not wrong; the suite was reading
+    live credentials. A test asserting behaviour *without* credentials has to be
+    run without them, or it asserts nothing on the machines that matter most.
     """
-    previous = {name: os.environ.get(name) for name in ("HAVEN_LLM_CHAIN", "HAVEN_LLM_PROVIDER")}
+    pinned = ("HAVEN_LLM_CHAIN", "HAVEN_LLM_PROVIDER", "WATSONX_API_KEY", "WATSONX_PROJECT_ID")
+    previous = {name: os.environ.get(name) for name in pinned}
     os.environ["HAVEN_LLM_CHAIN"] = "mock"
     os.environ["HAVEN_LLM_PROVIDER"] = "mock"
+    os.environ.pop("WATSONX_API_KEY", None)
+    os.environ.pop("WATSONX_PROJECT_ID", None)
 
     # The settings object resolved at import, so the environment alone is too
     # late. It is mutated in place rather than replaced because every consumer
@@ -49,9 +59,16 @@ def offline_provider_chain() -> None:
     # is put back below.
     from haven.config import LLM
 
-    original = {"chain": LLM.chain, "provider": LLM.provider}
+    original = {
+        "chain": LLM.chain,
+        "provider": LLM.provider,
+        "watsonx_api_key": LLM.watsonx_api_key,
+        "watsonx_project_id": LLM.watsonx_project_id,
+    }
     object.__setattr__(LLM, "chain", "mock")
     object.__setattr__(LLM, "provider", "mock")
+    object.__setattr__(LLM, "watsonx_api_key", "")
+    object.__setattr__(LLM, "watsonx_project_id", "")
 
     yield
 
