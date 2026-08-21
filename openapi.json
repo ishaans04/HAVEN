@@ -1707,6 +1707,7 @@
     },
     "/api/health": {
       "get": {
+        "description": "Which tiers are live in this process, and the thresholds they run under.",
         "operationId": "health_api_health_get",
         "responses": {
           "200": {

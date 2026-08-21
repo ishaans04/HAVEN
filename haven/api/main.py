@@ -66,22 +66,17 @@ class UnavailableLLM(ReasoningLLM):
 
 @app.get("/api/health")
 def health() -> dict:
-    """What this process is actually configured to do.
-
-    Both tier fields used to report something other than what runs. Reasoning
-    reported ``LLM.provider`` -- the *single*-provider setting, which is still
-    ``mock`` on any deployment configured with ``HAVEN_LLM_CHAIN``, so a server
-    genuinely calling watsonx announced itself as running the offline stand-in.
-    Retrieval reported ``RETRIEVAL.backend``, a v1 field describing a vector
-    store Phase 5 replaced; the running tier is BM25, optionally fused with
-    dense retrieval.
-
-    Both were wrong in the same direction and in the worst possible place. The
-    one question this endpoint exists to answer is "is this thing real, or is it
-    the mock?", and it was answering it incorrectly for a correctly configured
-    system. The values now come from the same places the evaluation response
-    takes them from, so health and TierStatus cannot disagree.
-    """
+    """Which tiers are live in this process, and the thresholds they run under."""
+    # Every value here is read from the same place the evaluation response reads
+    # it, so health and TierStatus cannot disagree. They did: reasoning reported
+    # LLM.provider -- the *single*-provider setting, which the documented chain
+    # configuration leaves at "mock" -- so a server genuinely calling watsonx
+    # announced itself as the offline stand-in. Retrieval reported
+    # RETRIEVAL.backend, a v1 field naming a vector store Phase 5 replaced.
+    #
+    # A comment rather than a docstring: FastAPI publishes the docstring as this
+    # endpoint's description, and the history of a fix is not documentation of
+    # an endpoint.
     return {
         "status": "ok",
         "build_mode": BUILD_MODE,

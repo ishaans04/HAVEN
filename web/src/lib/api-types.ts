@@ -69,7 +69,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health */
+        /**
+         * Health
+         * @description Which tiers are live in this process, and the thresholds they run under.
+         */
         get: operations["health_api_health_get"];
         put?: never;
         post?: never;
