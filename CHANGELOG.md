@@ -133,6 +133,105 @@ in the searched set. Its score decides nothing.
 
 ## [Unreleased]
 
+### Phase 11 — Running it
+
+**Landed.** 737 tests, up from 708. HAVEN runs end to end against IBM
+watsonx.ai Granite, and the first live-provider figures exist.
+
+The phase was meant to be "start the server". Starting it found four defects,
+every one of which was invisible from inside the test suite because every one
+of them looks like a working system from the outside.
+
+#### The measurement
+
+`ibm/granite-4-h-small`, 20 labelled cases:
+
+| | Granite alone | HAVEN |
+|---|---|---|
+| Accuracy | 65.0% | **95.0%** |
+
+Refusal recall 100%, refusal precision 90.9%, near-miss rejection 80%,
+**checker saves 6**, **unsafe citations 0**, provider errors 0, median latency
+1,780 ms.
+
+The thirty-point gap is the thesis as a number, and the six saves are what it
+means: Granite proposed the wrong governing rule six times out of twenty and
+not one of them reached an operator. A system that trusted the proposal would
+have shipped all six. 65% is also not a poor model — it is what reading eleven
+deliberately-confusable passages actually looks like, and the architecture
+exists because that number is never going to be 100%.
+
+#### Four things found by running it
+
+**`/api/health` reported the mock while watsonx served every request.** Both
+tier fields read v1 configuration: `LLM.provider`, the single-provider setting
+that the documented chain configuration leaves at `mock`, and
+`RETRIEVAL.backend`, a vector store Phase 5 replaced. So the deployment
+genuinely calling watsonx was precisely the one announcing itself as the
+offline stand-in. Wrong in the safe direction, and still unacceptable — the
+operator-facing claim is that a degraded tier is *always* visible as degraded,
+which is worth nothing if a live tier is displayed as degraded too.
+
+**A concurrency burst was treated as an outage.** Three of eight scenarios came
+back served by the mock. The chain was right — it fell through, marked the
+evaluation degraded and named the cause — but the cause was watsonx's free-tier
+limit of ten *concurrent* requests, which clears in seconds. It now retries
+that, three attempts with linear backoff, and the difficulty is that watsonx
+returns 429 for two conditions whose bodies are nearly identical: a concurrency
+limit that clears, and a monthly token allowance that does not. Both say
+`consumption_limit_reached`. Matching on either shared phrase would retry a
+spent allowance three times before reporting an outage the operator needed
+immediately.
+
+**The flagship scenario refused, and the audit could not say why.** On live
+Granite `eva_near_miss` returned `numeric_integrity_failure` after reasoning
+perfectly — it proposed P-FAT-4.4 from prose and the checker confirmed every
+precondition. The trail recorded only "contains numeric value '0.05'", which is
+not actionable. Carrying the sentence made the cause visible in one run:
+Granite had written *"the shortfall of 0.05"*, having computed 0.70 − 0.65.
+
+The guard was right. The prompt was the problem: *"use only the numbers given,
+do not introduce any other figure"* is satisfiable by a model that subtracts two
+of them, because in its own terms it introduced nothing and derived something.
+The prompts now forbid the operation rather than the output. The guard is
+byte-for-byte unchanged; a test asserts that separately, because the temptation
+under a live failure is to relax it.
+
+**The test suite was reading live credentials.** `test_providers.py` builds a
+watsonx client to assert it names the missing variable. Once `.env` loaded, the
+variables were not missing, and the assertion had quietly inverted into
+"credentials are present" on exactly the machines where it mattered.
+
+#### Running it on Windows
+
+The documented start command was destroying the environment. `uv sync` with no
+extras named prunes to the base set — `Would uninstall 84 packages`, including
+langchain-ibm — and `uv run` performs that sync implicitly on every invocation.
+Under OneDrive it also fails partway with `Access is denied`, leaving the
+environment in neither state.
+
+`scripts/run_haven.py` starts the server and first reports the two conditions
+that fail silently: a console export that is missing (the API mounts it only if
+present, so the symptom is a 404 at the root of a healthy server) or **stale**
+(the page loads, looks right, and renders a UI built before the API it is
+talking to — which is how the console demonstrating the Phase 9 authority
+labels turned out not to contain them). Neither refuses to start; a launcher
+that required watsonx credentials would contradict the offline guarantee it
+launches.
+
+`scripts/smoke.py` drives a running server over HTTP and asserts S2, S3, S5 and
+S10 over the wire, plus the chain and the ledger. Every check in it was chosen
+because it can fail while the system looks fine. 12/12 against live watsonx.
+
+#### Not claimed
+
+- **The image is still unbuilt.** Docker is not installed here.
+- **Ollama is still untested.** No local Granite on this machine; the adapter is
+  covered by unit tests and the chain, not by a live run.
+- **The corpus is unchanged.** Still the hand-authored eleven passages; the 131
+  compiled NASA passages still await review, and the emit gate still refuses.
+
+
 ### Phase 10 — Credentials that actually load
 
 **Landed.** 708 tests, up from 690.

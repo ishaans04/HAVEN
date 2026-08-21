@@ -369,7 +369,7 @@ is closed and enforced by a test that fails when the protection is removed:
 | Real-provider adapters never executed | Phase 3 — LangChain chat models, tested |
 | The chain detects corruption but not tampering | Phase 2 — HMAC, globally chained |
 
-**708 tests.** Ten safety requirements, each with a named enforcement point.
+**737 tests.** Ten safety requirements, each with a named enforcement point.
 
 What has *not* been done, plainly: the container is written and its parts are
 verified individually, but Docker was not installed in the build environment, so
