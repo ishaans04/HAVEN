@@ -110,6 +110,28 @@ provider *proposed*, and what HAVEN *did* after the deterministic checker
 disposed of that proposal. Unsafe citations — a recommendation citing a passage
 that does not govern — must be zero for every provider, and CI gates on it.
 
+**Measured against live IBM watsonx.ai**, `ibm/granite-4-h-small`, 20 labelled
+cases:
+
+| | Granite alone | HAVEN |
+|---|---|---|
+| Accuracy | **65.0%** | **95.0%** |
+
+| | |
+|---|---|
+| Refusal recall | 100.0% |
+| Refusal precision | 90.9% |
+| Near-miss rejection | 80.0% |
+| Checker saves — model wrong, system right | **6** |
+| Unsafe citations | **0** |
+| Provider errors | 0 |
+| Median latency | 1,780 ms |
+
+That thirty-point gap is the architecture, stated as a number. Granite proposed
+the wrong governing rule six times out of twenty; the deterministic checker
+caught every one, and not one wrong citation reached an operator. A system that
+trusted the model's proposal would have shipped six.
+
 **Run against a real model.** Both need the optional extra:
 
 ```bash
@@ -349,12 +371,14 @@ is closed and enforced by a test that fails when the protection is removed:
 
 **708 tests.** Ten safety requirements, each with a named enforcement point.
 
-What has *not* been done, plainly: no live-provider figures exist, because
-watsonx credentials were not available here — the evaluation harness reports the
-offline stand-in's numbers and exists precisely to produce the comparison the
-moment there is something to measure. The container is written and its parts are
+What has *not* been done, plainly: the container is written and its parts are
 verified individually, but Docker was not installed in the build environment, so
 the image itself is unbuilt.
+
+Live-provider figures now exist. HAVEN has been run end to end against IBM
+watsonx.ai Granite — all eight scenarios served by `watsonx-granite`, none
+degraded, and the golden set measured at 95% system accuracy against the model's
+own 65%, with zero unsafe citations. See the evaluation table above.
 
 The corpus is the honest one to read closely. Six real NASA documents are now
 acquired and compiled — NASA-STD-3001 Volumes 1 and 2, the HIDH, and three NTRS
