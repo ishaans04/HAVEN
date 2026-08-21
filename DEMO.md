@@ -72,6 +72,14 @@ searched, the closest candidate, and escalates to the flight director.
 produces an answer produces a wrong one eventually, and the wrong answer here
 looks exactly as confident as the right ones. Refusing is a first-class output.
 
+**On a real model the refusal often arrives by a different route, and it is the
+better story.** The offline stand-in reports that nothing governs, and the
+refusal reads `no_governing_procedure`. Live Granite tends to reach for the
+closest passage instead — exactly the failure the architecture predicts — and
+the deterministic checker rejects it, so the refusal reads `precondition_unmet`
+and names the clause that failed. Same outcome, and the second version shows
+the checker earning its place rather than the model happening not to need it.
+
 ---
 
 ## 4 · `roster_block` — the maths overrules the AI
