@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from haven import engine
-from haven.config import BUILD_MODE, LLM, RETRIEVAL, THRESHOLDS
+from haven.config import BUILD_MODE, LLM, THRESHOLDS
 from haven.contracts import (
     AuditRecord,
     DecisionRecord,
@@ -29,8 +29,9 @@ from haven.contracts import (
 from haven.data.scenarios import BY_ID as SCENARIO_BY_ID
 from haven.data.scenarios import SCENARIOS
 from haven.rag.corpus import CORPUS, DOCS
+from haven.rag.retriever import get_retriever
 from haven.reasoning.audit import AUDIT
-from haven.reasoning.chain import build_chain
+from haven.reasoning.chain import build_chain, configured_chain
 from haven.reasoning.llm import LLMUnavailable, ReasoningLLM
 
 app = FastAPI(
@@ -65,13 +66,31 @@ class UnavailableLLM(ReasoningLLM):
 
 @app.get("/api/health")
 def health() -> dict:
+    """What this process is actually configured to do.
+
+    Both tier fields used to report something other than what runs. Reasoning
+    reported ``LLM.provider`` -- the *single*-provider setting, which is still
+    ``mock`` on any deployment configured with ``HAVEN_LLM_CHAIN``, so a server
+    genuinely calling watsonx announced itself as running the offline stand-in.
+    Retrieval reported ``RETRIEVAL.backend``, a v1 field describing a vector
+    store Phase 5 replaced; the running tier is BM25, optionally fused with
+    dense retrieval.
+
+    Both were wrong in the same direction and in the worst possible place. The
+    one question this endpoint exists to answer is "is this thing real, or is it
+    the mock?", and it was answering it incorrectly for a correctly configured
+    system. The values now come from the same places the evaluation response
+    takes them from, so health and TierStatus cannot disagree.
+    """
     return {
         "status": "ok",
         "build_mode": BUILD_MODE,
         "tiers": {
             "deterministic": "Three-Process Model of Alertness + NASA-TLX",
-            "retrieval": RETRIEVAL.backend,
-            "reasoning_provider": LLM.provider,
+            "retrieval": get_retriever().backend_name,
+            # The chain, not the single provider: which link answers is decided
+            # per request and reported by TierStatus.served_by.
+            "reasoning_provider": " -> ".join(configured_chain()),
             "reasoning_model": LLM.model_id,
         },
         "thresholds": {
