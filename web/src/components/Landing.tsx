@@ -15,9 +15,10 @@ import {
   UserCheck,
   Users,
 } from "lucide-react";
+import { useParallax } from "@/lib/motion";
 import { PlanetLimb } from "./PlanetLimb";
 import { StarField } from "./StarField";
-import { Chip, GlassCard, Label } from "./ui";
+import { Chip, GlassCard, Label, Reveal } from "./ui";
 
 /**
  * The front door.
@@ -54,15 +55,27 @@ export function Landing() {
 /* -------------------------------------------------------------------------- */
 
 function Hero() {
+  const { ref, layer } = useParallax<HTMLElement>();
+
   return (
-    <section className="relative isolate flex min-h-[92vh] flex-col justify-center overflow-hidden px-5 pb-32 pt-24 sm:px-8">
+    <section
+      ref={ref}
+      className="relative isolate flex min-h-[92vh] flex-col justify-center overflow-hidden px-5 pb-32 pt-24 sm:px-8"
+    >
       {/* The planet sits behind and below the type, cropped by the section, the
           way a window crops a view. */}
       {/* A fixed height rather than a percentage: the limb's viewBox is 2.3:1,
           and `slice` crops whatever the container does not have room for. Sized
           in pixels, the horizon lands in a predictable place at every viewport
           height instead of sliding up out of frame on a short one. */}
-      <PlanetLimb className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[560px]" />
+      {/* Both decorative layers drift; neither the type nor the buttons do.
+          Content that slides under the cursor is content you have to chase. */}
+      <div
+        {...layer({ scroll: 0.26, pointer: 15 })}
+        className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[560px] will-change-transform"
+      >
+        <PlanetLimb className="h-full w-full" />
+      </div>
 
       {/* A scrim weighted to the side the type sits on. Without it the limb's
           hairline crosses the headline on a narrow screen — which reads as an
@@ -70,7 +83,8 @@ function Hero() {
           over it at the same depth, and falling to nothing well before the far
           edge so the rim stays visible where there is no text. */}
       <div
-        className="pointer-events-none absolute inset-0 -z-10"
+        {...layer({ scroll: 0.14 })}
+        className="pointer-events-none absolute inset-0 -z-10 will-change-transform"
         style={{
           background:
             "linear-gradient(102deg, rgba(4,3,12,0.88) 0%, rgba(4,3,12,0.62) 38%, rgba(4,3,12,0.1) 66%, rgba(4,3,12,0) 80%)",
@@ -79,32 +93,27 @@ function Hero() {
 
       <div className="mx-auto w-full max-w-[1560px]">
         <div className="max-w-3xl">
-          <div className="rise flex flex-wrap items-center gap-2.5">
+          <Reveal className="flex flex-wrap items-center gap-2.5">
             <Chip tone="iris">IBM AI Builders Challenge</Chip>
             <Chip tone="neutral">Space exploration</Chip>
-          </div>
+          </Reveal>
 
-          <h1
-            className="display rise mt-7 text-[clamp(2.75rem,7.4vw,6.25rem)]"
-            style={{ animationDelay: "80ms" }}
-          >
-            <span className="em block">Fatigue-aware</span>
-            <span className="block text-[var(--ink-2)]">safety co-pilot</span>
-          </h1>
+          <Reveal delay={90}>
+            <h1 className="display mt-7 text-[clamp(2.75rem,7.4vw,6.25rem)]">
+              <span className="em block">Fatigue-aware</span>
+              <span className="block text-[var(--ink-2)]">safety co-pilot</span>
+            </h1>
+          </Reveal>
 
-          <p
-            className="rise mt-7 max-w-xl text-[16px] leading-relaxed text-[var(--ink-2)] sm:text-[17px]"
-            style={{ animationDelay: "160ms" }}
-          >
+          <Reveal delay={180}>
+            <p className="mt-7 max-w-xl text-[16px] leading-relaxed text-[var(--ink-2)] sm:text-[17px]">
             A tired operator and an irreversible task are about to meet. HAVEN sees the collision
             coming, finds the rule in the mission&rsquo;s own procedures that governs it, and hands a
-            human the decision — or refuses to guess, and says so.
-          </p>
+              human the decision — or refuses to guess, and says so.
+            </p>
+          </Reveal>
 
-          <div
-            className="rise mt-9 flex flex-wrap items-center gap-3"
-            style={{ animationDelay: "240ms" }}
-          >
+          <Reveal delay={270} className="mt-9 flex flex-wrap items-center gap-3">
             <Link
               href="/console/"
               className="glass-interactive group inline-flex items-center gap-2.5 rounded-full px-6 py-3.5 text-[14px] font-medium"
@@ -127,12 +136,10 @@ function Hero() {
             >
               How it works
             </a>
-          </div>
+          </Reveal>
 
-          <ul
-            className="rise mt-12 flex flex-wrap gap-x-8 gap-y-3"
-            style={{ animationDelay: "320ms" }}
-          >
+          <Reveal delay={360}>
+            <ul className="mt-12 flex flex-wrap gap-x-8 gap-y-3">
             {[
               ["Every number is arithmetic", "var(--ok)"],
               ["Every recommendation is cited", "var(--info)"],
@@ -146,7 +153,8 @@ function Hero() {
                 {text}
               </li>
             ))}
-          </ul>
+            </ul>
+          </Reveal>
         </div>
       </div>
     </section>
@@ -182,12 +190,14 @@ function Problem() {
       lead="On a long mission the crew performs irreversible, high-consequence work — a propulsive burn, a docking, a spacewalk, a hatch closeout — under chronic fatigue and a radio delay to Earth too long for anyone on the ground to intervene in the moment."
     >
       <div className="grid gap-3 md:grid-cols-3">
-        {PROBLEMS.map(([icon, title, body]) => (
-          <GlassCard key={title} className="p-6">
+        {PROBLEMS.map(([icon, title, body], i) => (
+          <Reveal key={title} delay={i * 80}>
+            <GlassCard className="h-full p-6">
             <span className="glass-3 inline-flex rounded-full p-2.5 text-[var(--iris)]">{icon}</span>
             <h3 className="mt-4 text-[16px] font-medium leading-snug text-[var(--ink)]">{title}</h3>
             <p className="mt-2.5 text-[13.5px] leading-relaxed text-[var(--ink-2)]">{body}</p>
-          </GlassCard>
+            </GlassCard>
+          </Reveal>
         ))}
       </div>
     </Section>
@@ -250,7 +260,7 @@ function GoldenRule() {
             "A recommendation without a resolvable procedure citation is invalid and never shown. The flow refuses instead.",
           ],
         ].map(([title, body], i) => (
-          <div key={title} className="glass-2 p-5">
+          <Reveal key={title} delay={i * 80} className="glass-2 p-5">
             <span className="readout text-[13px] text-[var(--iris)]">
               Rule {String(i + 1).padStart(2, "0")}
             </span>
@@ -258,7 +268,7 @@ function GoldenRule() {
               {title}
             </h4>
             <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-3)]">{body}</p>
-          </div>
+          </Reveal>
         ))}
       </div>
     </Section>
@@ -331,7 +341,7 @@ function Pipeline() {
     >
       <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {STEPS.map(([icon, title, body], i) => (
-          <li key={title} className="glass-2 relative flex flex-col p-5">
+          <Reveal key={title} delay={i * 70} className="glass-2 relative flex flex-col p-5">
             <div className="flex items-center gap-2.5">
               <span
                 className="inline-flex rounded-full p-2"
@@ -348,7 +358,7 @@ function Pipeline() {
             </div>
             <h3 className="mt-3.5 text-[15px] font-medium text-[var(--ink)]">{title}</h3>
             <p className="mt-2 text-[12.5px] leading-relaxed text-[var(--ink-3)]">{body}</p>
-          </li>
+          </Reveal>
         ))}
       </ol>
     </Section>
@@ -387,7 +397,8 @@ function Layout() {
     >
       <div className="grid gap-3 lg:grid-cols-3">
         {layers.map(([name, tone, headline, body], i) => (
-          <GlassCard key={name} className="flex flex-col p-6">
+          <Reveal key={name} delay={i * 80}>
+            <GlassCard className="flex h-full flex-col p-6">
             <div className="flex items-center gap-2.5">
               <Layers size={15} style={{ color: tone }} />
               <span
@@ -401,7 +412,8 @@ function Layout() {
               {headline}
             </h3>
             <p className="mt-2.5 text-[13.5px] leading-relaxed text-[var(--ink-2)]">{body}</p>
-          </GlassCard>
+            </GlassCard>
+          </Reveal>
         ))}
       </div>
 
@@ -559,11 +571,11 @@ function Section({
   return (
     <section id={id} className="scroll-mt-8 px-5 py-14 sm:px-8 sm:py-20">
       <div className="mx-auto max-w-[1560px]">
-        <div className="max-w-3xl">
+        <Reveal className="max-w-3xl">
           <Label>{label}</Label>
           <h2 className="display mt-3 text-[clamp(1.6rem,3.4vw,2.5rem)]">{title}</h2>
           <p className="mt-4 text-[14.5px] leading-relaxed text-[var(--ink-2)]">{lead}</p>
-        </div>
+        </Reveal>
         <div className="mt-9">{children}</div>
       </div>
     </section>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { useSwipe } from "@/lib/motion";
 import { Label } from "./ui";
 
 /**
@@ -70,6 +71,13 @@ export function Tour({ open, onClose }: { open: boolean; onClose: () => void }) 
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
 
+  // Touch's answer to the arrow keys. Same two actions, same bounds.
+  const swipe = useSwipe<HTMLDivElement>(
+    () => setIndex((i) => (i + 1 < STOPS.length ? i + 1 : i)),
+    () => setIndex((i) => Math.max(0, i - 1)),
+    open,
+  );
+
   const stop = STOPS[index];
 
   const measure = useCallback(() => {
@@ -130,7 +138,13 @@ export function Tour({ open, onClose }: { open: boolean; onClose: () => void }) 
   const card = cardPosition(rect, stop.side);
 
   return (
-    <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="Console tour">
+    <div
+      ref={swipe}
+      className="fixed inset-0 z-[60]"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Console tour"
+    >
       {/* The spotlight. One element, and the dimming is its shadow — which is
           how you get a hole in an overlay without clip-path arithmetic. */}
       {rect ? (
@@ -170,6 +184,10 @@ export function Tour({ open, onClose }: { open: boolean; onClose: () => void }) 
         </div>
 
         <p className="mt-3 text-[13px] leading-relaxed text-[var(--ink-2)]">{stop.body}</p>
+
+        <p className="mt-3 text-[11.5px] text-[var(--ink-3)]">
+          Swipe or use the arrow keys · Esc to skip
+        </p>
 
         <div className="mt-5 flex items-center gap-2">
           <div className="flex flex-1 gap-1.5" aria-hidden>

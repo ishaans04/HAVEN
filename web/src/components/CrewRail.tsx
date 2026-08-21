@@ -26,7 +26,7 @@ export function CrewRail({
   onSelect: (crewId: string) => void;
 }) {
   return (
-    <div className="fade-x no-bar flex gap-2.5 overflow-x-auto px-1 pb-1">
+    <div className="fade-x no-bar flex snap-x snap-proximity gap-2.5 overflow-x-auto px-1 pb-1">
       {readiness.map((crew) => {
         const active = crew.crew_member === selected;
         const tone = toneOf(crew.status);
@@ -35,7 +35,7 @@ export function CrewRail({
             key={crew.crew_member}
             onClick={() => onSelect(crew.crew_member)}
             aria-pressed={active}
-            className="selectable flex w-[186px] shrink-0 items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-left"
+            className="selectable flex w-[186px] shrink-0 snap-start items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-left"
           >
             <Ring value={crew.alertness_score} tone={tone} size={42}>
               <span className="readout text-[12px] text-[var(--ink)]">

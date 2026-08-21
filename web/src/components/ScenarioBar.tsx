@@ -111,7 +111,7 @@ export function ScenarioBar({
 
       {/* Scenario rail. */}
       <div className="mx-auto max-w-[1560px] px-5 sm:px-8">
-        <div className="fade-x no-bar flex gap-1.5 overflow-x-auto px-1 pb-3">
+        <div className="fade-x no-bar flex snap-x snap-proximity gap-1.5 overflow-x-auto px-1 pb-3">
           {scenarios.map((scenario) => {
             const on = scenario.id === selected;
             return (
@@ -120,7 +120,7 @@ export function ScenarioBar({
                 onClick={() => onSelect(scenario.id)}
                 disabled={loading}
                 aria-pressed={on}
-                className="selectable shrink-0 rounded-full px-3.5 py-1.5 text-left disabled:opacity-50"
+                className="selectable shrink-0 snap-start rounded-full px-3.5 py-1.5 text-left disabled:opacity-50"
               >
                 <span
                   className="block whitespace-nowrap text-[12.5px] font-medium"

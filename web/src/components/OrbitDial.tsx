@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import type { CrewReadiness, TimelineTask } from "@/lib/types";
+import { useMotionOK, useTilt } from "@/lib/motion";
 import { useElementWidth } from "@/lib/useElementWidth";
 import { Chip, TONE_VAR, hoursSince, toneOf, utcTime } from "./ui";
 
@@ -95,6 +97,10 @@ export function OrbitDial({
   loading?: boolean;
 }) {
   const { ref: box, width } = useElementWidth<HTMLDivElement>();
+  const tilt = useTilt<HTMLDivElement>(3.5);
+  const motionOK = useMotionOK();
+  const edge = useRef<SVGPathElement>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
 
   // The dial is drawn in viewBox units and scaled to whatever width it lands
   // in, which would shrink its labels and hit targets along with it. Dividing
@@ -130,13 +136,27 @@ export function OrbitDial({
       .join(" ");
   })();
 
+  // A path can only draw itself if it knows how long it is, and only the
+  // rendered element knows that. Measured after commit, once per curve.
+  useEffect(() => {
+    const node = edge.current;
+    if (!node || !motionOK) return;
+    const length = node.getTotalLength();
+    node.style.setProperty("--draw-length", String(Math.ceil(length)));
+    node.style.strokeDasharray = String(Math.ceil(length));
+  }, [motionOK, edgePath]);
+
   const circadian = runs(samples.map((s) => ({ h: s.h, flag: s.low })));
   const sleep = runs(samples.map((s) => ({ h: s.h, flag: s.asleep })));
   const mine = tasks.filter((t) => !crew || t.assigned_to === crew.crew_member);
   const flagged = mine.find((t) => t.situation_id && t.situation_id === selectedSituation) ?? mine.find((t) => t.raises_situation);
 
   return (
-    <div ref={box} className={clsx("relative w-full", loading && "opacity-60 transition-opacity")}>
+    <div
+      ref={box}
+      className={clsx("tilt relative w-full", loading && "opacity-60 transition-opacity")}
+    >
+      <div ref={tilt} className="tilt-inner">
       <svg
         viewBox={`0 0 ${SIZE} ${SIZE}`}
         className="w-full"
@@ -270,6 +290,7 @@ export function OrbitDial({
           <>
             <path d={auroraPath} fill="url(#od-aurora)" />
             <path
+              ref={edge}
               d={edgePath}
               fill="none"
               stroke="var(--info)"
@@ -277,6 +298,7 @@ export function OrbitDial({
               strokeOpacity={0.92}
               strokeLinejoin="round"
               filter="url(#od-glow)"
+              className={motionOK ? "draw-on" : undefined}
             />
           </>
         ) : null}
@@ -347,6 +369,10 @@ export function OrbitDial({
                   onSelectSituation(task.situation_id as string);
                 }
               }}
+              onPointerEnter={() => setHovered(task.task_id)}
+              onPointerLeave={() => setHovered((id) => (id === task.task_id ? null : id))}
+              onFocus={() => setHovered(task.task_id)}
+              onBlur={() => setHovered((id) => (id === task.task_id ? null : id))}
             >
               <circle cx={x} cy={y} r={px(17)} fill="transparent" />
               {task.raises_situation ? (
@@ -373,6 +399,37 @@ export function OrbitDial({
           );
         })}
       </svg>
+
+      {/* What the pointer is on. Positioned in per cent of a square container,
+          which is exactly how the SVG places the mark it belongs to — so the
+          label tracks the node at every width without measuring anything. */}
+      {mine.map((task) => {
+        if (task.task_id !== hovered) return null;
+        const h = hoursSince(windowStart, task.scheduled);
+        const [x, y] = point(h, radiusFor(task.predicted_alertness));
+        return (
+          <div
+            key={task.task_id}
+            role="tooltip"
+            className="glass-3 rise pointer-events-none absolute z-10 w-max max-w-[190px] rounded-[var(--radius-xs)] px-2.5 py-2"
+            style={{
+              left: `${(x / SIZE) * 100}%`,
+              top: `${(y / SIZE) * 100}%`,
+              transform: "translate(-50%, calc(-100% - 14px))",
+              background: "rgba(12,10,28,0.92)",
+              backdropFilter: "blur(14px)",
+            }}
+          >
+            <div className="mono text-[11px] text-[var(--ink-3)]">
+              {utcTime(task.scheduled)} · {task.criticality}
+            </div>
+            <div className="mt-0.5 text-[12px] leading-snug text-[var(--ink)]">{task.label}</div>
+            <div className="readout mt-1 text-[12px]" style={{ color: TONE_VAR[task.raises_situation ? toneOf(task.risk_level) : "ok"] }}>
+              {task.predicted_alertness.toFixed(2)} predicted
+            </div>
+          </div>
+        );
+      })}
 
       {/* The centre reads as part of the planet, so it is HTML rather than SVG
           text: real font metrics, real ellipsis, real selection. */}
@@ -407,6 +464,7 @@ export function OrbitDial({
             </>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

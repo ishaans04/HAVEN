@@ -229,6 +229,103 @@ body::after {
 }
 
 /* ------------------------------------------------------------------------
+   Specular highlight
+   ------------------------------------------------------------------------
+   The one thing a static gradient cannot fake: on real glass the bright spot
+   is a reflection of the light source, so it moves when the viewer does. Here
+   the pointer stands in for the viewer.
+
+   It is a transform on a child rather than a moving gradient stop, because a
+   gradient position change repaints the whole card — expensive behind a 34px
+   backdrop-filter — while a transform is handed to the compositor. It sits
+   above the content on purpose: a highlight that text occludes is not on the
+   surface, it is under it.
+*/
+.glass-spec {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.glass:hover > .glass-spec,
+.glass:focus-within > .glass-spec {
+  opacity: 1;
+}
+.glass-spec::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 46%;
+  aspect-ratio: 1;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.11),
+    rgba(255, 255, 255, 0.04) 45%,
+    rgba(255, 255, 255, 0) 68%
+  );
+  transform: translate3d(var(--spec-x, 50%), var(--spec-y, 0), 0) translate(-50%, -50%);
+  will-change: transform;
+}
+
+/* ------------------------------------------------------------------------
+   Tilt
+   ------------------------------------------------------------------------
+   A surface with a normal. The perspective lives on the wrapper and the
+   rotation on the child, which is the only arrangement where the vanishing
+   point stays put as the child turns.
+*/
+.tilt {
+  perspective: 1100px;
+}
+.tilt-inner {
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+/* ------------------------------------------------------------------------
+   Reveal
+   ------------------------------------------------------------------------
+   Scroll-driven, and correct in its finished state before any script runs:
+   the `.reveal` class is only added by the component that also observes the
+   element, so a page with JS disabled is a page with everything visible.
+*/
+html.js .reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  filter: blur(7px);
+}
+.reveal-in {
+  opacity: 1;
+  transform: none;
+  filter: blur(0);
+  transition:
+    opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* The alertness band drawing itself once, on arrival. Long, because the shape
+   of the day is the thing being said and it is worth watching it get said. */
+@keyframes draw {
+  from {
+    stroke-dashoffset: var(--draw-length, 2000);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.draw-on {
+  animation: draw 2.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ------------------------------------------------------------------------
    Selectable
    ------------------------------------------------------------------------
    Scenario pills, crew cards, task rows, disclosure headers: anything with an
@@ -414,6 +511,24 @@ body::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+
+  /* Killing the transitions is not enough for anything whose *start* state is
+     hidden or displaced — that would leave it hidden or displaced for good.
+     Each of these has to be told to skip to its finished state instead. */
+  html.js .reveal {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  .tilt-inner {
+    transform: none;
+  }
+  .glass-spec {
+    display: none;
+  }
+  .draw-on {
+    stroke-dashoffset: 0 !important;
   }
 }
 

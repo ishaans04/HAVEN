@@ -1,9 +1,10 @@
 "use client";
 
 import clsx from "clsx";
-import { useEffect, useId, useRef, useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { ChevronDown, X } from "lucide-react";
+import { useFinePointer, useMotionOK, useReveal } from "@/lib/motion";
 
 /* --------------------------------------------------------------------------
    Tone
@@ -62,6 +63,7 @@ export function GlassCard({
   live,
   interactive,
   loading,
+  sheen = true,
   style,
 }: {
   children?: ReactNode;
@@ -70,18 +72,82 @@ export function GlassCard({
   live?: boolean;
   interactive?: boolean;
   loading?: boolean;
+  /** The pointer-tracked specular highlight. On by default; off for surfaces
+   *  that are already carrying a moving element of their own. */
+  sheen?: boolean;
   style?: CSSProperties;
 }) {
+  const spec = useRef<HTMLSpanElement>(null);
+  const frame = useRef(0);
+  const motionOK = useMotionOK();
+  const fine = useFinePointer();
+  const live_ = live;
+
+  // Written straight to custom properties rather than through state: a
+  // highlight that re-renders React on every pointer move is a highlight that
+  // costs more than it is worth.
+  const onPointerMove = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      const node = spec.current;
+      if (!node) return;
+      const box = event.currentTarget.getBoundingClientRect();
+      const x = event.clientX - box.left;
+      const y = event.clientY - box.top;
+      if (frame.current) return;
+      frame.current = requestAnimationFrame(() => {
+        frame.current = 0;
+        node.style.setProperty("--spec-x", `${x.toFixed(1)}px`);
+        node.style.setProperty("--spec-y", `${y.toFixed(1)}px`);
+      });
+    },
+    [],
+  );
+
+  useEffect(() => () => { if (frame.current) cancelAnimationFrame(frame.current); }, []);
+
+  const withSheen = sheen && motionOK && fine;
+
   return (
     <div
       style={style}
+      onPointerMove={withSheen ? onPointerMove : undefined}
       className={clsx(
         "glass",
-        live && "glass-live",
+        live_ && "glass-live",
         interactive && "glass-interactive",
         loading && "loading-sheen",
         className,
       )}
+    >
+      {withSheen ? <span ref={spec} aria-hidden className="glass-spec" /> : null}
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Reveal on scroll.
+ *
+ * A wrapper rather than a class, so the observer and the class that hides the
+ * element are created by the same component — an element can never be left
+ * hidden because somebody added `.reveal` and forgot to observe it.
+ */
+export function Reveal({
+  children,
+  delay = 0,
+  className,
+}: {
+  children: ReactNode;
+  /** Milliseconds of stagger. Keep the whole group under ~300ms. */
+  delay?: number;
+  className?: string;
+}) {
+  const { ref, shown } = useReveal<HTMLDivElement>();
+  return (
+    <div
+      ref={ref}
+      className={clsx("reveal", shown && "reveal-in", className)}
+      style={shown && delay ? { transitionDelay: `${delay}ms` } : undefined}
     >
       {children}
     </div>
