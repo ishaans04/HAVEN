@@ -3,86 +3,456 @@
 @tailwind utilities;
 
 /*
- * Console palette. Built for a fatigued operator reading under time pressure:
- * one dark surface, restrained accents, and status colour reserved exclusively
- * for risk state so nothing else competes with it.
+ * HAVEN console — the design system.
+ *
+ * Two constraints shaped every value below, and they pull against each other.
+ *
+ * The console has to be *calm*. It is read by someone tired, at the moment
+ * before an irreversible action, and a surface that shouts competes with the one
+ * thing that should: the risk state. So the field is dark, the type is quiet,
+ * and saturated colour is spent only on status.
+ *
+ * The console also has to be *readable by someone who has never seen it*. v1
+ * answered that with density — every number on screen at once, at 9px. That is a
+ * specialist's instrument, and it made a layman's first question ("what am I
+ * being told?") the hardest one to answer. This version answers that first, in
+ * one sentence, and puts the instrument one click behind it.
+ *
+ * Surfaces are glass rather than panels: translucent, refracting the field
+ * behind them, lit from above. Depth carries meaning — how far a surface floats
+ * says how much it wants to be read. Three tiers, no more, because a fourth
+ * stops reading as depth and starts reading as noise.
  */
+
 :root {
-  --hv-bg: #070a0f;
-  --hv-panel: #0e131b;
-  --hv-panel-raised: #141b26;
-  --hv-line: #1e2733;
-  --hv-line-bright: #2b3746;
-  --hv-text: #e6edf5;
-  --hv-muted: #8494a8;
-  --hv-dim: #5b6b7f;
+  /* --- The field ---------------------------------------------------------
+     Not a flat colour. A nebula gradient, so glass has something to refract:
+     over a flat fill, backdrop-filter is an expensive no-op. */
+  --void: #05050d;
+  --void-deep: #030308;
 
-  --hv-nominal: #35d6a4;
-  --hv-watch: #f2c14e;
-  --hv-degraded: #ff6b5e;
-  --hv-critical: #ff4d4d;
-  --hv-accent: #4aa8ff;
-  --hv-violet: #a78bfa;
+  /* --- Ink ---------------------------------------------------------------
+     Three levels, all verified at 4.5:1 or better against the darkest glass
+     they are used on. v1's third level sat at 3.2:1 and carried the smallest
+     text in the console; that is the mistake this ramp exists not to repeat. */
+  --ink: #f4f2ff;
+  --ink-2: #c3c0e2;
+  --ink-3: #a8a4cc;
+
+  /* --- Status ------------------------------------------------------------
+     Tuned for a violet field: the cold end of each hue reads as instrument
+     rather than web app, and no two are confusable at 12px. */
+  --ok: #5ce4bf;
+  --warn: #ffcf6b;
+  --bad: #ff8095;
+  --crit: #ff5d78;
+  --info: #86c2ff;
+  --iris: #bda6ff;
+
+  /* --- Glass -------------------------------------------------------------
+     A tier is a triple: how opaque the fill, how far the blur reaches, how
+     bright the top edge catches the light. */
+  --glass-1-fill: rgba(14, 12, 32, 0.44);
+  --glass-2-fill: rgba(255, 255, 255, 0.045);
+  --glass-3-fill: rgba(255, 255, 255, 0.07);
+
+  --radius-lg: 26px;
+  --radius: 18px;
+  --radius-sm: 13px;
+  --radius-xs: 9px;
+
+  /* Kept as aliases so anything still reaching for a v1 name resolves to the
+     new palette rather than to nothing. */
+  --hv-bg: var(--void);
+  --hv-panel: var(--glass-1-fill);
+  --hv-panel-raised: var(--glass-2-fill);
+  --hv-line: rgba(255, 255, 255, 0.09);
+  --hv-line-bright: rgba(255, 255, 255, 0.16);
+  --hv-text: var(--ink);
+  --hv-muted: var(--ink-2);
+  --hv-dim: var(--ink-3);
+  --hv-nominal: var(--ok);
+  --hv-watch: var(--warn);
+  --hv-degraded: var(--bad);
+  --hv-critical: var(--crit);
+  --hv-accent: var(--info);
+  --hv-violet: var(--iris);
 }
 
-html,
-body {
-  background: var(--hv-bg);
-  color: var(--hv-text);
+html {
+  background: var(--void-deep);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
+  position: relative;
+  min-height: 100vh;
+  color: var(--ink);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  /* Tabular figures everywhere. A number that changes width as it changes value
+     makes a column of them jitter, and this console is mostly numbers. */
   font-feature-settings: "tnum" 1;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The nebula. Fixed, so scrolling moves content across the field rather than
+   dragging the field with it — the same reason a cockpit window does not
+   scroll. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(58% 46% at 82% 4%, rgba(168, 44, 148, 0.34), transparent 64%),
+    radial-gradient(52% 44% at 8% 14%, rgba(96, 46, 200, 0.32), transparent 62%),
+    radial-gradient(78% 62% at 46% 112%, rgba(22, 52, 132, 0.5), transparent 62%),
+    radial-gradient(34% 30% at 96% 66%, rgba(70, 216, 255, 0.11), transparent 62%),
+    linear-gradient(178deg, #07061a 0%, #05040f 46%, #08051a 100%);
+}
+
+/* Film grain. Five per cent of noise is the difference between a gradient and a
+   gradient that looks printed rather than banded. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ------------------------------------------------------------------------
+   Glass
+   ------------------------------------------------------------------------
+   The sheen is a background layer rather than a pseudo-element, because
+   backgrounds paint under content unconditionally and an ::after with inset 0
+   does not. Only the hairline is a pseudo-element — it lives in the 1px the
+   padding keeps clear, so it never lands on top of anything.
+*/
+.glass {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--radius);
+  background:
+    radial-gradient(128% 96% at 6% -14%, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0) 56%),
+    linear-gradient(177deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.02) 62%),
+    var(--glass-1-fill);
+  backdrop-filter: blur(34px) saturate(185%);
+  -webkit-backdrop-filter: blur(34px) saturate(185%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.035),
+    0 36px 80px -34px rgba(0, 0, 0, 0.9),
+    0 3px 14px -6px rgba(0, 0, 0, 0.55);
+}
+
+/* The specular hairline: bright where the light lands, gone by the far edge,
+   picking up a trace of the field's violet on the way out. A uniform 1px border
+   is the tell of a rectangle pretending to be glass. */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    142deg,
+    rgba(255, 255, 255, 0.46) 0%,
+    rgba(255, 255, 255, 0.1) 30%,
+    rgba(255, 255, 255, 0) 52%,
+    rgba(189, 166, 255, 0.22) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+/* Tier 2 — a tile inside a panel. Less blur, less lift: it is nested, not
+   floating, and blurring an already-blurred backdrop only muddies it. */
+.glass-2 {
+  position: relative;
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(176deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.012)),
+    var(--glass-2-fill);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.055);
+}
+
+/* Tier 3 — a chip. Flat, small, no depth of its own. */
+.glass-3 {
+  background: var(--glass-3-fill);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* A surface that wants to be read next. Used on one element at a time: two
+   things glowing is neither of them glowing. */
+.glass-live {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 0 0 1px rgba(189, 166, 255, 0.24),
+    0 0 0 1px rgba(189, 166, 255, 0.1),
+    0 30px 90px -30px rgba(120, 72, 255, 0.4),
+    0 36px 80px -34px rgba(0, 0, 0, 0.9);
+}
+
+.glass-interactive {
+  transition:
+    transform 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.3s ease;
+}
+.glass-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 44px 90px -34px rgba(0, 0, 0, 0.92),
+    0 0 40px -12px rgba(150, 110, 255, 0.35);
+}
+.glass-interactive:active {
+  transform: translateY(0);
+}
+
+/* ------------------------------------------------------------------------
+   Selectable
+   ------------------------------------------------------------------------
+   Scenario pills, crew cards, task rows, disclosure headers: anything with an
+   on state. The selected look hangs off `aria-pressed` and `aria-expanded`
+   rather than a class, so the state assistive tech is told and the state a
+   sighted reader sees cannot drift apart — there is only one of them.
+
+   These live in CSS rather than inline styles for one concrete reason: an
+   inline box-shadow beats a stylesheet `:hover`, so a card that set its
+   selected ring inline would silently lose its hover response.
+*/
+.selectable {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  transition:
+    box-shadow 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.3s ease,
+    transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.selectable:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.085);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    0 16px 34px -20px rgba(0, 0, 0, 0.85);
+}
+.selectable:active {
+  transform: none;
+}
+.selectable[aria-pressed="true"],
+.selectable[aria-expanded="true"] {
+  background: rgba(189, 166, 255, 0.14);
+  box-shadow:
+    inset 0 0 0 1px rgba(189, 166, 255, 0.46),
+    0 14px 34px -18px rgba(120, 72, 255, 0.5);
+}
+.selectable[aria-pressed="true"]:hover,
+.selectable[aria-expanded="true"]:hover {
+  box-shadow:
+    inset 0 0 0 1px rgba(189, 166, 255, 0.62),
+    0 18px 40px -18px rgba(120, 72, 255, 0.66);
+}
+
+/* ------------------------------------------------------------------------
+   Type
+   ------------------------------------------------------------------------ */
+.display {
+  font-weight: 250;
+  letter-spacing: -0.032em;
+  line-height: 1.04;
+}
+.display .em {
+  font-weight: 500;
+  letter-spacing: -0.036em;
+}
+
+/* Micro-caps. 11px is the floor: v1 ran labels at 9px, which is decoration
+   shaped like information. */
+.label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-3);
 }
 
 .mono {
   font-family: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  font-feature-settings: "tnum" 1;
 }
 
-/* Faint grid, so the console reads as an instrument surface rather than a page. */
-.hv-grid {
-  background-image:
-    linear-gradient(rgba(74, 168, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(74, 168, 255, 0.035) 1px, transparent 1px);
-  background-size: 44px 44px;
+/* A figure. Large, light, tabular — the shape a gauge reading has. */
+.readout {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
-.hv-panel {
-  background: var(--hv-panel);
-  border: 1px solid var(--hv-line);
-  border-radius: 10px;
+/* ------------------------------------------------------------------------
+   Focus
+   ------------------------------------------------------------------------
+   The browser default is orange, and this palette spends orange on "watch". A
+   focus ring that reads as a risk state is worse than no ring.
+*/
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--iris);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
 }
 
-.hv-zone-label {
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--hv-dim);
+/* ------------------------------------------------------------------------
+   Motion
+   ------------------------------------------------------------------------ */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+.rise {
+  animation: rise 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.22;
+    transform: scale(1.55);
+  }
+}
+.breathe {
+  animation: breathe 3.4s ease-in-out infinite;
+}
+
+@keyframes drift {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* The planet's surface. A translation rather than a rotation: a rotating
+   texture reads as a spinning disc, and two copies offset by the globe's
+   diameter make the translation loop seamlessly. */
+@keyframes roll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-224px);
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(-130%);
+  }
+  to {
+    transform: translateX(330%);
+  }
+}
+/* A specular pass across glass while data is in flight. Reads as light moving
+   over a surface, not as a progress bar — there is no progress to report. */
+.loading-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.loading-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.07) 42%,
+    rgba(255, 255, 255, 0.14) 50%,
+    rgba(255, 255, 255, 0.07) 58%,
+    transparent 80%
+  );
+  animation: sweep 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------------
+   Scrollbars — thin, and only where something actually scrolls.
+   ------------------------------------------------------------------------ */
 ::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--hv-line-bright);
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.26);
+  background-clip: content-box;
 }
 
-@keyframes hv-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
+/* A horizontal rail fades at its edges instead of ending in a hard cut, so it
+   reads as "more over there" rather than "that is all". */
+.fade-x {
+  mask-image: linear-gradient(90deg, transparent, #000 20px, #000 calc(100% - 24px), transparent);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 20px,
+    #000 calc(100% - 24px),
+    transparent
+  );
 }
-.hv-pulse {
-  animation: hv-pulse 2s ease-in-out infinite;
+.no-bar {
+  scrollbar-width: none;
+}
+.no-bar::-webkit-scrollbar {
+  display: none;
 }

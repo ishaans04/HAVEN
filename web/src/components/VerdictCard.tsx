@@ -1,0 +1,480 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import clsx from "clsx";
+import { ArrowRight, Check, CircleSlash, ShieldAlert, UserCheck, X } from "lucide-react";
+import type { CrewReadiness, Situation } from "@/lib/types";
+import { recordDecision } from "@/lib/api";
+import { Chip, Disclosure, GlassCard, Label, Meter, StatTile, TONE_VAR, toneOf, utcTime } from "./ui";
+
+const CONFIDENCE_TONE: Record<string, "ok" | "warn" | "bad"> = {
+  high: "ok",
+  moderate: "warn",
+  low: "warn",
+  insufficient: "bad",
+};
+
+const BLOCK_LABEL: Record<string, string> = {
+  no_qualified_alternate: "No other crew member holds the qualification",
+  alternate_below_alertness_floor: "Qualified alternates are below the alertness floor",
+  alternate_committed_elsewhere: "Alternates are committed to concurrent safety-critical work",
+};
+
+const humanise = (value: string) => value.replace(/_/g, " ");
+
+/**
+ * The answer.
+ *
+ * This card exists because v1 answered in the wrong order. It led with the
+ * evidence — four readouts, a paragraph of grounded rationale, a citation, a
+ * cost line, a projection — and left the reader to assemble the conclusion. A
+ * specialist does that assembly for free. Everyone else reads a wall.
+ *
+ * So the order is inverted: what to do, then why in one plain sentence, then
+ * the numbers that back it, then everything else behind a disclosure. Nothing
+ * was deleted to achieve that. The rationale, the cost, the projection, the
+ * roster check and the clause-level refusal detail are all still on this card;
+ * they are just no longer the first thing competing for the first read.
+ *
+ * A refusal is styled as a different kind of answer rather than as a failed
+ * recommendation, because that is what it is.
+ */
+export function VerdictCard({
+  situation,
+  readiness,
+}: {
+  situation: Situation | null;
+  readiness: CrewReadiness[];
+}) {
+  const [decision, setDecision] = useState<"approved" | "overridden" | null>(null);
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setDecision(null);
+    setReason("");
+  }, [situation?.situation_id]);
+
+  if (!situation) {
+    return (
+      <GlassCard className="flex min-h-[280px] flex-col items-center justify-center p-8 text-center">
+        <div className="glass-3 mb-4 rounded-full p-3">
+          <Check size={20} className="text-[var(--ok)]" />
+        </div>
+        <h2 className="display text-[26px]">Nothing needs a decision</h2>
+        <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-[var(--ink-2)]">
+          Every task in this window cleared the deterministic trigger. A quiet console is a valid
+          state, not a broken one — the tier strip below shows the system is live.
+        </p>
+      </GlassCard>
+    );
+  }
+
+  const isRefusal = situation.outcome === "refusal";
+  const rec = situation.recommendation;
+  const ref = situation.refusal;
+  const impact = rec?.schedule_impact ?? null;
+  const projection = rec?.projection ?? null;
+  const riskTone = toneOf(situation.risk_level);
+
+  async function submit(choice: "approved" | "overridden") {
+    if (!situation) return;
+    setSaving(true);
+    try {
+      await recordDecision({
+        situation_id: situation.situation_id,
+        audit_ref: situation.audit_ref,
+        decision: choice,
+        reason,
+      });
+      setDecision(choice);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <GlassCard live className="overflow-hidden">
+      {/* Header — who and when, and how bad. */}
+      <div className="flex flex-wrap items-start gap-3 px-6 pt-5">
+        <div className="min-w-0 flex-1">
+          <Label>{isRefusal ? "HAVEN is refusing" : "HAVEN recommends"}</Label>
+          <p className="mono mt-1.5 text-[11.5px] text-[var(--ink-3)]">
+            {situation.crew_member_name} · {situation.task} · {utcTime(situation.task_scheduled)}
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <Chip tone={riskTone} solid>
+            {situation.risk_level}
+          </Chip>
+          <Chip tone={CONFIDENCE_TONE[situation.confidence] ?? "neutral"}>
+            {situation.confidence} confidence
+          </Chip>
+        </div>
+      </div>
+
+      {/* The headline and the one-sentence reason. */}
+      <div className="px-6 pt-4">
+        <h2 className="display text-[27px] sm:text-[34px] xl:text-[38px]">
+          {isRefusal ? (
+            <span className="flex items-start gap-3">
+              <ShieldAlert size={26} className="mt-1.5 shrink-0 text-[var(--bad)]" />
+              <span>{ref?.reason_label ?? "No governing procedure"}</span>
+            </span>
+          ) : (
+            rec?.action_label
+          )}
+        </h2>
+
+        <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-[var(--ink-2)]">
+          {isRefusal ? (
+            ref?.explanation
+          ) : (
+            <>
+              <span className="text-[var(--ink)]">{situation.crew_member_name}</span> is predicted at{" "}
+              <span className="readout text-[15px]" style={{ color: TONE_VAR[riskTone] }}>
+                {situation.alertness_score.toFixed(2)}
+              </span>{" "}
+              alertness
+              {projection ? (
+                <>
+                  {" "}
+                  against a line of{" "}
+                  <span className="readout text-[15px]">{projection.threshold.toFixed(2)}</span> for
+                  this job
+                </>
+              ) : null}
+              , with {humanise(situation.task_label)} due at {utcTime(situation.task_scheduled)} at{" "}
+              {situation.task_criticality} criticality
+              {situation.circadian_flag ? " — inside their body-clock low" : ""}.
+            </>
+          )}
+        </p>
+
+        {isRefusal && ref ? (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Chip tone="bad" icon={<ShieldAlert size={12} />} solid>
+              escalate to {humanise(ref.escalate_to)}
+            </Chip>
+            {ref.checker_disagreed ? (
+              <Chip tone="warn">reasoning tier and checker disagreed — failed closed</Chip>
+            ) : null}
+          </div>
+        ) : null}
+
+        {rec ? (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Chip tone="info">
+              {rec.citation.doc} §{rec.citation.section}
+            </Chip>
+            <span className="text-[12.5px] text-[var(--ink-3)]">
+              Cost — {rec.resource_cost}
+            </span>
+          </div>
+        ) : null}
+      </div>
+
+      {/* The deterministic evidence. Four figures, at a size they can be read. */}
+      <div className="mt-6 grid grid-cols-2 gap-2.5 px-6 sm:grid-cols-4">
+        <StatTile
+          label="Alertness"
+          value={situation.alertness_score.toFixed(2)}
+          sub="Three-Process Model"
+          tone={
+            situation.alertness_score < 0.6 ? "bad" : situation.alertness_score < 0.7 ? "warn" : "ok"
+          }
+        />
+        <StatTile
+          label="Workload"
+          value={situation.workload_score.toFixed(0)}
+          sub={`NASA-TLX · ${humanise(situation.evidence.workload_band)}`}
+        />
+        <StatTile
+          label="Awake"
+          value={situation.evidence.hours_awake.toFixed(1)}
+          unit="h"
+          sub={`sleep debt ${situation.evidence.sleep_debt_h.toFixed(1)}h`}
+        />
+        <StatTile
+          label="Body clock"
+          value={situation.circadian_flag ? "Trough" : "Clear"}
+          sub={`KSS ${situation.evidence.kss.toFixed(1)}`}
+          tone={situation.circadian_flag ? "bad" : undefined}
+        />
+      </div>
+
+      {/* What the action is predicted to buy. */}
+      {projection ? (
+        <div className="mt-3 px-6">
+          <div className="glass-2 px-4 py-3.5">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <Label className="!text-[10.5px]">Predicted effect</Label>
+              <div className="flex items-baseline gap-2.5">
+                <span className="readout text-[19px] text-[var(--ink-3)]">
+                  {projection.before.toFixed(2)}
+                </span>
+                <ArrowRight size={14} className="text-[var(--ink-3)]" />
+                <span
+                  className="readout text-[26px]"
+                  style={{
+                    color: projection.clears_threshold
+                      ? "var(--ok)"
+                      : projection.delta > 0
+                        ? "var(--warn)"
+                        : "var(--bad)",
+                  }}
+                >
+                  {projection.after.toFixed(2)}
+                </span>
+                <span className="text-[12px] text-[var(--ink-3)]">
+                  {projection.delta >= 0 ? "+" : ""}
+                  {projection.delta.toFixed(3)}
+                </span>
+              </div>
+              <Chip
+                tone={projection.clears_threshold ? "ok" : "warn"}
+                className="ml-auto"
+              >
+                {projection.clears_threshold ? "clears the line" : "still below the line"}
+              </Chip>
+            </div>
+            <div className="mt-3">
+              <Meter
+                value={projection.after}
+                threshold={projection.threshold}
+                height={5}
+                color={projection.clears_threshold ? "var(--ok)" : "var(--warn)"}
+              />
+            </div>
+            <p className="mt-2.5 text-[11.5px] leading-snug text-[var(--ink-3)]">
+              {projection.subject_name ? `${projection.subject_name}. ` : ""}
+              {projection.basis} A projection under the Three-Process Model, not a measurement —
+              nothing here observes the crew afterwards.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Does the fix break the roster? One line, expandable. */}
+      {impact ? (
+        <div className="mt-3 px-6">
+          <div
+            className="glass-2 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3"
+            style={{
+              boxShadow: `inset 0 0 0 1px ${
+                impact.roster_ok ? "rgba(92,228,191,0.24)" : "rgba(255,128,149,0.3)"
+              }`,
+            }}
+          >
+            {impact.roster_ok ? (
+              <UserCheck size={16} className="shrink-0 text-[var(--ok)]" />
+            ) : (
+              <CircleSlash size={16} className="shrink-0 text-[var(--bad)]" />
+            )}
+            <span className="min-w-0 flex-1 text-[13px] leading-snug text-[var(--ink-2)]">
+              {impact.note}
+            </span>
+            {impact.alternate_name ? (
+              <Chip tone="ok">cover · {impact.alternate_name}</Chip>
+            ) : impact.blocked_reason ? (
+              <Chip tone="bad">{BLOCK_LABEL[impact.blocked_reason] ?? impact.blocked_reason}</Chip>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Everything v1 showed by default, kept and demoted. */}
+      <div className="mt-3 space-y-2 px-6">
+        {rec ? (
+          <Disclosure
+            summary="The full rationale, as cited"
+            hint={`Grounded in ${rec.citation.doc} section ${rec.citation.section}`}
+          >
+            <div className="glass-2 px-4 py-3.5">
+              <p className="text-[13px] leading-relaxed text-[var(--ink-2)]">{rec.rationale}</p>
+            </div>
+          </Disclosure>
+        ) : null}
+
+        {isRefusal && ref ? (
+          <Disclosure
+            summary="What was searched, and why nothing applied"
+            hint={`${ref.searched.length} document${ref.searched.length === 1 ? "" : "s"} searched · closest candidate recorded`}
+          >
+            <div className="glass-2 space-y-4 px-4 py-3.5">
+              <div>
+                <Label className="!text-[10.5px]">Searched</Label>
+                <div className="mono mt-2 flex flex-wrap gap-1.5">
+                  {ref.searched.map((doc) => (
+                    <span
+                      key={doc}
+                      className="glass-3 rounded-full px-2.5 py-[3px] text-[11px] text-[var(--ink-2)]"
+                    >
+                      {doc}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {ref.failed_clauses.length > 0 ? (
+                <div>
+                  <Label className="!text-[10.5px]">
+                    Checker rejected {ref.model_selected} — unsatisfied preconditions
+                  </Label>
+                  <ul className="mt-2 space-y-2">
+                    {ref.failed_clauses.map((clause) => (
+                      <li key={clause.clause} className="text-[12.5px] leading-snug">
+                        <span className="mono text-[11.5px] text-[var(--ink-3)]">
+                          {clause.clause}
+                        </span>
+                        <span className="ml-2 text-[var(--ink-2)]">
+                          wants {clause.expected} · got {clause.actual}
+                        </span>
+                        <div className="mt-0.5 text-[var(--bad)]">{clause.explanation}</div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {ref.best_candidate ? (
+                <div>
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <Label className="!text-[10.5px]">
+                      Closest candidate — {ref.best_candidate.doc} §{ref.best_candidate.section}
+                    </Label>
+                    <span className="mono text-[11px] text-[var(--ink-3)]">
+                      retrieval similarity {ref.best_candidate.relevance.toFixed(3)}
+                    </span>
+                  </div>
+                  <div className="mt-2">
+                    <Meter
+                      value={ref.best_candidate.relevance}
+                      threshold={ref.gate}
+                      color="var(--bad)"
+                      height={5}
+                    />
+                  </div>
+                  <p className="mt-2 text-[11.5px] leading-snug text-[var(--ink-3)]">
+                    Similarity explains what was found, and decides nothing. Admissibility is
+                    settled clause by clause above.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          </Disclosure>
+        ) : null}
+
+        {impact ? (
+          <Disclosure
+            summary="Safety-critical roles after the change"
+            hint={`${impact.checked_roles.length} role${impact.checked_roles.length === 1 ? "" : "s"} checked against the roster`}
+          >
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {readiness
+                .filter((c) => impact.checked_roles.includes(c.role))
+                .map((c) => (
+                  <li key={c.crew_member} className="glass-2 flex items-center gap-3 px-3.5 py-2.5">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13px] text-[var(--ink)]">{c.name}</span>
+                      <span className="text-[11.5px] capitalize text-[var(--ink-3)]">
+                        {humanise(c.role)}
+                      </span>
+                    </span>
+                    <span className="readout text-[15px]" style={{ color: TONE_VAR[toneOf(c.status)] }}>
+                      {c.alertness_score.toFixed(2)}
+                    </span>
+                    <Chip tone={toneOf(c.status)}>{c.status}</Chip>
+                  </li>
+                ))}
+            </ul>
+          </Disclosure>
+        ) : null}
+      </div>
+
+      {/* Stage 7. HAVEN never actions anything itself. */}
+      <div
+        className="mt-5 px-6 py-4"
+        style={{
+          background: "rgba(255,255,255,0.03)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07)",
+        }}
+      >
+        {decision ? (
+          <div className="flex items-start gap-2.5 text-[13px] text-[var(--ink-2)]">
+            {decision === "approved" ? (
+              <Check size={16} className="mt-0.5 shrink-0 text-[var(--ok)]" />
+            ) : (
+              <X size={16} className="mt-0.5 shrink-0 text-[var(--warn)]" />
+            )}
+            <span>
+              Recorded as <strong className="font-medium text-[var(--ink)]">{decision}</strong>{" "}
+              against <span className="mono text-[12px]">{situation.audit_ref}</span>. HAVEN has
+              taken no action — the operator owns the change.
+            </span>
+          </div>
+        ) : (
+          <>
+            <p className="text-[12.5px] text-[var(--ink-3)]">
+              HAVEN does not execute, defer, or reassign. Record the operator decision.
+            </p>
+            <div className="mt-3 flex flex-col gap-2.5 sm:flex-row">
+              <input
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Reason (logged with the decision)"
+                aria-label="Reason, logged with the decision"
+                className="min-w-0 flex-1 rounded-full bg-white/[0.05] px-4 py-2.5 text-[13px] text-[var(--ink)] outline-none transition-shadow placeholder:text-[var(--ink-3)]"
+                style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.12)" }}
+              />
+              <div className="flex gap-2.5">
+                <DecisionButton
+                  tone="ok"
+                  disabled={saving}
+                  onClick={() => submit("approved")}
+                  label={isRefusal ? "Acknowledge & escalate" : "Approve"}
+                />
+                <DecisionButton
+                  tone="warn"
+                  disabled={saving}
+                  onClick={() => submit("overridden")}
+                  label="Override"
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </GlassCard>
+  );
+}
+
+function DecisionButton({
+  tone,
+  label,
+  disabled,
+  onClick,
+}: {
+  tone: "ok" | "warn";
+  label: string;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  const color = TONE_VAR[tone];
+  return (
+    <button
+      disabled={disabled}
+      onClick={onClick}
+      className={clsx(
+        "glass-interactive shrink-0 rounded-full px-5 py-2.5 text-[13px] font-medium disabled:opacity-50",
+      )}
+      style={{
+        color,
+        background: `color-mix(in oklab, ${color} 16%, transparent)`,
+        boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${color} 42%, transparent)`,
+      }}
+    >
+      {label}
+    </button>
+  );
+}

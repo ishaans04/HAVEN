@@ -7,16 +7,16 @@ import type { ClauseDetail } from "@/lib/types";
 /**
  * The deterministic checker's verdict, clause by clause.
  *
- * This is the half of propose/dispose that has had nowhere to appear. The model
- * proposes a passage and says why in prose; the checker evaluates that passage's
- * compiled preconditions and returns a verdict per clause. Showing only the
- * model's reasoning would leave an operator taking the citation on trust — which
- * is precisely the posture this architecture was built to replace.
+ * The half of propose/dispose that would otherwise have nowhere to appear. The
+ * model proposes a passage and says why in prose; the checker evaluates that
+ * passage's compiled preconditions and returns a verdict per clause. Showing
+ * only the model's reasoning would leave an operator taking the citation on
+ * trust — precisely the posture this architecture was built to replace.
  *
  * Satisfied clauses are rendered as well as failed ones, deliberately. A single
  * red line invites the reading "fix that one thing and it would apply"; the full
- * test shows what was actually asked. It is also the difference between a
- * passage that failed on one clause of five and one that failed on four.
+ * test shows what was actually asked, and the difference between a passage that
+ * failed one clause of five and one that failed four.
  */
 export function ClauseVerdict({
   clauses,
@@ -27,35 +27,28 @@ export function ClauseVerdict({
 }) {
   if (!clauses.length) {
     return (
-      <p className="text-[10px] italic text-[var(--hv-dim)]">
+      <p className="text-[11.5px] italic text-[var(--ink-3)]">
         This passage declares no preconditions.
       </p>
     );
   }
 
   return (
-    <ul className={clsx("space-y-1", compact && "space-y-0.5")}>
+    <ul className={clsx("space-y-1.5", compact && "space-y-1")}>
       {clauses.map((clause) => (
-        <li key={clause.clause} className="flex items-start gap-1.5">
+        <li key={clause.clause} className="flex items-start gap-2">
           {clause.satisfied ? (
-            <Check size={11} className="mt-[3px] shrink-0 text-[color:var(--hv-nominal)]" />
+            <Check size={13} className="mt-[2px] shrink-0 text-[var(--ok)]" />
           ) : (
-            <X size={11} className="mt-[3px] shrink-0 text-[color:var(--hv-degraded)]" />
+            <X size={13} className="mt-[2px] shrink-0 text-[var(--bad)]" />
           )}
-          <span className="min-w-0 flex-1">
-            <span className="mono text-[10px] text-[var(--hv-muted)]">{clause.clause}</span>
+          <span className="min-w-0 flex-1 text-[11.5px] leading-snug">
+            <span className="mono text-[var(--ink-2)]">{clause.clause}</span>
             {!compact ? (
-              <span className="ml-1.5 text-[10px] text-[var(--hv-dim)]">
-                wants <span className="mono text-[var(--hv-muted)]">{clause.expected}</span>
+              <span className="ml-1.5 text-[var(--ink-3)]">
+                wants <span className="mono">{clause.expected}</span>
                 {" · got "}
-                <span
-                  className={clsx(
-                    "mono",
-                    clause.satisfied
-                      ? "text-[var(--hv-muted)]"
-                      : "text-[color:var(--hv-degraded)]",
-                  )}
-                >
+                <span className={clsx("mono", !clause.satisfied && "text-[var(--bad)]")}>
                   {clause.actual}
                 </span>
               </span>
@@ -73,8 +66,8 @@ export function ClauseTally({ clauses }: { clauses: ClauseDetail[] }) {
   const all = met === clauses.length && clauses.length > 0;
   return (
     <span
-      className="mono shrink-0 text-[10px]"
-      style={{ color: all ? "var(--hv-nominal)" : "var(--hv-degraded)" }}
+      className="readout shrink-0 text-[12px]"
+      style={{ color: all ? "var(--ok)" : "var(--bad)" }}
     >
       {met}/{clauses.length}
     </span>

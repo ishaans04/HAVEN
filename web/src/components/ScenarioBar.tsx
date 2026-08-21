@@ -4,7 +4,15 @@ import { useState } from "react";
 import clsx from "clsx";
 import { BookOpen, ChevronDown, Info } from "lucide-react";
 import type { ScenarioSummary } from "@/lib/types";
+import { Chip, Label } from "./ui";
 
+/**
+ * The masthead: identity, the scenario picker, and the honesty panel.
+ *
+ * Sticky, translucent, and thin. It is the one surface that persists while the
+ * console changes underneath it, so it has to stay quiet — the field shows
+ * through it and the content below scrolls under it rather than past it.
+ */
 export function ScenarioBar({
   scenarios,
   selected,
@@ -24,103 +32,142 @@ export function ScenarioBar({
   const active = scenarios.find((s) => s.id === selected);
 
   return (
-    <header className="border-b border-[var(--hv-line)] bg-[var(--hv-panel)]/70 backdrop-blur">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-        <div className="flex items-baseline gap-2">
-          <span className="text-[17px] font-semibold tracking-[-0.02em]">HAVEN</span>
-          <span className="hidden text-[10px] uppercase tracking-[0.18em] text-[var(--hv-dim)] sm:inline">
-            Human Adaptation &amp; Vitality Enhancement Network
+    <header
+      className="sticky top-0 z-40"
+      style={{
+        background: "rgba(7,6,20,0.62)",
+        backdropFilter: "blur(26px) saturate(170%)",
+        WebkitBackdropFilter: "blur(26px) saturate(170%)",
+        boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.08)",
+      }}
+    >
+      <div className="mx-auto flex max-w-[1560px] flex-wrap items-center gap-x-5 gap-y-3 px-5 py-3.5 sm:px-8">
+        <div className="flex items-baseline gap-3">
+          <h1 className="display text-[21px] tracking-[-0.03em] text-[var(--ink)]">
+            <span className="em">HAVEN</span>
+          </h1>
+          <span className="hidden text-[10.5px] uppercase tracking-[0.2em] text-[var(--ink-3)] lg:inline">
+            Fatigue-aware safety co-pilot
           </span>
         </div>
 
-        <span className="hidden h-4 w-px bg-[var(--hv-line-bright)] sm:block" />
-
-        <p className="hidden text-[11px] text-[var(--hv-muted)] lg:block">
-          Fatigue-aware safety co-pilot · the maths owns the numbers, the AI owns the rulebook, the
-          human owns the decision
+        <p className="hidden max-w-md text-[12px] leading-snug text-[var(--ink-3)] xl:block">
+          The maths owns the numbers · the AI reads the rulebook · the human owns the decision
         </p>
 
-        <button
-          onClick={onOpenProcedures}
-          className="ml-auto flex items-center gap-1.5 rounded border border-[var(--hv-line-bright)] px-2 py-1 text-[10px] text-[var(--hv-muted)] transition-colors hover:text-[var(--hv-text)]"
-        >
-          <BookOpen size={11} />
-          The corpus
-        </button>
-
-        <button
-          onClick={() => setShowHonesty((v) => !v)}
-          className="flex items-center gap-1.5 rounded border border-[var(--hv-line-bright)] px-2 py-1 text-[10px] text-[var(--hv-muted)] transition-colors hover:text-[var(--hv-text)]"
-        >
-          <Info size={11} />
-          Real vs simulated
-          <ChevronDown size={11} className={clsx("transition-transform", showHonesty && "rotate-180")} />
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <BarButton onClick={onOpenProcedures} icon={<BookOpen size={13} />}>
+            The rulebook
+          </BarButton>
+          <BarButton
+            onClick={() => setShowHonesty((v) => !v)}
+            icon={<Info size={13} />}
+            expanded={showHonesty}
+            chevron
+          >
+            Real vs simulated
+          </BarButton>
+        </div>
       </div>
 
       {showHonesty ? (
-        <div className="grid gap-3 border-t border-[var(--hv-line)] px-4 py-3 text-[11px] leading-relaxed sm:grid-cols-2">
-          <div>
-            <div className="hv-zone-label mb-1">Real</div>
-            <p className="text-[var(--hv-muted)]">
+        <div
+          className="rise mx-auto grid max-w-[1560px] gap-6 px-5 pb-5 sm:grid-cols-2 sm:px-8"
+          id="honesty"
+        >
+          <div className="glass-2 px-4 py-3.5">
+            <Label className="!text-[10.5px]" >Real</Label>
+            <p className="mt-2 text-[12.5px] leading-relaxed text-[var(--ink-2)]">
               The Three-Process Model of Alertness and NASA-TLX are the published models, computed
-              from the inputs shown. The retrieval, precondition-checked rule selection, refusal
-              path, deterministic screens, and hash-chained audit trail all execute live on every
-              evaluation.
+              from the inputs shown. Retrieval, precondition-checked rule selection, the refusal
+              path, the deterministic screens and the hash-chained audit trail all execute live on
+              every evaluation.
             </p>
           </div>
-          <div>
-            <div className="hv-zone-label mb-1">Simulated and labelled</div>
-            <p className="text-[var(--hv-muted)]">
-              The crew roster is representative, not real individuals. Sleep, duty, and task
-              timelines are synthetic — no public live crew-timeline feed exists. The procedure
-              corpus follows NASA flight-rule structure but its text is written for this prototype.
-              The reasoning model is a scripted Granite stand-in so the console runs offline;
-              watsonx.ai and Ollama adapters are wired behind the same interface.
+          <div className="glass-2 px-4 py-3.5">
+            <Label className="!text-[10.5px]">Simulated, and labelled</Label>
+            <p className="mt-2 text-[12.5px] leading-relaxed text-[var(--ink-2)]">
+              The crew roster is representative, not real individuals. Sleep, duty and task
+              timelines are synthetic — no public live crew-timeline feed exists. Where the corpus
+              reports <span className="mono">prototype</span> authority, its text follows NASA
+              flight-rule structure but was written for this build. The reasoning model is a
+              scripted Granite stand-in unless a live provider is configured.
             </p>
           </div>
         </div>
       ) : null}
 
-      <div className="flex gap-1.5 overflow-x-auto border-t border-[var(--hv-line)] px-4 py-2">
-        {scenarios.map((scenario) => (
-          <button
-            key={scenario.id}
-            onClick={() => onSelect(scenario.id)}
-            disabled={loading}
-            className={clsx(
-              "shrink-0 rounded border px-2.5 py-1.5 text-left transition-colors disabled:opacity-60",
-              scenario.id === selected
-                ? "border-[color:var(--hv-accent)] bg-[color:var(--hv-accent)]/[0.1]"
-                : "border-[var(--hv-line)] hover:border-[var(--hv-line-bright)]",
-            )}
-          >
-            <span
-              className={clsx(
-                "block text-[11px] font-medium",
-                scenario.id === selected ? "text-[color:var(--hv-accent)]" : "text-[var(--hv-text)]",
-              )}
-            >
-              {scenario.subtitle}
-            </span>
-            <span className="mono block text-[9px] text-[var(--hv-dim)]">{scenario.id}</span>
-          </button>
-        ))}
+      {/* Scenario rail. */}
+      <div className="mx-auto max-w-[1560px] px-5 sm:px-8">
+        <div className="fade-x no-bar flex gap-1.5 overflow-x-auto px-1 pb-3">
+          {scenarios.map((scenario) => {
+            const on = scenario.id === selected;
+            return (
+              <button
+                key={scenario.id}
+                onClick={() => onSelect(scenario.id)}
+                disabled={loading}
+                aria-pressed={on}
+                className="selectable shrink-0 rounded-full px-3.5 py-1.5 text-left disabled:opacity-50"
+              >
+                <span
+                  className="block whitespace-nowrap text-[12.5px] font-medium"
+                  style={{ color: on ? "var(--iris)" : "var(--ink-2)" }}
+                >
+                  {scenario.subtitle}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {active ? (
-        <div className="border-t border-[var(--hv-line)] px-4 py-2.5">
-          <div className="flex flex-wrap items-baseline gap-x-3">
-            <span className="text-[12px] font-semibold">{active.title}</span>
-            <span className="text-[10px] uppercase tracking-wider text-[color:var(--hv-accent)]">
-              {active.demonstrates}
-            </span>
+        <div className="mx-auto max-w-[1560px] px-5 pb-4 sm:px-8">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
+            <h2 className="text-[15px] font-medium tracking-[-0.01em] text-[var(--ink)]">
+              {active.title}
+            </h2>
+            <Chip tone="iris">{active.demonstrates.toLowerCase()}</Chip>
+            <span className="mono text-[11px] text-[var(--ink-3)]">{active.id}</span>
           </div>
-          <p className="mt-1 max-w-4xl text-[11px] leading-relaxed text-[var(--hv-muted)]">
+          <p className="mt-1.5 max-w-4xl text-[12.5px] leading-relaxed text-[var(--ink-3)]">
             {note || active.note}
           </p>
         </div>
       ) : null}
     </header>
+  );
+}
+
+function BarButton({
+  children,
+  icon,
+  onClick,
+  expanded,
+  chevron,
+}: {
+  children: React.ReactNode;
+  icon: React.ReactNode;
+  onClick: () => void;
+  expanded?: boolean;
+  chevron?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-expanded={chevron ? expanded : undefined}
+      aria-controls={chevron ? "honesty" : undefined}
+      className="glass-3 glass-interactive flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-[12.5px] text-[var(--ink-2)] hover:text-[var(--ink)]"
+    >
+      {icon}
+      {children}
+      {chevron ? (
+        <ChevronDown
+          size={13}
+          className={clsx("transition-transform duration-300", expanded && "rotate-180")}
+        />
+      ) : null}
+    </button>
   );
 }
