@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -34,6 +35,54 @@ class LLMUnavailable(RuntimeError):
 
 class NumericIntegrityError(RuntimeError):
     """Raised when a completion contains a number the deterministic tier never supplied."""
+
+
+#: How many times a provider call is attempted before the link is declared down.
+#: Small on purpose: this recovers a burst, and anything longer is an outage the
+#: chain should be told about so it can fall through and say so.
+RETRY_ATTEMPTS = 3
+RETRY_BACKOFF_SECONDS = 1.5
+
+#: Failures that clear on their own within seconds.
+#:
+#: The distinction that matters is inside HTTP 429, which watsonx returns for two
+#: unrelated conditions. A *concurrency* limit -- "the total number of free
+#: concurrent requests for model X has reached its limit 10" -- clears as soon as
+#: the in-flight calls finish. A *plan* limit, the monthly token allowance, does
+#: not clear at all this month. Retrying the first is right; retrying the second
+#: just delays an outage the operator needs to be told about, three times over.
+_RETRYABLE_MARKERS = (
+    "concurrent",
+    "too many requests",
+    "timeout",
+    "timed out",
+    "connection reset",
+    "connection aborted",
+    "temporarily unavailable",
+    "service unavailable",
+    "bad gateway",
+    " 502",
+    " 503",
+    " 504",
+)
+
+#: Present in a 429 body, these mean the allowance is gone rather than busy.
+_EXHAUSTED_MARKERS = ("token quota", "tokens exhausted", "monthly", "billing", "usage limit for the current plan")
+
+
+def _is_worth_retrying(exc: Exception) -> bool:
+    """Whether waiting a moment could plausibly change the answer.
+
+    Read in this order deliberately: a concurrency 429 and a plan-exhaustion 429
+    share the phrase "usage limit for the current plan", so the specific signal
+    has to win over the general one.
+    """
+    text = str(exc).lower()
+    if "concurrent" in text:
+        return True
+    if any(marker in text for marker in _EXHAUSTED_MARKERS):
+        return False
+    return any(marker in text for marker in _RETRYABLE_MARKERS)
 
 
 def assert_no_novel_numbers(text: str, allowed: set[str]) -> None:
@@ -424,10 +473,19 @@ class _LangChainProvider(ReasoningLLM):
         if self._wants_json(task):
             client = self._as_json_mode(client)
 
-        try:
-            response = client.invoke([SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=prompt)])
-        except Exception as exc:
-            raise self._as_unavailable(exc) from exc
+        messages = [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=prompt)]
+        for attempt in range(RETRY_ATTEMPTS):
+            try:
+                response = client.invoke(messages)
+                break
+            except Exception as exc:
+                unavailable = self._as_unavailable(exc)
+                if attempt + 1 >= RETRY_ATTEMPTS or not _is_worth_retrying(exc):
+                    raise unavailable from exc
+                # Linear rather than exponential: the failure this recovers from
+                # is a concurrency burst that clears in seconds, and a demo
+                # waiting out an exponential backoff has already lost.
+                time.sleep(RETRY_BACKOFF_SECONDS * (attempt + 1))
 
         content = getattr(response, "content", response)
         if isinstance(content, list):
