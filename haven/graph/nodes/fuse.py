@@ -34,4 +34,4 @@ def fuse_node(state: SituationState) -> dict[str, Any]:
         # The guard fired twice. Caught rather than raised: an invented figure
         # is an operational condition with a correct response -- withhold and
         # escalate -- not a program error deserving a 500.
-        return {"outcome": flow.refuse_numeric_integrity(facts, state["candidates"], "FUSE", str(exc))}
+        return {"outcome": flow.refuse_numeric_integrity(facts, state["candidates"], "FUSE", exc)}

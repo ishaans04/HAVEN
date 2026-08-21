@@ -517,8 +517,12 @@ class ReasoningFlow:
         retry_prompt = (
             f"{prompt}\n\n"
             f"Your previous response was rejected: {violation}\n"
-            f"Every figure must be one of the values given above, written exactly as given. "
-            f"Do not round, restate, or introduce any other number."
+            f"Permitted figures, exactly as written: {', '.join(sorted(allowed))}.\n"
+            f"Every figure must be one of those. Do not round, restate, or introduce any "
+            f"other number -- and do not compute one. If the rejected value is the "
+            f"difference between two permitted figures, delete the clause containing it "
+            f"rather than rephrasing it: state that the threshold was not met, not by how "
+            f"much."
         )
         retry, retry_latency = self._call(task, retry_prompt, context)
         latency += retry_latency
@@ -646,7 +650,7 @@ class ReasoningFlow:
         facts: dict,
         payloads: list[dict],
         stage: str,
-        violation: str,
+        violation: NumericIntegrityError | str,
     ) -> ReasoningOutcome:
         """The generated text failed S1 twice. Escalate rather than publish it.
 
@@ -659,6 +663,16 @@ class ReasoningFlow:
 
         A refusal here is not the system breaking. It is the system working.
         """
+        # The sentence the model wrote, not only the numeral that failed. Two
+        # very different faults produce the same message -- restating a supplied
+        # threshold in a different format, and computing a difference between
+        # two supplied figures -- and they need opposite responses. Without the
+        # text, every one of these looks identical in the trail and none of them
+        # can be acted on.
+        offending = getattr(violation, "text", "")
+        permitted = getattr(violation, "allowed", [])
+        violation = str(violation)
+
         self.trail.append(
             step="NUMERIC_INTEGRITY_FAILURE",
             tier="orchestration",
@@ -666,8 +680,19 @@ class ReasoningFlow:
                 f"{stage} produced a figure the deterministic tier never supplied, twice. "
                 f"{violation} Withholding the recommendation."
             ),
-            inputs={"stage": stage, "provider": self.llm.provider, "model_id": self.llm.model_id},
-            outputs={"violation": violation, "outcome": "refusal"},
+            inputs={
+                "stage": stage,
+                "provider": self.llm.provider,
+                "model_id": self.llm.model_id,
+                "permitted_values": permitted,
+            },
+            outputs={
+                "violation": violation,
+                "outcome": "refusal",
+                # Truncated: the trail is read by people, and a rejected
+                # completion is evidence rather than an artefact to reconstruct.
+                "rejected_text": offending[:600],
+            },
         )
         return self.refuse(
             facts,

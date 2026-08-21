@@ -40,5 +40,5 @@ def generate_node(state: SituationState) -> dict[str, Any]:
         }
     except NumericIntegrityError as exc:
         # As in FUSE: withheld, not raised. See flow.refuse_numeric_integrity.
-        return {"outcome": flow.refuse_numeric_integrity(facts, state["candidates"], "GENERATE", str(exc))}
+        return {"outcome": flow.refuse_numeric_integrity(facts, state["candidates"], "GENERATE", exc)}
     return {"outcome": outcome}

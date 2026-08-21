@@ -34,7 +34,25 @@ class LLMUnavailable(RuntimeError):
 
 
 class NumericIntegrityError(RuntimeError):
-    """Raised when a completion contains a number the deterministic tier never supplied."""
+    """Raised when a completion contains a number the deterministic tier never supplied.
+
+    Carries the offending completion and the permitted set, because the message
+    alone cannot be acted on. "Contains numeric value '0.05'" tells a reader that
+    something was invented but not *what* the model was trying to say -- and the
+    two possibilities need opposite responses. A model restating a threshold it
+    was given, slightly reformatted, is a prompt problem. A model computing a
+    difference between two supplied figures is the model doing arithmetic it was
+    told not to do, and no amount of prompt tightening reliably stops that.
+
+    Telling them apart requires the sentence. Withholding it from the audit
+    trail made every one of these failures look identical from the outside.
+    """
+
+    def __init__(self, message: str, *, text: str = "", value: str = "", allowed: set[str] | None = None) -> None:
+        super().__init__(message)
+        self.text = text
+        self.value = value
+        self.allowed = sorted(allowed or ())
 
 
 #: How many times a provider call is attempted before the link is declared down.
@@ -95,7 +113,10 @@ def assert_no_novel_numbers(text: str, allowed: set[str]) -> None:
         normalised = found.rstrip("0").rstrip(".") if "." in found else found
         if found not in allowed and normalised not in allowed:
             raise NumericIntegrityError(
-                f"Completion contains numeric value {found!r} not supplied by the deterministic tier"
+                f"Completion contains numeric value {found!r} not supplied by the deterministic tier",
+                text=text,
+                value=found,
+                allowed=allowed,
             )
 
 
@@ -141,7 +162,12 @@ FUSE_PROMPT = """TASK: FUSE
 
 Combine exactly three facts into one reasoned justification: the crew alertness state, the
 task criticality, and the selected governing rule. Use only the numbers given below, written
-exactly as given. Do not introduce any other figure. Two or three sentences.
+exactly as given. Two or three sentences.
+
+Do not calculate. Do not subtract one given figure from another, and do not state a
+shortfall, margin, gap, difference, percentage, or ratio between them. A figure you worked
+out is not a figure you were given, however simple the arithmetic. Say that alertness is
+below the threshold; do not say by how much.
 
 DETERMINISTIC FACTS:
 {facts}
@@ -155,8 +181,10 @@ Respond with the justification text only.
 GENERATE_PROMPT = """TASK: GENERATE
 
 Write the operator-facing recommendation. State the action the procedure requires, then the
-justification. Cite the procedure by document and section. Use only the numbers given; do not
-introduce any other figure.
+justification. Cite the procedure by document and section. Use only the numbers given.
+
+Do not calculate. Do not state a shortfall, margin, gap, difference, percentage, or ratio
+between any two of the figures below. A figure you worked out is not a figure you were given.
 
 PRESCRIBED ACTION: {action}
 CITATION: {doc} section {section}
