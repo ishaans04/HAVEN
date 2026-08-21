@@ -505,3 +505,68 @@ def test_the_reasoning_tier_is_not_told_which_passages_count() -> None:
     that has to transfer to a procedure library it has not seen.
     """
     assert "authority" not in PROSE_KEYS
+
+
+# --------------------------------------------------------------------------
+# S1's diagnosability
+#
+# The guard is unchanged by any of this. What changed is what it hands over
+# when it fires, and the reason is a real failure: on live Granite the audit
+# said only "Completion contains numeric value '0.05'", which is not something
+# a reader can act on. Two very different faults produce that same message.
+#
+#   * The model restated a threshold it was given, reformatted. A prompt problem.
+#   * The model subtracted one supplied figure from another. Arithmetic it was
+#     told not to do, and a different problem entirely.
+#
+# Telling them apart needs the sentence.
+# --------------------------------------------------------------------------
+def test_a_numeric_violation_carries_the_sentence_that_caused_it() -> None:
+    text = "Alertness 0.65 is below the 0.7 threshold, a shortfall of 0.05."
+    with pytest.raises(NumericIntegrityError) as excinfo:
+        assert_no_novel_numbers(text, {"0.65", "0.7"})
+
+    error = excinfo.value
+    assert error.value == "0.05"
+    assert error.text == text, "without the sentence, the cause cannot be identified"
+    assert error.allowed == ["0.65", "0.7"], "and without the permitted set, neither can the fix"
+
+
+def test_the_guard_still_rejects_exactly_what_it_rejected_before() -> None:
+    """The metadata is additive. Admissibility of a completion is untouched."""
+    assert_no_novel_numbers("Alertness 0.65 is below 0.7.", {"0.65", "0.7"})
+    assert_no_novel_numbers("No figures at all.", set())
+
+    for text in ("a shortfall of 0.05", "roughly 65 percent", "within 30 minutes"):
+        with pytest.raises(NumericIntegrityError):
+            assert_no_novel_numbers(text, {"0.65", "0.7"})
+
+
+def test_a_derived_figure_is_a_violation_however_simple_the_arithmetic() -> None:
+    """The case that reached production, stated as the rule it breaks.
+
+    0.7 - 0.65 = 0.05. Both operands were supplied and the subtraction is
+    trivial, and the result is still a number no part of the deterministic tier
+    computed. An operator reading "shortfall of 0.05" would take it as a
+    measured quantity.
+    """
+    with pytest.raises(NumericIntegrityError) as excinfo:
+        assert_no_novel_numbers("the shortfall of 0.05", {"0.65", "0.7"})
+    assert excinfo.value.value == "0.05"
+
+
+def test_the_prompts_forbid_the_operation_not_only_the_output() -> None:
+    """ "Do not introduce any other figure" is satisfiable while subtracting two.
+
+    A model that derives a number has not introduced a fact in its own terms --
+    it has restated ones it was given. The instruction has to name the
+    operation, and this asserts it still does, because the sentence is easy to
+    lose in a later prompt edit and its absence shows up only against a live
+    model.
+    """
+    from haven.reasoning.llm import FUSE_PROMPT, GENERATE_PROMPT
+
+    for prompt in (FUSE_PROMPT, GENERATE_PROMPT):
+        lowered = prompt.lower()
+        assert "do not calculate" in lowered
+        assert "shortfall" in lowered, "name the thing the model actually wrote"
