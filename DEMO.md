@@ -6,11 +6,16 @@ and they are ordered so each answers the doubt the last one raises.
 Start it:
 
 ```bash
-uv sync
-uv run uvicorn haven.api.main:app --port 8000
+uv run --no-sync python -m scripts.run_haven
 ```
 
 Then open <http://localhost:8000>. One process serves the console and the API.
+The launcher reports whether the console build is current and which provider
+chain will be tried, both of which fail silently otherwise.
+
+`--no-sync` is not optional: `uv run` re-syncs by default, and a bare sync
+prunes the optional extras — including the watsonx packages — thirty seconds
+before a demo.
 
 For development with hot reload, run the console separately instead:
 

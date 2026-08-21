@@ -19,17 +19,52 @@ and CI asserts it on every push.
 Dependencies are managed with [uv](https://docs.astral.sh/uv/). Install it once
 with `pip install uv`, or see the upstream instructions.
 
-**Everything, one process** (from the repository root):
+**Setup**, once — name every extra you want, because a bare `uv sync` prunes to
+the base dependency set and removes the rest:
 
 ```bash
-uv sync
+uv sync --extra providers --extra rag --extra compiler
 cd web && npm ci && npm run build && cd ..
-uv run uvicorn haven.api.main:app --port 8000
+```
+
+**Run:**
+
+```bash
+uv run --no-sync python -m scripts.run_haven
 ```
 
 Open <http://localhost:8000>. FastAPI serves the console as a static export from
 the same origin as the API, so there is one port and nothing to configure.
 Interactive API docs are at `/docs`.
+
+`--no-sync` matters: `uv run` re-syncs before every invocation, and a bare sync
+strips the extras installed above. The launcher reports whether the console is
+built and current, which provider chain will be tried, and which corpus manifest
+is loaded — then starts the server. `uvicorn haven.api.main:app` still works and
+skips those checks.
+
+**Verify a running instance** — every check below can fail while the system
+looks fine, which is why it exists:
+
+```bash
+uv run --no-sync python -m scripts.smoke
+```
+
+<details>
+<summary><strong>Windows and OneDrive</strong></summary>
+
+If the repository lives in a OneDrive-synced folder, `uv sync` can fail partway
+with `Access is denied` — OneDrive holds handles open on files uv is replacing,
+and a failed sync leaves the environment half-pruned. Installing in place avoids
+the prune entirely:
+
+```bash
+uv pip install --python .venv/Scripts/python.exe langchain-ibm langchain-ollama
+```
+
+This is an environment constraint, not a repository one: CI runs
+`uv sync --frozen` on Linux and is unaffected.
+</details>
 
 **Or in a container:**
 
