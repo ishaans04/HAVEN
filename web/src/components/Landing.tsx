@@ -1,0 +1,571 @@
+"use client";
+
+import Link from "next/link";
+import type { ReactNode } from "react";
+import {
+  ArrowRight,
+  Calculator,
+  ClipboardList,
+  Clock4,
+  Compass,
+  FileSearch,
+  Gauge,
+  Layers,
+  ShieldAlert,
+  UserCheck,
+  Users,
+} from "lucide-react";
+import { PlanetLimb } from "./PlanetLimb";
+import { StarField } from "./StarField";
+import { Chip, GlassCard, Label } from "./ui";
+
+/**
+ * The front door.
+ *
+ * The console is an instrument, and an instrument does not explain itself — it
+ * assumes you already know what you are holding. That is fine for the operator
+ * it was designed for and useless for everyone who arrives at a URL: a judge, a
+ * reviewer, somebody sent a link. This page is the twenty seconds before the
+ * instrument.
+ *
+ * Its claims are deliberately the same claims the product makes about itself,
+ * in the same plain language, including the ones that are limitations. A
+ * landing page that oversells a system whose entire argument is "it refuses
+ * when it does not know" would undo the argument on the way in.
+ */
+export function Landing() {
+  return (
+    <>
+      <StarField />
+
+      <main>
+        <Hero />
+        <Problem />
+        <GoldenRule />
+        <Pipeline />
+        <Layout />
+        <Honesty />
+        <Close />
+      </main>
+    </>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+function Hero() {
+  return (
+    <section className="relative isolate flex min-h-[92vh] flex-col justify-center overflow-hidden px-5 pb-32 pt-24 sm:px-8">
+      {/* The planet sits behind and below the type, cropped by the section, the
+          way a window crops a view. */}
+      {/* A fixed height rather than a percentage: the limb's viewBox is 2.3:1,
+          and `slice` crops whatever the container does not have room for. Sized
+          in pixels, the horizon lands in a predictable place at every viewport
+          height instead of sliding up out of frame on a short one. */}
+      <PlanetLimb className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[560px]" />
+
+      {/* A scrim weighted to the side the type sits on. Without it the limb's
+          hairline crosses the headline on a narrow screen — which reads as an
+          accident rather than as a horizon. Painted after the limb so it lands
+          over it at the same depth, and falling to nothing well before the far
+          edge so the rim stays visible where there is no text. */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          background:
+            "linear-gradient(102deg, rgba(4,3,12,0.88) 0%, rgba(4,3,12,0.62) 38%, rgba(4,3,12,0.1) 66%, rgba(4,3,12,0) 80%)",
+        }}
+      />
+
+      <div className="mx-auto w-full max-w-[1560px]">
+        <div className="max-w-3xl">
+          <div className="rise flex flex-wrap items-center gap-2.5">
+            <Chip tone="iris">IBM AI Builders Challenge</Chip>
+            <Chip tone="neutral">Space exploration</Chip>
+          </div>
+
+          <h1
+            className="display rise mt-7 text-[clamp(2.75rem,7.4vw,6.25rem)]"
+            style={{ animationDelay: "80ms" }}
+          >
+            <span className="em block">Fatigue-aware</span>
+            <span className="block text-[var(--ink-2)]">safety co-pilot</span>
+          </h1>
+
+          <p
+            className="rise mt-7 max-w-xl text-[16px] leading-relaxed text-[var(--ink-2)] sm:text-[17px]"
+            style={{ animationDelay: "160ms" }}
+          >
+            A tired operator and an irreversible task are about to meet. HAVEN sees the collision
+            coming, finds the rule in the mission&rsquo;s own procedures that governs it, and hands a
+            human the decision — or refuses to guess, and says so.
+          </p>
+
+          <div
+            className="rise mt-9 flex flex-wrap items-center gap-3"
+            style={{ animationDelay: "240ms" }}
+          >
+            <Link
+              href="/console/"
+              className="glass-interactive group inline-flex items-center gap-2.5 rounded-full px-6 py-3.5 text-[14px] font-medium"
+              style={{
+                color: "var(--iris)",
+                background: "color-mix(in oklab, var(--iris) 18%, transparent)",
+                boxShadow:
+                  "inset 0 0 0 1px color-mix(in oklab, var(--iris) 48%, transparent), 0 20px 50px -22px rgba(120,72,255,0.7)",
+              }}
+            >
+              Enter the console
+              <ArrowRight
+                size={16}
+                className="transition-transform duration-300 group-hover:translate-x-1"
+              />
+            </Link>
+            <a
+              href="#how"
+              className="glass-3 glass-interactive inline-flex items-center gap-2 rounded-full px-5 py-3.5 text-[14px] text-[var(--ink-2)] hover:text-[var(--ink)]"
+            >
+              How it works
+            </a>
+          </div>
+
+          <ul
+            className="rise mt-12 flex flex-wrap gap-x-8 gap-y-3"
+            style={{ animationDelay: "320ms" }}
+          >
+            {[
+              ["Every number is arithmetic", "var(--ok)"],
+              ["Every recommendation is cited", "var(--info)"],
+              ["Refusal is a valid answer", "var(--iris)"],
+            ].map(([text, color]) => (
+              <li key={text} className="flex items-center gap-2.5 text-[13px] text-[var(--ink-2)]">
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ background: color, boxShadow: `0 0 8px ${color}` }}
+                />
+                {text}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+const PROBLEMS: [ReactNode, string, string][] = [
+  [
+    <Gauge key="i" size={17} />,
+    "Fatigue is invisible until it is too late",
+    "A tired brain does not feel broken. Reaction time and judgement are measurably impaired while the person still feels fine, so self-assessment is the one instrument you cannot trust.",
+  ],
+  [
+    <Users key="i" size={17} />,
+    "High performers push through",
+    "Astronauts are trained to power through exhaustion, and under-report it — partly out of pride, partly to avoid being pulled from a task they trained years for. “Are you too tired for this?” is the question the best operators are least likely to answer honestly.",
+  ],
+  [
+    <Clock4 key="i" size={17} />,
+    "A tiredness number alone is noise",
+    "Everyone is tired sometimes. Being tired during a rest period is fine; being tired forty minutes before a critical engine burn is not. What matters is fatigue set against what the person is about to do.",
+  ],
+];
+
+function Problem() {
+  return (
+    <Section
+      id="how"
+      label="The problem"
+      title="Why this is hard to manage by hand"
+      lead="On a long mission the crew performs irreversible, high-consequence work — a propulsive burn, a docking, a spacewalk, a hatch closeout — under chronic fatigue and a radio delay to Earth too long for anyone on the ground to intervene in the moment."
+    >
+      <div className="grid gap-3 md:grid-cols-3">
+        {PROBLEMS.map(([icon, title, body]) => (
+          <GlassCard key={title} className="p-6">
+            <span className="glass-3 inline-flex rounded-full p-2.5 text-[var(--iris)]">{icon}</span>
+            <h3 className="mt-4 text-[16px] font-medium leading-snug text-[var(--ink)]">{title}</h3>
+            <p className="mt-2.5 text-[13.5px] leading-relaxed text-[var(--ink-2)]">{body}</p>
+          </GlassCard>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+function GoldenRule() {
+  return (
+    <Section
+      label="The golden rule"
+      title="The AI never produces a safety number"
+      lead="Modern AI reads documents well and states wrong numbers with total confidence. In a system that can recommend pulling somebody off a critical task, an invented fatigue score is unacceptable — so the work is split along a hard line, and the line is enforced in code rather than in prompting."
+    >
+      <div className="grid gap-3 lg:grid-cols-2">
+        <GlassCard className="p-6" live>
+          <Label>The fatigue &amp; workload engine</Label>
+          <h3 className="display mt-2 text-[26px]">Ordinary maths</h3>
+          <p className="mt-3 text-[13.5px] leading-relaxed text-[var(--ink-2)]">
+            Published, validated alertness and workload models. Same inputs, same score, every time
+            — and checkable by hand.
+          </p>
+          <Owns
+            owns="The alertness score, the workload score, sleep-debt, circadian phase, and every safety threshold in the system."
+            question="Can it invent a number?"
+            answer="No — it is arithmetic."
+            tone="var(--ok)"
+          />
+        </GlassCard>
+
+        <GlassCard className="p-6">
+          <Label>The reasoning tier</Label>
+          <h3 className="display mt-2 text-[26px]">Reading and explaining</h3>
+          <p className="mt-3 text-[13.5px] leading-relaxed text-[var(--ink-2)]">
+            Reads procedures written for humans, decides which rule governs the situation, and turns
+            a bare score into a cited recommendation.
+          </p>
+          <Owns
+            owns="Interpreting the rulebook, weighing the score against the upcoming task, drafting the briefing an operator reads."
+            question="Can it invent a number?"
+            answer="Yes — so it is never allowed to supply one."
+            tone="var(--iris)"
+          />
+        </GlassCard>
+      </div>
+
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
+        {[
+          [
+            "Scores are calculated, never generated",
+            "Every figure originates in the deterministic tier. The model receives them fixed and may echo them, never alter them.",
+          ],
+          [
+            "It flags risk, it never decides fitness",
+            "No code path lets HAVEN execute, defer, or reassign anything. The output is always a recommendation or a refusal for a person to action.",
+          ],
+          [
+            "No citation, no recommendation",
+            "A recommendation without a resolvable procedure citation is invalid and never shown. The flow refuses instead.",
+          ],
+        ].map(([title, body], i) => (
+          <div key={title} className="glass-2 p-5">
+            <span className="readout text-[13px] text-[var(--iris)]">
+              Rule {String(i + 1).padStart(2, "0")}
+            </span>
+            <h4 className="mt-2 text-[14.5px] font-medium leading-snug text-[var(--ink)]">
+              {title}
+            </h4>
+            <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-3)]">{body}</p>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+function Owns({
+  owns,
+  question,
+  answer,
+  tone,
+}: {
+  owns: string;
+  question: string;
+  answer: string;
+  tone: string;
+}) {
+  return (
+    <dl className="mt-5 space-y-3.5 border-t border-white/[0.08] pt-5">
+      <div>
+        <dt className="label !text-[10.5px]">Owns</dt>
+        <dd className="mt-1.5 text-[13px] leading-relaxed text-[var(--ink-2)]">{owns}</dd>
+      </div>
+      <div>
+        <dt className="label !text-[10.5px]">{question}</dt>
+        <dd className="mt-1.5 text-[13.5px] font-medium" style={{ color: tone }}>
+          {answer}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+const STEPS: [ReactNode, string, string][] = [
+  [
+    <ClipboardList key="i" size={16} />,
+    "Listen",
+    "Takes in recent sleep and duty history, hours on task, and how much the person is juggling. Inputs the crew already share with flight medicine — no hidden monitoring.",
+  ],
+  [
+    <Calculator key="i" size={16} />,
+    "Calculate",
+    "Turns that history into an alertness score with published fatigue models — the same science behind airline crew scheduling. Ordinary maths, because a safety number must never be invented.",
+  ],
+  [
+    <FileSearch key="i" size={16} />,
+    "Read the manual",
+    "When alertness is low, the reasoning tier searches the mission's own procedures for the rule that governs the upcoming task — and a deterministic checker tests whether it really applies.",
+  ],
+  [
+    <UserCheck key="i" size={16} />,
+    "Check the schedule",
+    "Before suggesting anything, confirms the change still leaves every safety-critical role staffed by someone qualified and rested. If it cannot, it says so rather than proposing an unworkable fix.",
+  ],
+  [
+    <ShieldAlert key="i" size={16} />,
+    "Hand it to a human",
+    "Produces one page: who is affected, the evidence, the task, the governing rule with its citation, and the least disruptive action. A person decides. Always.",
+  ],
+];
+
+function Pipeline() {
+  return (
+    <Section
+      label="The pipeline"
+      title="Five steps, and the last one is a person"
+      lead="Nothing in this sequence acts on the crew. It watches, calculates, reads, checks its own suggestion for side effects, and then stops."
+    >
+      <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {STEPS.map(([icon, title, body], i) => (
+          <li key={title} className="glass-2 relative flex flex-col p-5">
+            <div className="flex items-center gap-2.5">
+              <span
+                className="inline-flex rounded-full p-2"
+                style={{
+                  color: i === STEPS.length - 1 ? "var(--ok)" : "var(--info)",
+                  background: "rgba(255,255,255,0.06)",
+                }}
+              >
+                {icon}
+              </span>
+              <span className="readout text-[12px] text-[var(--ink-3)]">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+            </div>
+            <h3 className="mt-3.5 text-[15px] font-medium text-[var(--ink)]">{title}</h3>
+            <p className="mt-2 text-[12.5px] leading-relaxed text-[var(--ink-3)]">{body}</p>
+          </li>
+        ))}
+      </ol>
+    </Section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+function Layout() {
+  const layers: [string, string, string, string][] = [
+    [
+      "The answer",
+      "var(--iris)",
+      "What to do, and why in one sentence",
+      "The recommended action in plain language, the operator it concerns, the four figures behind it, and what the action is predicted to buy. Or a refusal, styled as a different kind of answer rather than a failure.",
+    ],
+    [
+      "How it decided",
+      "var(--info)",
+      "Four counts: measured, offered, allowed, cited",
+      "The whole architecture in numbers you can hold. The maths went first. Retrieval offered several candidate rules, near-misses on purpose. A deterministic checker threw most of them out. What survived is the citation on the card above.",
+    ],
+    [
+      "The instrument",
+      "var(--ok)",
+      "Every clause, timing and hash, folded",
+      "The candidate passages with the checker's verdict clause by clause, the orchestrated flow with per-step timings, the hash-chained log, and every figure for every crew member. One click each — none of it deleted to keep the first read clean.",
+    ],
+  ];
+
+  return (
+    <Section
+      label="The console"
+      title="Three layers, in the order you need them"
+      lead="One screen. A newcomer should be able to read what is being recommended and why without opening anything; somebody auditing the decision should be able to reach every clause that produced it."
+    >
+      <div className="grid gap-3 lg:grid-cols-3">
+        {layers.map(([name, tone, headline, body], i) => (
+          <GlassCard key={name} className="flex flex-col p-6">
+            <div className="flex items-center gap-2.5">
+              <Layers size={15} style={{ color: tone }} />
+              <span
+                className="text-[10.5px] uppercase tracking-[0.15em]"
+                style={{ color: tone }}
+              >
+                Layer {i + 1} · {name}
+              </span>
+            </div>
+            <h3 className="mt-4 text-[16px] font-medium leading-snug text-[var(--ink)]">
+              {headline}
+            </h3>
+            <p className="mt-2.5 text-[13.5px] leading-relaxed text-[var(--ink-2)]">{body}</p>
+          </GlassCard>
+        ))}
+      </div>
+
+      <GlassCard className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-3 px-6 py-5">
+        <Compass size={17} className="shrink-0 text-[var(--iris)]" />
+        <p className="min-w-0 flex-1 text-[13.5px] leading-relaxed text-[var(--ink-2)]">
+          First visit runs a four-stop tour of those layers, and it is replayable from the console
+          masthead at any time.
+        </p>
+        <Link
+          href="/console/"
+          className="glass-3 glass-interactive inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-[13px] text-[var(--ink)]"
+        >
+          Take the tour
+          <ArrowRight size={14} />
+        </Link>
+      </GlassCard>
+    </Section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+function Honesty() {
+  return (
+    <Section
+      label="Real vs simulated"
+      title="What is real here, and what is not"
+      lead="Naming limitations explicitly is part of the design rather than a disclaimer bolted to it — this is a system whose central claim is that it flags risk honestly instead of asserting false certainty, and it would be a strange thing to describe dishonestly."
+    >
+      <div className="grid gap-3 lg:grid-cols-2">
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2.5">
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ background: "var(--ok)", boxShadow: "0 0 8px var(--ok)" }}
+            />
+            <Label>Real, and running</Label>
+          </div>
+          <ul className="mt-4 space-y-2.5 text-[13.5px] leading-relaxed text-[var(--ink-2)]">
+            {[
+              "The Three-Process Model of Alertness and NASA-TLX — the published models, computed from the inputs shown.",
+              "Retrieval over the procedure corpus, with confusable near-misses deliberately in the candidate set.",
+              "The compiled precondition checker that admits or rejects each passage independently of the model.",
+              "The refusal path, the schedule-impact and confidence screens, and the hash-chained audit trail — all live on every evaluation.",
+            ].map((line) => (
+              <li key={line} className="flex gap-2.5">
+                <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-[var(--ok)]" />
+                {line}
+              </li>
+            ))}
+          </ul>
+        </GlassCard>
+
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-2.5">
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ background: "var(--warn)", boxShadow: "0 0 8px var(--warn)" }}
+            />
+            <Label>Simulated, and labelled as such</Label>
+          </div>
+          <ul className="mt-4 space-y-2.5 text-[13.5px] leading-relaxed text-[var(--ink-2)]">
+            {[
+              "The crew roster is representative, not real individuals.",
+              "Sleep, duty and task timelines are synthetic — no public live crew-timeline feed exists.",
+              "Where a passage reports prototype authority, its text follows NASA flight-rule structure but was written for this build. The console labels every passage's provenance on the row.",
+              "The reasoning model is a scripted Granite stand-in unless a live provider is configured, so the offline path is a first-class path rather than a degraded one.",
+            ].map((line) => (
+              <li key={line} className="flex gap-2.5">
+                <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-[var(--warn)]" />
+                {line}
+              </li>
+            ))}
+          </ul>
+        </GlassCard>
+      </div>
+    </Section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+function Close() {
+  return (
+    <section className="relative overflow-hidden px-5 pb-24 pt-10 sm:px-8">
+      <div className="mx-auto max-w-[1560px]">
+        <GlassCard className="relative overflow-hidden px-6 py-14 text-center sm:px-14">
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-[-60%] h-[150%] -z-10"
+            style={{
+              background:
+                "radial-gradient(60% 60% at 50% 100%, rgba(150,110,255,0.3), rgba(150,110,255,0) 70%)",
+            }}
+          />
+          <h2 className="display mx-auto max-w-2xl text-[clamp(1.75rem,4vw,2.75rem)]">
+            The maths owns the numbers.
+            <br />
+            <span className="text-[var(--ink-2)]">The human owns the decision.</span>
+          </h2>
+          <p className="mx-auto mt-5 max-w-lg text-[14px] leading-relaxed text-[var(--ink-2)]">
+            Eight scenarios are wired up, including the one that matters most: the situation no
+            procedure governs, where the right output is to stop and escalate.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/console/"
+              className="glass-interactive group inline-flex items-center gap-2.5 rounded-full px-6 py-3.5 text-[14px] font-medium"
+              style={{
+                color: "var(--iris)",
+                background: "color-mix(in oklab, var(--iris) 18%, transparent)",
+                boxShadow:
+                  "inset 0 0 0 1px color-mix(in oklab, var(--iris) 48%, transparent), 0 20px 50px -22px rgba(120,72,255,0.7)",
+              }}
+            >
+              Enter the console
+              <ArrowRight
+                size={16}
+                className="transition-transform duration-300 group-hover:translate-x-1"
+              />
+            </Link>
+            <a
+              href="/docs"
+              className="glass-3 glass-interactive inline-flex items-center gap-2 rounded-full px-5 py-3.5 text-[14px] text-[var(--ink-2)] hover:text-[var(--ink)]"
+            >
+              API reference
+            </a>
+          </div>
+        </GlassCard>
+
+        <p className="mt-8 text-center text-[12px] text-[var(--ink-3)]">
+          HAVEN · Human Adaptation &amp; Vitality Enhancement Network · a prototype, and it says so
+          where it is one.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+function Section({
+  id,
+  label,
+  title,
+  lead,
+  children,
+}: {
+  id?: string;
+  label: string;
+  title: string;
+  lead: string;
+  children: ReactNode;
+}) {
+  return (
+    <section id={id} className="scroll-mt-8 px-5 py-14 sm:px-8 sm:py-20">
+      <div className="mx-auto max-w-[1560px]">
+        <div className="max-w-3xl">
+          <Label>{label}</Label>
+          <h2 className="display mt-3 text-[clamp(1.6rem,3.4vw,2.5rem)]">{title}</h2>
+          <p className="mt-4 text-[14.5px] leading-relaxed text-[var(--ink-2)]">{lead}</p>
+        </div>
+        <div className="mt-9">{children}</div>
+      </div>
+    </section>
+  );
+}

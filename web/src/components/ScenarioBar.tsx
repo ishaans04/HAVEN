@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import clsx from "clsx";
-import { BookOpen, ChevronDown, Info } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, ChevronDown, Compass, Info } from "lucide-react";
 import type { ScenarioSummary } from "@/lib/types";
 import { Chip, Label } from "./ui";
 
@@ -20,6 +21,7 @@ export function ScenarioBar({
   note,
   loading,
   onOpenProcedures,
+  onStartTour,
 }: {
   scenarios: ScenarioSummary[];
   selected: string;
@@ -27,6 +29,7 @@ export function ScenarioBar({
   note: string;
   loading: boolean;
   onOpenProcedures: () => void;
+  onStartTour: () => void;
 }) {
   const [showHonesty, setShowHonesty] = useState(false);
   const active = scenarios.find((s) => s.id === selected);
@@ -56,6 +59,15 @@ export function ScenarioBar({
         </p>
 
         <div className="ml-auto flex items-center gap-2">
+          <Link
+            href="/"
+            className="glass-3 glass-interactive hidden shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-[12.5px] text-[var(--ink-2)] hover:text-[var(--ink)] sm:flex"
+          >
+            What this is
+          </Link>
+          <BarButton onClick={onStartTour} icon={<Compass size={13} />}>
+            Tour
+          </BarButton>
           <BarButton onClick={onOpenProcedures} icon={<BookOpen size={13} />}>
             The rulebook
           </BarButton>
