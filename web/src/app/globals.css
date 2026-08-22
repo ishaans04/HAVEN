@@ -82,11 +82,27 @@
 html {
   background: var(--void-deep);
   -webkit-text-size-adjust: 100%;
+  /* The console has no horizontal content, and at narrow widths it was
+     nonetheless scrolling ~350px sideways into empty space: the horizontal
+     rails' content region leaks into the document's scrollable overflow even
+     though the rails clip correctly and paint nothing out there. Sampling the
+     overflow with elementFromPoint returns bare `body` at every height.
+
+     `clip` rather than `hidden` on purpose. `hidden` would make this element a
+     scroll container, which silently kills `position: sticky` on the masthead;
+     `clip` refuses the scroll without becoming one. The rails keep their own
+     overflow and still scroll. */
+  overflow-x: clip;
 }
 
 body {
   position: relative;
   min-height: 100vh;
+  /* Both html and body. Clipping the root alone does not stop it: the phantom
+     overflow originates inside body's box, and body still reported it upward.
+     See the note on `html`. `clip` keeps `position: sticky` working, which
+     `hidden` would not. */
+  overflow-x: clip;
   color: var(--ink);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   font-size: 14px;
@@ -313,10 +329,16 @@ html.js .reveal {
   transform: translateY(20px);
   filter: blur(7px);
 }
-.reveal-in {
+/* Scoped to `html.js` to match the hiding rule above, and not for symmetry:
+   `html.js .reveal` is specificity (0,2,1) and a bare `.reveal-in` is (0,1,0),
+   so the unscoped version lost every time and the whole page stayed at
+   opacity 0. Same scope, later in the file, so this one wins. */
+html.js .reveal-in {
   opacity: 1;
   transform: none;
-  filter: blur(0);
+  /* `none` rather than `blur(0)`: both look identical and only one of them
+     stops being a filter when the transition ends. See the note on `.rise`. */
+  filter: none;
   transition:
     opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
     transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
@@ -447,7 +469,16 @@ html.js .reveal {
   }
 }
 .rise {
-  animation: rise 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* `backwards`, not `both`.
+     `both` holds the final keyframe forever, which leaves `filter: blur(0)` and
+     a transform applied for the life of the page. An element carrying a filter
+     becomes a containing block and its overflow region stops respecting a
+     descendant scroll container -- so the crew rail, which clips its own six
+     cards correctly, was leaking all of them into the document and giving the
+     page 350px of horizontal scroll at narrow widths.
+     `backwards` applies the *first* keyframe before the animation runs and
+     leaves nothing behind after it. */
+  animation: rise 0.72s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 @keyframes breathe {

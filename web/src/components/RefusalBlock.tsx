@@ -64,7 +64,7 @@ const KINDS: Record<string, Kind> = {
   provider_unavailable: {
     icon: <PlugZap size={15} />,
     what: "The reasoning tier could not be reached.",
-    did: "Deterministic scoring is unaffected, but no rule can be interpreted without it — so the Situation escalates rather than being answered from the numbers alone.",
+    did: "Deterministic scoring is unaffected. But no rule can be interpreted without the reasoning tier, so the Situation escalates rather than being answered from the numbers alone.",
   },
   precondition_unmet: {
     icon: <Gavel size={15} />,
@@ -74,7 +74,7 @@ const KINDS: Record<string, Kind> = {
   checker_model_disagreement: {
     icon: <Scale size={15} />,
     what: "The reasoning tier and the deterministic checker reached different conclusions.",
-    did: "Resolved by refusing. Disagreement fails closed in both directions — a rejected passage is never cited, and a refusal is never overridden upward.",
+    did: "Resolved by refusing. Disagreement fails closed in both directions: a rejected passage is never cited, and a refusal is never overridden upward.",
   },
   numeric_integrity_failure: {
     icon: <Sigma size={15} />,
@@ -207,8 +207,8 @@ function Evidence({ refusal, situation }: { refusal: Refusal; situation: Situati
             <Meter value={coverage} color="var(--bad)" height={4} />
           </div>
           <p className="mt-2.5 text-[11.5px] leading-snug text-[var(--ink-3)]">
-            The deterministic tier still scored the window — those figures are above and they are
-            real. What it will not do is attach a recommendation to them at this coverage.
+            The deterministic tier still scored the window, and those figures above are real. What
+            it will not do is attach a recommendation to them at this coverage.
           </p>
         </Panel>
       );

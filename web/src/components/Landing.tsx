@@ -107,9 +107,10 @@ function Hero() {
 
           <Reveal delay={180}>
             <p className="mt-7 max-w-xl text-[16px] leading-relaxed text-[var(--ink-2)] sm:text-[17px]">
-            A tired operator and an irreversible task are about to meet. HAVEN sees the collision
-            coming, finds the rule in the mission&rsquo;s own procedures that governs it, and hands a
-              human the decision — or refuses to guess, and says so.
+              A tired operator and an irreversible task are about to meet. HAVEN sees the
+              collision coming, and finds the rule in the mission&rsquo;s own procedures that
+              governs it. Then it hands a human the decision. When no rule fits, it says so
+              instead of guessing.
             </p>
           </Reveal>
 
@@ -167,17 +168,17 @@ const PROBLEMS: [ReactNode, string, string][] = [
   [
     <Gauge key="i" size={17} />,
     "Fatigue is invisible until it is too late",
-    "A tired brain does not feel broken. Reaction time and judgement are measurably impaired while the person still feels fine, so self-assessment is the one instrument you cannot trust.",
+    "A tired brain does not feel broken. Reaction time and judgement degrade measurably while the person still feels fine. Self-assessment is the one instrument here you cannot trust.",
   ],
   [
     <Users key="i" size={17} />,
     "High performers push through",
-    "Astronauts are trained to power through exhaustion, and under-report it — partly out of pride, partly to avoid being pulled from a task they trained years for. “Are you too tired for this?” is the question the best operators are least likely to answer honestly.",
+    "Astronauts are trained to power through exhaustion, and they under-report it. Partly pride, partly not wanting to be pulled off a task they trained years for. “Are you too tired for this?” is the question your best operators are least likely to answer honestly.",
   ],
   [
     <Clock4 key="i" size={17} />,
     "A tiredness number alone is noise",
-    "Everyone is tired sometimes. Being tired during a rest period is fine; being tired forty minutes before a critical engine burn is not. What matters is fatigue set against what the person is about to do.",
+    "Everyone is tired sometimes. Being tired during a rest period is fine; being tired forty minutes before a critical engine burn is not. Fatigue only means anything set against what the person is about to do.",
   ],
 ];
 
@@ -187,7 +188,7 @@ function Problem() {
       id="how"
       label="The problem"
       title="Why this is hard to manage by hand"
-      lead="On a long mission the crew performs irreversible, high-consequence work — a propulsive burn, a docking, a spacewalk, a hatch closeout — under chronic fatigue and a radio delay to Earth too long for anyone on the ground to intervene in the moment."
+      lead="On a long mission the crew performs irreversible work under chronic fatigue: a propulsive burn, a docking, a spacewalk, a hatch closeout. The radio delay back to Earth is far too long for anyone on the ground to intervene in the moment."
     >
       <div className="grid gap-3 md:grid-cols-3">
         {PROBLEMS.map(([icon, title, body], i) => (
@@ -211,20 +212,20 @@ function GoldenRule() {
     <Section
       label="The golden rule"
       title="The AI never produces a safety number"
-      lead="Modern AI reads documents well and states wrong numbers with total confidence. In a system that can recommend pulling somebody off a critical task, an invented fatigue score is unacceptable — so the work is split along a hard line, and the line is enforced in code rather than in prompting."
+      lead="Modern AI reads documents well. It also states wrong numbers with total confidence. In a system that can recommend pulling somebody off a critical task, an invented fatigue score is unacceptable, so the work is split along a hard line. That line is enforced in code, not in prompting."
     >
       <div className="grid gap-3 lg:grid-cols-2">
         <GlassCard className="p-6" live>
           <Label>The fatigue &amp; workload engine</Label>
           <h3 className="display mt-2 text-[26px]">Ordinary maths</h3>
           <p className="mt-3 text-[13.5px] leading-relaxed text-[var(--ink-2)]">
-            Published, validated alertness and workload models. Same inputs, same score, every time
-            — and checkable by hand.
+            Published, validated alertness and workload models. Same inputs, same score, every
+            time. Checkable by hand.
           </p>
           <Owns
             owns="The alertness score, the workload score, sleep-debt, circadian phase, and every safety threshold in the system."
             question="Can it invent a number?"
-            answer="No — it is arithmetic."
+            answer="No. It is arithmetic."
             tone="var(--ok)"
           />
         </GlassCard>
@@ -239,7 +240,7 @@ function GoldenRule() {
           <Owns
             owns="Interpreting the rulebook, weighing the score against the upcoming task, drafting the briefing an operator reads."
             question="Can it invent a number?"
-            answer="Yes — so it is never allowed to supply one."
+            answer="Yes. So it is never allowed to supply one."
             tone="var(--iris)"
           />
         </GlassCard>
@@ -308,17 +309,17 @@ const STEPS: [ReactNode, string, string][] = [
   [
     <ClipboardList key="i" size={16} />,
     "Listen",
-    "Takes in recent sleep and duty history, hours on task, and how much the person is juggling. Inputs the crew already share with flight medicine — no hidden monitoring.",
+    "Takes in recent sleep and duty history, hours on task, and how much the person is juggling. These are inputs the crew already share with flight medicine. Nothing here is hidden monitoring.",
   ],
   [
     <Calculator key="i" size={16} />,
     "Calculate",
-    "Turns that history into an alertness score with published fatigue models — the same science behind airline crew scheduling. Ordinary maths, because a safety number must never be invented.",
+    "Turns that history into an alertness score with published fatigue models, the same science behind airline crew scheduling. Ordinary maths, because a safety number must never be invented.",
   ],
   [
     <FileSearch key="i" size={16} />,
     "Read the manual",
-    "When alertness is low, the reasoning tier searches the mission's own procedures for the rule that governs the upcoming task — and a deterministic checker tests whether it really applies.",
+    "When alertness is low, the reasoning tier searches the mission's own procedures for the rule that governs the upcoming task. A deterministic checker then tests whether it really applies.",
   ],
   [
     <UserCheck key="i" size={16} />,
@@ -336,7 +337,7 @@ function Pipeline() {
   return (
     <Section
       label="The pipeline"
-      title="Five steps, and the last one is a person"
+      title="Five steps. A person takes the last one."
       lead="Nothing in this sequence acts on the crew. It watches, calculates, reads, checks its own suggestion for side effects, and then stops."
     >
       <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -372,7 +373,7 @@ function Layout() {
     [
       "The answer",
       "var(--iris)",
-      "What to do, and why in one sentence",
+      "What to do about it",
       "The recommended action in plain language, the operator it concerns, the four figures behind it, and what the action is predicted to buy. Or a refusal, styled as a different kind of answer rather than a failure.",
     ],
     [
@@ -384,15 +385,15 @@ function Layout() {
     [
       "The instrument",
       "var(--ok)",
-      "Every clause, timing and hash, folded",
-      "The candidate passages with the checker's verdict clause by clause, the orchestrated flow with per-step timings, the hash-chained log, and every figure for every crew member. One click each — none of it deleted to keep the first read clean.",
+      "The whole evidence trail",
+      "The candidate passages with the checker's verdict clause by clause, the orchestrated flow with per-step timings, the hash-chained log, and every figure for every crew member. One click each. None of it was deleted to keep the first read clean.",
     ],
   ];
 
   return (
     <Section
       label="The console"
-      title="Three layers, in the order you need them"
+      title="Read it in three layers"
       lead="One screen. A newcomer should be able to read what is being recommended and why without opening anything; somebody auditing the decision should be able to reach every clause that produced it."
     >
       <div className="grid gap-3 lg:grid-cols-3">
@@ -442,7 +443,7 @@ function Honesty() {
     <Section
       label="Real vs simulated"
       title="What is real here, and what is not"
-      lead="Naming limitations explicitly is part of the design rather than a disclaimer bolted to it — this is a system whose central claim is that it flags risk honestly instead of asserting false certainty, and it would be a strange thing to describe dishonestly."
+      lead="Naming limitations is part of the design here, not a disclaimer bolted onto it. This is a system whose central claim is that it flags risk honestly instead of asserting false certainty. It would be a strange thing to describe dishonestly."
     >
       <div className="grid gap-3 lg:grid-cols-2">
         <GlassCard className="p-6">
@@ -455,10 +456,10 @@ function Honesty() {
           </div>
           <ul className="mt-4 space-y-2.5 text-[13.5px] leading-relaxed text-[var(--ink-2)]">
             {[
-              "The Three-Process Model of Alertness and NASA-TLX — the published models, computed from the inputs shown.",
+              "The Three-Process Model of Alertness and NASA-TLX: the published models, computed from the inputs shown.",
               "Retrieval over the procedure corpus, with confusable near-misses deliberately in the candidate set.",
               "The compiled precondition checker that admits or rejects each passage independently of the model.",
-              "The refusal path, the schedule-impact and confidence screens, and the hash-chained audit trail — all live on every evaluation.",
+              "The refusal path, the schedule-impact and confidence screens, and the hash-chained audit trail. All of it runs live on every evaluation.",
             ].map((line) => (
               <li key={line} className="flex gap-2.5">
                 <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-[var(--ok)]" />
@@ -479,7 +480,7 @@ function Honesty() {
           <ul className="mt-4 space-y-2.5 text-[13.5px] leading-relaxed text-[var(--ink-2)]">
             {[
               "The crew roster is representative, not real individuals.",
-              "Sleep, duty and task timelines are synthetic — no public live crew-timeline feed exists.",
+              "Sleep, duty and task timelines are synthetic. No public live crew-timeline feed exists.",
               "Where a passage reports prototype authority, its text follows NASA flight-rule structure but was written for this build. The console labels every passage's provenance on the row.",
               "The reasoning model is a scripted Granite stand-in unless a live provider is configured, so the offline path is a first-class path rather than a degraded one.",
             ].map((line) => (

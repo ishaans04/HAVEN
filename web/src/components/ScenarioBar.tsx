@@ -100,7 +100,7 @@ export function ScenarioBar({
             <Label className="!text-[10.5px]">Simulated, and labelled</Label>
             <p className="mt-2 text-[12.5px] leading-relaxed text-[var(--ink-2)]">
               The crew roster is representative, not real individuals. Sleep, duty and task
-              timelines are synthetic — no public live crew-timeline feed exists. Where the corpus
+              timelines are synthetic. No public live crew-timeline feed exists. Where the corpus
               reports <span className="mono">prototype</span> authority, its text follows NASA
               flight-rule structure but was written for this build. The reasoning model is a
               scripted Granite stand-in unless a live provider is configured.

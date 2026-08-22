@@ -157,7 +157,7 @@ export function ProcedureReasoning({
           label="Cited"
           body={
             citation
-              ? `${citation.doc} — proposed by the model and confirmed clause by clause.`
+              ? `${citation.doc}, proposed by the model and confirmed clause by clause.`
               : "Nothing cleared the checker, so nothing was cited and the flow refused."
           }
         />
@@ -167,7 +167,7 @@ export function ProcedureReasoning({
       <div className="mt-4 space-y-2 px-6 pb-6">
         <Disclosure
           summary="Every candidate, and the checker's verdict on each"
-          hint="The model reads passage prose only — it never sees the compiled preconditions the checker evaluates."
+          hint="The model reads passage prose only. It never sees the compiled preconditions the checker evaluates."
         >
           <ul className="space-y-2.5">
             {candidates.map((candidate) => {
@@ -214,7 +214,7 @@ export function ProcedureReasoning({
                         {isGoverning
                           ? "This passage, as governing."
                           : rejection
-                            ? `Rejected — ${rejection.why}`
+                            ? `Rejected: ${rejection.why}`
                             : "Not selected."}
                       </p>
                     </div>

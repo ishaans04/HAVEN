@@ -64,8 +64,8 @@ export function VerdictCard({
         </div>
         <h2 className="display text-[26px]">Nothing needs a decision</h2>
         <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-[var(--ink-2)]">
-          Every task in this window cleared the deterministic trigger. A quiet console is a valid
-          state, not a broken one — the tier strip below shows the system is live.
+          Every task in this window cleared the deterministic trigger. A quiet console is a
+          valid state, not a broken one. The tier strip below shows the system is live.
         </p>
       </GlassCard>
     );
@@ -147,7 +147,7 @@ export function VerdictCard({
               ) : null}
               , with {humanise(situation.task_label)} due at {utcTime(situation.task_scheduled)} at{" "}
               {situation.task_criticality} criticality
-              {situation.circadian_flag ? " — inside their body-clock low" : ""}.
+              {situation.circadian_flag ? ", inside their body-clock low" : ""}.
             </>
           )}
         </p>
@@ -242,8 +242,8 @@ export function VerdictCard({
             </div>
             <p className="mt-2.5 text-[11.5px] leading-snug text-[var(--ink-3)]">
               {projection.subject_name ? `${projection.subject_name}. ` : ""}
-              {projection.basis} A projection under the Three-Process Model, not a measurement —
-              nothing here observes the crew afterwards.
+              {projection.basis} A projection under the Three-Process Model, not a
+              measurement. Nothing here observes the crew afterwards.
             </p>
           </div>
         </div>

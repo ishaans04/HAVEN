@@ -80,7 +80,7 @@ export function TaskRiskTimeline({
       <div className="glass-2 px-2 py-3">
         <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2 px-2">
           <span className="text-[13px] text-[var(--ink-2)]">
-            Predicted alertness — {crew.name}
+            Predicted alertness · {crew.name}
           </span>
           <span className="mono text-[11px] text-[var(--ink-3)]">
             {crewTasks.length} task{crewTasks.length === 1 ? "" : "s"} assigned · 24 h window
