@@ -61,6 +61,7 @@ export function GlassCard({
   children,
   className,
   live,
+  refuse,
   interactive,
   loading,
   sheen = true,
@@ -70,6 +71,8 @@ export function GlassCard({
   className?: string;
   /** The one surface asking to be read next. At most one at a time. */
   live?: boolean;
+  /** The same emphasis as `live`, in the colour reserved for a stop. */
+  refuse?: boolean;
   interactive?: boolean;
   loading?: boolean;
   /** The pointer-tracked specular highlight. On by default; off for surfaces
@@ -113,7 +116,8 @@ export function GlassCard({
       onPointerMove={withSheen ? onPointerMove : undefined}
       className={clsx(
         "glass",
-        live_ && "glass-live",
+        live_ && !refuse && "glass-live",
+        refuse && "glass-refuse",
         interactive && "glass-interactive",
         loading && "loading-sheen",
         className,

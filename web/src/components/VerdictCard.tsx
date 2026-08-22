@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { ArrowRight, Check, CircleSlash, ShieldAlert, UserCheck, X } from "lucide-react";
 import type { CrewReadiness, Situation } from "@/lib/types";
 import { recordDecision } from "@/lib/api";
+import { EscalationTarget, RefusalBlock } from "./RefusalBlock";
 import { Chip, Disclosure, GlassCard, Label, Meter, StatTile, TONE_VAR, toneOf, utcTime } from "./ui";
 
 const CONFIDENCE_TONE: Record<string, "ok" | "warn" | "bad"> = {
@@ -94,7 +95,7 @@ export function VerdictCard({
   }
 
   return (
-    <GlassCard live className="overflow-hidden">
+    <GlassCard live={!isRefusal} refuse={isRefusal} className="overflow-hidden">
       {/* Header — who and when, and how bad. */}
       <div className="flex flex-wrap items-start gap-3 px-6 pt-5">
         <div className="min-w-0 flex-1">
@@ -151,16 +152,7 @@ export function VerdictCard({
           )}
         </p>
 
-        {isRefusal && ref ? (
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Chip tone="bad" icon={<ShieldAlert size={12} />} solid>
-              escalate to {humanise(ref.escalate_to)}
-            </Chip>
-            {ref.checker_disagreed ? (
-              <Chip tone="warn">reasoning tier and checker disagreed — failed closed</Chip>
-            ) : null}
-          </div>
-        ) : null}
+        {isRefusal && ref ? <RefusalBlock refusal={ref} situation={situation} /> : null}
 
         {rec ? (
           <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -296,74 +288,6 @@ export function VerdictCard({
           </Disclosure>
         ) : null}
 
-        {isRefusal && ref ? (
-          <Disclosure
-            summary="What was searched, and why nothing applied"
-            hint={`${ref.searched.length} document${ref.searched.length === 1 ? "" : "s"} searched · closest candidate recorded`}
-          >
-            <div className="glass-2 space-y-4 px-4 py-3.5">
-              <div>
-                <Label className="!text-[10.5px]">Searched</Label>
-                <div className="mono mt-2 flex flex-wrap gap-1.5">
-                  {ref.searched.map((doc) => (
-                    <span
-                      key={doc}
-                      className="glass-3 rounded-full px-2.5 py-[3px] text-[11px] text-[var(--ink-2)]"
-                    >
-                      {doc}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {ref.failed_clauses.length > 0 ? (
-                <div>
-                  <Label className="!text-[10.5px]">
-                    Checker rejected {ref.model_selected} — unsatisfied preconditions
-                  </Label>
-                  <ul className="mt-2 space-y-2">
-                    {ref.failed_clauses.map((clause) => (
-                      <li key={clause.clause} className="text-[12.5px] leading-snug">
-                        <span className="mono text-[11.5px] text-[var(--ink-3)]">
-                          {clause.clause}
-                        </span>
-                        <span className="ml-2 text-[var(--ink-2)]">
-                          wants {clause.expected} · got {clause.actual}
-                        </span>
-                        <div className="mt-0.5 text-[var(--bad)]">{clause.explanation}</div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-
-              {ref.best_candidate ? (
-                <div>
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <Label className="!text-[10.5px]">
-                      Closest candidate — {ref.best_candidate.doc} §{ref.best_candidate.section}
-                    </Label>
-                    <span className="mono text-[11px] text-[var(--ink-3)]">
-                      retrieval similarity {ref.best_candidate.relevance.toFixed(3)}
-                    </span>
-                  </div>
-                  <div className="mt-2">
-                    <Meter
-                      value={ref.best_candidate.relevance}
-                      threshold={ref.gate}
-                      color="var(--bad)"
-                      height={5}
-                    />
-                  </div>
-                  <p className="mt-2 text-[11.5px] leading-snug text-[var(--ink-3)]">
-                    Similarity explains what was found, and decides nothing. Admissibility is
-                    settled clause by clause above.
-                  </p>
-                </div>
-              ) : null}
-            </div>
-          </Disclosure>
-        ) : null}
 
         {impact ? (
           <Disclosure
@@ -415,9 +339,14 @@ export function VerdictCard({
           </div>
         ) : (
           <>
-            <p className="text-[12.5px] text-[var(--ink-3)]">
-              HAVEN does not execute, defer, or reassign. Record the operator decision.
-            </p>
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <p className="text-[12.5px] text-[var(--ink-3)]">
+                HAVEN does not execute, defer, or reassign. Record the operator decision.
+              </p>
+              {/* On a refusal the escalation target is the action, so it belongs
+                  next to the button rather than in a chip further up. */}
+              {isRefusal && ref ? <EscalationTarget refusal={ref} /> : null}
+            </div>
             <div className="mt-3 flex flex-col gap-2.5 sm:flex-row">
               <input
                 value={reason}

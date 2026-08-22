@@ -210,6 +210,18 @@ body::after {
     0 36px 80px -34px rgba(0, 0, 0, 0.9);
 }
 
+/* A surface that is declining to answer. The same lift as `glass-live`, in the
+   colour the palette reserves for a stop — because a refusal is the card
+   wanting to be read most, not a card that failed to render. */
+.glass-refuse {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 0 0 1px rgba(255, 128, 149, 0.3),
+    0 0 0 1px rgba(255, 128, 149, 0.12),
+    0 30px 90px -30px rgba(255, 80, 110, 0.32),
+    0 36px 80px -34px rgba(0, 0, 0, 0.9);
+}
+
 .glass-interactive {
   transition:
     transform 0.42s cubic-bezier(0.16, 1, 0.3, 1),
