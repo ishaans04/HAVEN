@@ -8,16 +8,10 @@ import type {
   Situation,
 } from "@/lib/types";
 import { ClauseTally, ClauseVerdict } from "./ClauseVerdict";
+import { FlowTrack } from "./FlowTrack";
 import { RetrievalFunnel } from "./RetrievalFunnel";
 import { Chip, Disclosure, GlassCard, Label, Meter } from "./ui";
 
-const TIER_TONE: Record<string, string> = {
-  deterministic: "var(--ok)",
-  retrieval: "var(--info)",
-  reasoning: "var(--iris)",
-  orchestration: "var(--warn)",
-  human: "var(--ink)",
-};
 
 const FLOW_STEPS = [
   "RETRIEVE",
@@ -229,41 +223,9 @@ export function ProcedureReasoning({
 
         <Disclosure
           summary="The orchestrated flow, step by step"
-          hint={`${flow.length} steps, each logged with the tier that ran it and what it took`}
+          hint="Coloured by the tier that ran each step, so the alternation between model and checker is visible at a glance"
         >
-          <ol className="space-y-0 pl-1">
-            {flow.map((s) => (
-              <li key={s.seq} className="relative flex gap-3.5 pb-3.5 last:pb-0">
-                <span className="relative flex w-3 shrink-0 justify-center">
-                  <span
-                    className="absolute top-[6px] h-2 w-2 rounded-full"
-                    style={{
-                      background: TIER_TONE[s.tier] ?? "var(--ink-3)",
-                      boxShadow: `0 0 8px ${TIER_TONE[s.tier] ?? "transparent"}`,
-                    }}
-                  />
-                  <span className="absolute top-[18px] bottom-[-6px] w-px bg-white/10" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex flex-wrap items-baseline gap-x-2.5">
-                    <span className="mono text-[12px] font-medium text-[var(--ink)]">{s.step}</span>
-                    <span
-                      className="text-[10.5px] uppercase tracking-[0.14em]"
-                      style={{ color: TIER_TONE[s.tier] ?? "var(--ink-3)" }}
-                    >
-                      {s.tier}
-                    </span>
-                    <span className="mono ml-auto text-[11px] text-[var(--ink-3)]">
-                      {s.duration_ms.toFixed(1)} ms
-                    </span>
-                  </span>
-                  <span className="mt-0.5 block text-[12.5px] leading-snug text-[var(--ink-2)]">
-                    {s.detail}
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ol>
+          <FlowTrack steps={flow} />
         </Disclosure>
       </div>
     </GlassCard>

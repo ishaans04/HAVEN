@@ -186,7 +186,7 @@ export function Console() {
             <div className="mt-4 grid gap-4 lg:grid-cols-12">
               {/* Zone 2 — the day, as a dial. */}
               <GlassCard
-                className="flex flex-col p-5 lg:col-span-5"
+                className="flex flex-col p-5 lg:col-span-6"
                 loading={loading}
                 style={{ animationDelay: "60ms" }}
               >
@@ -198,7 +198,7 @@ export function Console() {
                     </span>
                   </div>
 
-                  <div className="mx-auto w-full max-w-[520px]">
+                  <div className="mx-auto w-full max-w-[620px]">
                     <OrbitDial
                       crew={crew}
                       tasks={evaluation.timeline}
@@ -238,7 +238,7 @@ export function Console() {
               </GlassCard>
 
               {/* Zones 4, 5 and 3 — the answer, then how it was reached. */}
-              <div className="flex flex-col gap-4 lg:col-span-7">
+              <div className="flex flex-col gap-4 lg:col-span-6">
                 <div className="rise" style={{ animationDelay: "120ms" }} data-tour="verdict">
                   <VerdictCard situation={situation} readiness={evaluation.readiness} />
                 </div>
