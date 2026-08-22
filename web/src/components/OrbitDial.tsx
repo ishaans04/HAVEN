@@ -472,11 +472,11 @@ export function OrbitDial({
 
 /** The dial's key. Small, and beside the dial rather than over it. */
 export function OrbitLegend({ className }: { className?: string }) {
-  const items: [string, string, string][] = [
-    ["var(--info)", "Predicted alertness", "band radius"],
+  const items: [string, string, string | null][] = [
+    ["var(--info)", "Predicted alertness", null],
     ["var(--warn)", "Execution threshold", "0.70"],
-    ["var(--bad)", "Circadian low", "outer arc"],
-    ["var(--iris)", "Scheduled sleep", "outer arc"],
+    ["var(--bad)", "Circadian low", null],
+    ["var(--iris)", "Scheduled sleep", null],
   ];
   return (
     <ul className={clsx("flex flex-wrap items-center gap-x-5 gap-y-2", className)}>
@@ -487,7 +487,7 @@ export function OrbitLegend({ className }: { className?: string }) {
             style={{ background: color, boxShadow: `0 0 8px -1px ${color}` }}
           />
           {label}
-          <span className="text-[var(--ink-3)]">{note}</span>
+          {note ? <span className="readout text-[11px] text-[var(--ink-3)]">{note}</span> : null}
         </li>
       ))}
     </ul>

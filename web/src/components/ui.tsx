@@ -358,18 +358,40 @@ export function Ring({
   size = 44,
   stroke = 3.5,
   tone = "ok",
+  mark,
   children,
 }: {
   value: number;
   size?: number;
   stroke?: number;
   tone?: Tone;
+  /**
+   * A reference value, drawn as a notch across the track.
+   *
+   * On the crew rail this is the operator's own baseline, and it is the
+   * difference between a dial that reports a number and one that reports a
+   * departure. "0.37" means nothing until you can see it sitting well inside
+   * where that person normally runs.
+   */
+  mark?: number;
   children?: ReactNode;
 }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const clamped = Math.max(0, Math.min(1, value));
   const color = TONE_VAR[tone];
+  const notch = (() => {
+    if (mark === undefined) return null;
+    const angle = Math.max(0, Math.min(1, mark)) * 2 * Math.PI;
+    const inner = r - stroke / 2 - 1.5;
+    const outer = r + stroke / 2 + 1.5;
+    return {
+      x1: size / 2 + inner * Math.cos(angle),
+      y1: size / 2 + inner * Math.sin(angle),
+      x2: size / 2 + outer * Math.cos(angle),
+      y2: size / 2 + outer * Math.sin(angle),
+    };
+  })();
   return (
     <span className="relative inline-flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90" aria-hidden>
@@ -393,6 +415,18 @@ export function Ring({
           strokeDashoffset={c * (1 - clamped)}
           style={{ filter: `drop-shadow(0 0 5px ${color})`, transition: "stroke-dashoffset .8s cubic-bezier(.16,1,.3,1)" }}
         />
+        {notch ? (
+          <line
+            x1={notch.x1}
+            y1={notch.y1}
+            x2={notch.x2}
+            y2={notch.y2}
+            stroke="var(--ink-2)"
+            strokeWidth={1.25}
+            strokeLinecap="round"
+            opacity={0.75}
+          />
+        ) : null}
       </svg>
       <span className="absolute inset-0 flex items-center justify-center">{children}</span>
     </span>

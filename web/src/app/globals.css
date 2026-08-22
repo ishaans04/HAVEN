@@ -88,7 +88,7 @@ body {
   position: relative;
   min-height: 100vh;
   color: var(--ink);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   /* Tabular figures everywhere. A number that changes width as it changes value
@@ -385,13 +385,13 @@ html.js .reveal {
    Type
    ------------------------------------------------------------------------ */
 .display {
-  font-weight: 250;
-  letter-spacing: -0.032em;
-  line-height: 1.04;
+  font-weight: 300;
+  letter-spacing: -0.021em;
+  line-height: 1.06;
 }
 .display .em {
   font-weight: 500;
-  letter-spacing: -0.036em;
+  letter-spacing: -0.025em;
 }
 
 /* Micro-caps. 11px is the floor: v1 ran labels at 9px, which is decoration
@@ -399,21 +399,23 @@ html.js .reveal {
 .label {
   font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-3);
 }
 
 .mono {
-  font-family: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: var(--font-mono), ui-monospace, "SF Mono", Menlo, monospace;
   font-feature-settings: "tnum" 1;
 }
 
 /* A figure. Large, light, tabular — the shape a gauge reading has. */
 .readout {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-weight: 300;
-  letter-spacing: -0.02em;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 400;
+  /* Plex Mono is already monospaced and already tabular; the negative tracking
+     Geist wanted only made the figures collide here. */
+  letter-spacing: -0.005em;
   font-variant-numeric: tabular-nums;
 }
 

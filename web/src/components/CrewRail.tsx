@@ -37,28 +37,44 @@ export function CrewRail({
             aria-pressed={active}
             className="selectable flex w-[186px] shrink-0 snap-start items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-left"
           >
-            <Ring value={crew.alertness_score} tone={tone} size={42}>
-              <span className="readout text-[12px] text-[var(--ink)]">
+            {/* The notch is the operator's own baseline. Without it the ring
+                reports a number; with it the ring reports a departure, which is
+                what the section claims to be showing. */}
+            <Ring
+              value={crew.alertness_score}
+              mark={crew.baseline_alertness}
+              tone={tone}
+              size={44}
+            >
+              <span className="readout text-[12.5px] text-[var(--ink)]">
                 {crew.alertness_score.toFixed(2).slice(1)}
               </span>
             </Ring>
+
+            {/* Two lines on every card, always. A third line that appears only
+                for the one operator who is declining knocks that card's rhythm
+                out of step with the five beside it — so the trend rides on the
+                role line as a glyph instead of taking a row of its own. */}
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[13.5px] font-medium text-[var(--ink)]">
+              <span className="block truncate text-[13.5px] font-medium tracking-[-0.005em] text-[var(--ink)]">
                 {crew.name}
               </span>
-              <span className="mt-0.5 block truncate text-[11.5px] capitalize text-[var(--ink-3)]">
-                {crew.role.replace(/_/g, " ")}
+              <span className="mt-1 flex items-center gap-1.5">
+                <span className="truncate text-[10.5px] font-medium uppercase tracking-[0.11em] text-[var(--ink-3)]">
+                  {crew.role.replace(/_/g, " ")}
+                </span>
+                {crew.trend === "declining" ? (
+                  <TrendingDown size={12} aria-hidden className="shrink-0 text-[var(--bad)]" />
+                ) : null}
               </span>
-              {crew.trend === "declining" ? (
-                <span className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-[var(--bad)]">
-                  <TrendingDown size={11} />
-                  declining
-                </span>
-              ) : crew.status !== "nominal" ? (
-                <span className="mt-1.5 block text-[11px] capitalize text-[var(--warn)]">
-                  {crew.status}
-                </span>
-              ) : null}
+              {/* Ring colour carries the state visually and carries nothing at
+                  all to a screen reader. This is the same information in the
+                  channel that does not depend on seeing it. */}
+              <span className="sr-only">
+                alertness {crew.alertness_score.toFixed(2)}, baseline{" "}
+                {crew.baseline_alertness.toFixed(2)}, {crew.status}
+                {crew.trend === "declining" ? ", declining" : ""}
+              </span>
             </span>
           </button>
         );

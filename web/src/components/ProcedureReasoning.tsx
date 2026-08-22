@@ -92,9 +92,12 @@ export function ProcedureReasoning({
       <div className="flex flex-wrap items-start gap-3 px-6 pt-5">
         <div className="min-w-0 flex-1">
           <Label>How it decided</Label>
-          <p className="mt-1.5 max-w-xl text-[13px] leading-relaxed text-[var(--ink-2)]">
-            The maths owns the numbers. The compiler owns the rules, the reasoning tier proposes,
-            and a deterministic checker disposes.
+          {/* This said the maths-owns-the-numbers line, which the masthead is
+              already saying six inches above it. A slogan restated on the same
+              screen stops being a principle and becomes filler. The four counts
+              below demonstrate it; they do not need it announced. */}
+          <p className="mono mt-1.5 text-[11px] text-[var(--ink-3)]">
+            {situation.situation_id}
           </p>
         </div>
         {governing ? (

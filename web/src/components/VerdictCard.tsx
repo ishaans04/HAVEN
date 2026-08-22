@@ -160,7 +160,9 @@ export function VerdictCard({
               {rec.citation.doc} §{rec.citation.section}
             </Chip>
             <span className="text-[12.5px] text-[var(--ink-3)]">
-              Cost — {rec.resource_cost}
+              <span className="uppercase tracking-[0.11em] text-[10.5px] font-medium">Cost</span>
+              {" · "}
+              {rec.resource_cost}
             </span>
           </div>
         ) : null}

@@ -5,7 +5,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { BookOpen, ChevronDown, Compass, Info } from "lucide-react";
 import type { ScenarioSummary } from "@/lib/types";
-import { Chip, Label } from "./ui";
+import { Label } from "./ui";
 
 /**
  * The masthead: identity, the scenario picker, and the honesty panel.
@@ -140,10 +140,12 @@ export function ScenarioBar({
             <h2 className="text-[15px] font-medium tracking-[-0.01em] text-[var(--ink)]">
               {active.title}
             </h2>
-            <Chip tone="iris">{active.demonstrates.toLowerCase()}</Chip>
             <span className="mono text-[11px] text-[var(--ink-3)]">{active.id}</span>
           </div>
-          <p className="mt-1.5 max-w-4xl text-[12.5px] leading-relaxed text-[var(--ink-3)]">
+          <p className="mt-1 text-[10.5px] font-medium uppercase tracking-[0.11em] text-[var(--iris)]">
+            {active.demonstrates.replace(/\.$/, "")}
+          </p>
+          <p className="mt-2 max-w-4xl text-[12.5px] leading-relaxed text-[var(--ink-3)]">
             {note || active.note}
           </p>
         </div>

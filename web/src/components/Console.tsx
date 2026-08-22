@@ -166,9 +166,14 @@ export function Console() {
             <section className="rise" data-tour="crew">
               <div className="mb-2.5 flex flex-wrap items-baseline gap-x-3">
                 <Label>Crew readiness</Label>
-                <span className="text-[12px] text-[var(--ink-3)]">
-                  Predicted alertness against each operator&rsquo;s own baseline — select one to put
-                  them on the dial
+                {/* The instructional sentence that used to sit here explained
+                    the baseline comparison and told you to click something. The
+                    notch on each ring now shows the comparison, the tour covers
+                    the interaction once, and an instrument that narrates itself
+                    on every screen reads as one that does not trust its own
+                    labels. */}
+                <span className="mono text-[11px] text-[var(--ink-3)]">
+                  {evaluation.readiness.length} operators
                 </span>
               </div>
               <CrewRail
@@ -189,7 +194,7 @@ export function Console() {
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                     <Label>The window</Label>
                     <span className="mono text-[11px] text-[var(--ink-3)]">
-                      24 h · midnight at the top
+                      {evaluation.window.start.slice(0, 10)} · 24 h
                     </span>
                   </div>
 
@@ -222,7 +227,7 @@ export function Console() {
                   </Disclosure>
 
                   <Disclosure
-                    summary="The numbers, for every operator"
+                    summary="Every operator, every figure"
                     hint="Baseline, workload, sleep debt, hours awake, window low and record coverage"
                   >
                     <div className="glass-2 px-1 py-2">
