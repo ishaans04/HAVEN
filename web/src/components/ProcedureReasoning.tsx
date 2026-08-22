@@ -1,7 +1,5 @@
 "use client";
 
-import clsx from "clsx";
-import { Calculator, FileSearch, Gavel, MessageSquareQuote } from "lucide-react";
 import type {
   AuditRecord,
   ClauseDetail,
@@ -10,7 +8,8 @@ import type {
   Situation,
 } from "@/lib/types";
 import { ClauseTally, ClauseVerdict } from "./ClauseVerdict";
-import { Chip, Disclosure, GlassCard, Label, Meter, TONE_VAR } from "./ui";
+import { RetrievalFunnel } from "./RetrievalFunnel";
+import { Chip, Disclosure, GlassCard, Label, Meter } from "./ui";
 
 const TIER_TONE: Record<string, string> = {
   deterministic: "var(--ok)",
@@ -85,6 +84,19 @@ export function ProcedureReasoning({
   const admissibleIds = new Set((admissibility?.outputs.admissible ?? []) as string[]);
   const rejectionById = new Map(rejected.map((r) => [r.passage_id, r]));
   const flow = (audit?.steps ?? []).filter((s) => FLOW_STEPS.includes(s.step));
+
+  // One lane per retrieved passage, carrying the clause tally that decided it.
+  const lanes = candidates.map((candidate) => {
+    const clauses = clausesById[candidate.passage_id] ?? [];
+    return {
+      passageId: candidate.passage_id,
+      relevance: candidate.relevance,
+      admissible: admissibleIds.has(candidate.passage_id),
+      met: clauses.filter((c) => c.satisfied).length,
+      total: clauses.length,
+      why: rejectionById.get(candidate.passage_id)?.why ?? null,
+    };
+  });
   const citation = situation.recommendation?.citation;
 
   return (
@@ -127,40 +139,10 @@ export function ProcedureReasoning({
         </div>
       ) : null}
 
-      {/* The four counts. */}
-      <div className="mt-5 grid gap-2.5 px-6 sm:grid-cols-2 xl:grid-cols-4">
-        <Count
-          icon={<Calculator size={14} />}
-          tone="ok"
-          n={situation.alertness_score.toFixed(2)}
-          label="Measured"
-          body="Alertness and workload, computed deterministically before any model was asked anything."
-        />
-        <Count
-          icon={<FileSearch size={14} />}
-          tone="info"
-          n={String(candidates.length)}
-          label="Offered"
-          body="Passages retrieved for this situation, near-misses deliberately included."
-        />
-        <Count
-          icon={<Gavel size={14} />}
-          tone={admissibleIds.size ? "warn" : "bad"}
-          n={`${admissibleIds.size}/${candidates.length || 0}`}
-          label="Allowed"
-          body="Survived the compiled preconditions, checked independently of the model."
-        />
-        <Count
-          icon={<MessageSquareQuote size={14} />}
-          tone={citation ? "iris" : "bad"}
-          n={citation ? `§${citation.section}` : "none"}
-          label="Cited"
-          body={
-            citation
-              ? `${citation.doc}, proposed by the model and confirmed clause by clause.`
-              : "Nothing cleared the checker, so nothing was cited and the flow refused."
-          }
-        />
+      {/* Four rules in, one citation out. The tiles that used to sit here spent
+          forty-six words describing this; the diagram performs it. */}
+      <div className="mt-5 px-6">
+        <RetrievalFunnel lanes={lanes} citation={citation} />
       </div>
 
       {/* The specialist layers. */}
@@ -285,31 +267,5 @@ export function ProcedureReasoning({
         </Disclosure>
       </div>
     </GlassCard>
-  );
-}
-
-function Count({
-  icon,
-  n,
-  label,
-  body,
-  tone,
-}: {
-  icon: React.ReactNode;
-  n: string;
-  label: string;
-  body: string;
-  tone: "ok" | "info" | "warn" | "bad" | "iris";
-}) {
-  const color = TONE_VAR[tone];
-  return (
-    <div className="glass-2 px-4 py-3.5">
-      <div className="flex items-center gap-2" style={{ color }}>
-        {icon}
-        <span className={clsx("text-[10.5px] uppercase tracking-[0.15em]")}>{label}</span>
-      </div>
-      <div className="readout mt-2 text-[24px] leading-none text-[var(--ink)]">{n}</div>
-      <p className="mt-2 text-[11.5px] leading-snug text-[var(--ink-3)]">{body}</p>
-    </div>
   );
 }

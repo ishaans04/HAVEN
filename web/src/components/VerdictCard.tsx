@@ -6,7 +6,9 @@ import { ArrowRight, Check, CircleSlash, ShieldAlert, UserCheck, X } from "lucid
 import type { CrewReadiness, Situation } from "@/lib/types";
 import { recordDecision } from "@/lib/api";
 import { EscalationTarget, RefusalBlock } from "./RefusalBlock";
-import { Chip, Disclosure, GlassCard, Label, Meter, StatTile, TONE_VAR, toneOf, utcTime } from "./ui";
+import { RosterSeats } from "./RosterSeats";
+import { Vitals } from "./Vitals";
+import { Chip, Disclosure, GlassCard, Label, Meter, TONE_VAR, toneOf, utcTime } from "./ui";
 
 const CONFIDENCE_TONE: Record<string, "ok" | "warn" | "bad"> = {
   high: "ok",
@@ -168,33 +170,9 @@ export function VerdictCard({
         ) : null}
       </div>
 
-      {/* The deterministic evidence. Four figures, at a size they can be read. */}
-      <div className="mt-6 grid grid-cols-2 gap-2.5 px-6 sm:grid-cols-4">
-        <StatTile
-          label="Alertness"
-          value={situation.alertness_score.toFixed(2)}
-          sub="Three-Process Model"
-          tone={
-            situation.alertness_score < 0.6 ? "bad" : situation.alertness_score < 0.7 ? "warn" : "ok"
-          }
-        />
-        <StatTile
-          label="Workload"
-          value={situation.workload_score.toFixed(0)}
-          sub={`NASA-TLX · ${humanise(situation.evidence.workload_band)}`}
-        />
-        <StatTile
-          label="Awake"
-          value={situation.evidence.hours_awake.toFixed(1)}
-          unit="h"
-          sub={`sleep debt ${situation.evidence.sleep_debt_h.toFixed(1)}h`}
-        />
-        <StatTile
-          label="Body clock"
-          value={situation.circadian_flag ? "Trough" : "Clear"}
-          sub={`KSS ${situation.evidence.kss.toFixed(1)}`}
-          tone={situation.circadian_flag ? "bad" : undefined}
-        />
+      {/* The deterministic evidence, as one reading rather than four boxes. */}
+      <div className="mt-6 px-6">
+        <Vitals situation={situation} />
       </div>
 
       {/* What the action is predicted to buy. */}
@@ -249,30 +227,36 @@ export function VerdictCard({
         </div>
       ) : null}
 
-      {/* Does the fix break the roster? One line, expandable. */}
+      {/* Does the fix break the crew? Six seats say it faster than the note did. */}
       {impact ? (
         <div className="mt-3 px-6">
-          <div
-            className="glass-2 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3"
-            style={{
-              boxShadow: `inset 0 0 0 1px ${
-                impact.roster_ok ? "rgba(92,228,191,0.24)" : "rgba(255,128,149,0.3)"
-              }`,
-            }}
-          >
-            {impact.roster_ok ? (
-              <UserCheck size={16} className="shrink-0 text-[var(--ok)]" />
-            ) : (
-              <CircleSlash size={16} className="shrink-0 text-[var(--bad)]" />
-            )}
-            <span className="min-w-0 flex-1 text-[13px] leading-snug text-[var(--ink-2)]">
-              {impact.note}
-            </span>
-            {impact.alternate_name ? (
-              <Chip tone="ok">cover · {impact.alternate_name}</Chip>
-            ) : impact.blocked_reason ? (
-              <Chip tone="bad">{BLOCK_LABEL[impact.blocked_reason] ?? impact.blocked_reason}</Chip>
-            ) : null}
+          <div className="glass-2 px-4 py-3.5">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              {impact.roster_ok ? (
+                <UserCheck size={15} className="shrink-0 text-[var(--ok)]" />
+              ) : (
+                <CircleSlash size={15} className="shrink-0 text-[var(--bad)]" />
+              )}
+              <Label className="!text-[10.5px]">
+                {impact.roster_ok ? "Roster holds" : "Roster blocked"}
+              </Label>
+              {impact.blocked_reason ? (
+                <Chip tone="bad">
+                  {BLOCK_LABEL[impact.blocked_reason] ?? impact.blocked_reason}
+                </Chip>
+              ) : null}
+              <span className="mono ml-auto text-[11px] text-[var(--ink-3)]">
+                {impact.checked_roles.length} role
+                {impact.checked_roles.length === 1 ? "" : "s"} screened
+              </span>
+            </div>
+            <div className="mt-3.5">
+              <RosterSeats
+                readiness={readiness}
+                impact={impact}
+                subject={situation.crew_member}
+              />
+            </div>
           </div>
         </div>
       ) : null}
@@ -291,31 +275,6 @@ export function VerdictCard({
         ) : null}
 
 
-        {impact ? (
-          <Disclosure
-            summary="Safety-critical roles after the change"
-            hint={`${impact.checked_roles.length} role${impact.checked_roles.length === 1 ? "" : "s"} checked against the roster`}
-          >
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {readiness
-                .filter((c) => impact.checked_roles.includes(c.role))
-                .map((c) => (
-                  <li key={c.crew_member} className="glass-2 flex items-center gap-3 px-3.5 py-2.5">
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] text-[var(--ink)]">{c.name}</span>
-                      <span className="text-[11.5px] capitalize text-[var(--ink-3)]">
-                        {humanise(c.role)}
-                      </span>
-                    </span>
-                    <span className="readout text-[15px]" style={{ color: TONE_VAR[toneOf(c.status)] }}>
-                      {c.alertness_score.toFixed(2)}
-                    </span>
-                    <Chip tone={toneOf(c.status)}>{c.status}</Chip>
-                  </li>
-                ))}
-            </ul>
-          </Disclosure>
-        ) : null}
       </div>
 
       {/* Stage 7. HAVEN never actions anything itself. */}
