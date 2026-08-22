@@ -3,8 +3,9 @@
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
-import { BookOpen, Check, ChevronDown, Compass, Info, MoreHorizontal, Orbit } from "lucide-react";
+import { BookOpen, Check, ChevronDown, Compass, Info, MoreHorizontal, Orbit, Route } from "lucide-react";
 import type { ScenarioSummary } from "@/lib/types";
+import { DIVERGENT } from "./ArgumentWalk";
 import { Label } from "./ui";
 
 /**
@@ -28,6 +29,8 @@ export function ScenarioBar({
   loading,
   onOpenProcedures,
   onStartTour,
+  walking,
+  onStartWalk,
 }: {
   scenarios: ScenarioSummary[];
   selected: string;
@@ -36,6 +39,8 @@ export function ScenarioBar({
   loading: boolean;
   onOpenProcedures: () => void;
   onStartTour: () => void;
+  walking: boolean;
+  onStartWalk: () => void;
 }) {
   const active = scenarios.find((s) => s.id === selected);
 
@@ -66,6 +71,21 @@ export function ScenarioBar({
             onSelect={onSelect}
             loading={loading}
           />
+          {!walking ? (
+            <button
+              onClick={onStartWalk}
+              className="glass-interactive flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-[12.5px] font-medium"
+              style={{
+                color: "var(--ok)",
+                background: "color-mix(in oklab, var(--ok) 14%, transparent)",
+                boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--ok) 40%, transparent)",
+              }}
+            >
+              <Route size={13} />
+              <span className="hidden sm:inline">See the argument</span>
+              <span className="sm:hidden">Argument</span>
+            </button>
+          ) : null}
           <BarButton onClick={onStartTour} icon={<Compass size={13} />}>
             Tour
           </BarButton>
@@ -179,6 +199,18 @@ function ScenarioPicker({
                   <span className="mt-0.5 block text-[12px] leading-snug text-[var(--ink-3)]">
                     {scenario.title}
                   </span>
+                  {DIVERGENT.has(scenario.id) ? (
+                    <span
+                      className="mt-1.5 inline-block rounded-full px-2 py-[2px] text-[10px] font-medium"
+                      style={{
+                        color: "var(--warn)",
+                        background: "rgba(255,207,107,0.12)",
+                        boxShadow: "inset 0 0 0 1px rgba(255,207,107,0.3)",
+                      }}
+                    >
+                      the checker overrules the top match
+                    </span>
+                  ) : null}
                 </span>
               </button>
             );

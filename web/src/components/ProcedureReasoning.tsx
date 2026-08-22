@@ -8,6 +8,7 @@ import type {
   Situation,
 } from "@/lib/types";
 import { ClauseTally, ClauseVerdict } from "./ClauseVerdict";
+import { Counterfactual, compareToSimilarity } from "./Counterfactual";
 import { FlowTrack } from "./FlowTrack";
 import { RetrievalFunnel } from "./RetrievalFunnel";
 import { Chip, Disclosure, GlassCard, Label, Meter } from "./ui";
@@ -93,6 +94,17 @@ export function ProcedureReasoning({
   });
   const citation = situation.recommendation?.citation;
 
+  // What ranking on the retrieval score alone would have selected, and what the
+  // checker did with it. The most persuasive thing this card can say.
+  const verdict = compareToSimilarity({
+    candidates,
+    admissible: admissibleIds,
+    clauses: clausesById,
+    citation,
+    outcome: situation.outcome,
+    refusalReason: situation.refusal?.reason,
+  });
+
   return (
     <GlassCard className="overflow-hidden">
       <div className="flex flex-wrap items-start gap-3 px-6 pt-5">
@@ -138,6 +150,12 @@ export function ProcedureReasoning({
       <div className="mt-5 px-6">
         <RetrievalFunnel lanes={lanes} citation={citation} />
       </div>
+
+      {verdict ? (
+        <div className="mt-4 px-6">
+          <Counterfactual verdict={verdict} />
+        </div>
+      ) : null}
 
       {/* The specialist layers. */}
       <div className="mt-4 space-y-2 px-6 pb-6">

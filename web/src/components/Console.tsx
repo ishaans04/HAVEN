@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ArgumentWalk, BEATS } from "@/components/ArgumentWalk";
 import { AuditBar } from "@/components/AuditBar";
 import { CrewDetail, CrewRail } from "@/components/CrewRail";
 import { OrbitDial, OrbitLegend } from "@/components/OrbitDial";
@@ -41,6 +42,8 @@ export function Console() {
   const [loading, setLoading] = useState(true);
   const [showProcedures, setShowProcedures] = useState(false);
   const [tour, setTour] = useState(false);
+  // null when not walking. The walk drives the scenario, not the reverse.
+  const [beat, setBeat] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const tourOffered = useRef(false);
 
@@ -74,6 +77,23 @@ export function Console() {
   useEffect(() => {
     void load(scenarioId);
   }, [scenarioId, load]);
+
+  // Publish the masthead's height so anything sticking below it can clear it.
+  // It is not a constant: the scenario note under the title runs to one line or
+  // three depending on the scenario.
+  useEffect(() => {
+    const masthead = document.querySelector("header");
+    if (!masthead) return;
+    const publish = () =>
+      document.documentElement.style.setProperty(
+        "--masthead-h",
+        `${Math.round(masthead.getBoundingClientRect().height)}px`,
+      );
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(masthead);
+    return () => observer.disconnect();
+  }, []);
 
   // Offer the tour once the console has something in it. Offering it against an
   // empty page would spotlight cards that are not there yet.
@@ -147,17 +167,39 @@ export function Console() {
       <ScenarioBar
         scenarios={scenarios}
         selected={scenarioId}
-        onSelect={setScenarioId}
+        onSelect={(id) => {
+          // Choosing a scenario by hand means leaving the guided sequence;
+          // otherwise the next click of "Next" would yank the reader somewhere
+          // they did not ask to go.
+          setBeat(null);
+          setScenarioId(id);
+        }}
         note={evaluation?.scenario_note ?? ""}
         loading={loading}
         onOpenProcedures={() => setShowProcedures(true)}
         onStartTour={() => setTour(true)}
+        walking={beat !== null}
+        onStartWalk={() => {
+          setBeat(0);
+          setScenarioId(BEATS[0].scenario);
+        }}
       />
 
       {showProcedures ? <ProcedureBrowser onClose={() => setShowProcedures(false)} /> : null}
       <Tour open={tour} onClose={() => setTour(false)} />
 
       <main className="mx-auto max-w-[1560px] px-5 pb-14 pt-5 sm:px-8">
+        {beat !== null ? (
+          <ArgumentWalk
+            index={beat}
+            onIndex={(next) => {
+              setBeat(next);
+              setScenarioId(BEATS[next].scenario);
+            }}
+            onClose={() => setBeat(null)}
+          />
+        ) : null}
+
         {!evaluation ? (
           <Skeleton />
         ) : (
