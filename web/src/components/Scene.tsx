@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { PlanetLimb } from "./PlanetLimb";
+import { Earth } from "./Earth";
 import { StarField } from "./StarField";
 import { useMotionOK } from "@/lib/motion";
 
@@ -64,17 +64,30 @@ export function Scene({ tone }: { tone: "ok" | "warn" | "bad" }) {
         }}
       />
 
-      {/* Earth, along the bottom. Bled off both edges so it reads as a limb
-          rather than as an illustration sitting in the layout. */}
+      {/* Earth, along the bottom. The same rendered sphere the landing uses,
+          pushed far enough below the fold that only the limb is in frame — so
+          the console gets a real horizon with a real terminator crossing it
+          rather than a curve drawn to look like one. The orbit track is off:
+          the console draws its own 24-hour window as a dial, and two orbits on
+          one screen would be two different clocks. */}
       <div
         ref={limb}
-        className="absolute inset-x-[-6%] bottom-[-8vh] h-[58vh] will-change-transform"
+        className="absolute inset-0 will-change-transform"
         style={{
-          maskImage: "linear-gradient(to top, #000 42%, transparent 100%)",
-          WebkitMaskImage: "linear-gradient(to top, #000 42%, transparent 100%)",
+          maskImage: "linear-gradient(to top, #000 34%, transparent 92%)",
+          WebkitMaskImage: "linear-gradient(to top, #000 34%, transparent 92%)",
         }}
       >
-        <PlanetLimb className="h-full w-full" />
+        {/* A shallow limb across the bottom quarter — the curve you get looking
+            at Earth from low orbit, not the tight ball you get from further
+            out. Dimmed hard: on the landing the planet is the subject, here it
+            is the room, and a lit limb at full strength competes with every
+            readout on the page. */}
+        <Earth
+          className="absolute inset-0 opacity-[0.45]"
+          placement={{ cx: 0.5, r: 1.15, topAt: 0.74 }}
+          orbit={false}
+        />
       </div>
     </div>
   );
