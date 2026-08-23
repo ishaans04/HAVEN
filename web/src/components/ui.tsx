@@ -15,7 +15,7 @@ import { useFinePointer, useMotionOK, useReveal } from "@/lib/motion";
    colour that would read as a state of its own.
    -------------------------------------------------------------------------- */
 
-export type Tone = "ok" | "warn" | "bad" | "crit" | "info" | "iris" | "neutral";
+export type Tone = "ok" | "warn" | "bad" | "crit" | "info" | "accent" | "neutral";
 
 export const TONE_VAR: Record<Tone, string> = {
   ok: "var(--ok)",
@@ -23,7 +23,7 @@ export const TONE_VAR: Record<Tone, string> = {
   bad: "var(--bad)",
   crit: "var(--crit)",
   info: "var(--info)",
-  iris: "var(--iris)",
+  accent: "var(--accent)",
   neutral: "var(--ink-2)",
 };
 

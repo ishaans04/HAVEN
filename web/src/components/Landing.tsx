@@ -94,7 +94,7 @@ function Hero() {
       <div className="mx-auto w-full max-w-[1560px]">
         <div className="max-w-3xl">
           <Reveal className="flex flex-wrap items-center gap-2">
-            <Chip tone="iris">IBM AI Builders Challenge</Chip>
+            <Chip tone="accent">IBM AI Builders Challenge</Chip>
             <Chip tone="neutral">Space exploration</Chip>
           </Reveal>
 
@@ -119,10 +119,10 @@ function Hero() {
               href="/console/"
               className="glass-interactive group inline-flex items-center gap-2 rounded-full px-6 py-4 text-[14px] font-medium"
               style={{
-                color: "var(--iris)",
-                background: "color-mix(in oklab, var(--iris) 18%, transparent)",
+                color: "var(--accent)",
+                background: "color-mix(in oklab, var(--accent) 18%, transparent)",
                 boxShadow:
-                  "inset 0 0 0 1px color-mix(in oklab, var(--iris) 48%, transparent), 0 20px 50px -22px color-mix(in oklab, var(--iris) 70%, transparent)",
+                  "inset 0 0 0 1px color-mix(in oklab, var(--accent) 48%, transparent), 0 20px 50px -22px color-mix(in oklab, var(--accent) 70%, transparent)",
               }}
             >
               Enter the console
@@ -144,7 +144,7 @@ function Hero() {
             {[
               ["Every number is arithmetic", "var(--ok)"],
               ["Every recommendation is cited", "var(--info)"],
-              ["Refusal is a valid answer", "var(--iris)"],
+              ["Refusal is a valid answer", "var(--accent)"],
             ].map(([text, color]) => (
               <li key={text} className="flex items-center gap-2 text-[13px] text-[var(--ink-2)]">
                 <span
@@ -194,7 +194,7 @@ function Problem() {
         {PROBLEMS.map(([icon, title, body], i) => (
           <Reveal key={title} delay={i * 80}>
             <GlassCard className="h-full p-6">
-            <span className="glass-3 inline-flex rounded-full p-2.5 text-[var(--iris)]">{icon}</span>
+            <span className="glass-3 inline-flex rounded-full p-2.5 text-[var(--accent)]">{icon}</span>
             <h3 className="mt-4 text-[16px] font-medium leading-snug text-[var(--ink)]">{title}</h3>
             <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-2)]">{body}</p>
             </GlassCard>
@@ -241,7 +241,7 @@ function GoldenRule() {
             owns="Interpreting the rulebook, weighing the score against the upcoming task, drafting the briefing an operator reads."
             question="Can it invent a number?"
             answer="Yes. So it is never allowed to supply one."
-            tone="var(--iris)"
+            tone="var(--accent)"
           />
         </GlassCard>
       </div>
@@ -262,7 +262,7 @@ function GoldenRule() {
           ],
         ].map(([title, body], i) => (
           <Reveal key={title} delay={i * 80} className="glass-2 p-5">
-            <span className="readout text-[13px] text-[var(--iris)]">
+            <span className="readout text-[13px] text-[var(--accent)]">
               Rule {String(i + 1).padStart(2, "0")}
             </span>
             <h4 className="mt-2 text-[14px] font-medium leading-snug text-[var(--ink)]">
@@ -372,7 +372,7 @@ function Layout() {
   const layers: [string, string, string, string][] = [
     [
       "The answer",
-      "var(--iris)",
+      "var(--accent)",
       "What to do about it",
       "The recommended action in plain language, the operator it concerns, the four figures behind it, and what the action is predicted to buy. Or a refusal, styled as a different kind of answer rather than a failure.",
     ],
@@ -419,7 +419,7 @@ function Layout() {
       </div>
 
       <GlassCard className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-3 px-6 py-5">
-        <Compass size={17} className="shrink-0 text-[var(--iris)]" />
+        <Compass size={17} className="shrink-0 text-[var(--accent)]" />
         <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-[var(--ink-2)]">
           First visit runs a four-stop tour of those layers, and it is replayable from the console
           masthead at any time.
@@ -507,7 +507,7 @@ function Close() {
             className="pointer-events-none absolute inset-x-0 bottom-[-60%] h-[150%] -z-10"
             style={{
               background:
-                "radial-gradient(60% 60% at 50% 100%, color-mix(in oklab, var(--iris) 30%, transparent), color-mix(in oklab, var(--iris) 0%, transparent) 70%)",
+                "radial-gradient(60% 60% at 50% 100%, color-mix(in oklab, var(--accent) 30%, transparent), color-mix(in oklab, var(--accent) 0%, transparent) 70%)",
             }}
           />
           <h2 className="display mx-auto max-w-2xl text-[clamp(1.75rem,4vw,2.75rem)]">
@@ -524,10 +524,10 @@ function Close() {
               href="/console/"
               className="glass-interactive group inline-flex items-center gap-2 rounded-full px-6 py-4 text-[14px] font-medium"
               style={{
-                color: "var(--iris)",
-                background: "color-mix(in oklab, var(--iris) 18%, transparent)",
+                color: "var(--accent)",
+                background: "color-mix(in oklab, var(--accent) 18%, transparent)",
                 boxShadow:
-                  "inset 0 0 0 1px color-mix(in oklab, var(--iris) 48%, transparent), 0 20px 50px -22px color-mix(in oklab, var(--iris) 70%, transparent)",
+                  "inset 0 0 0 1px color-mix(in oklab, var(--accent) 48%, transparent), 0 20px 50px -22px color-mix(in oklab, var(--accent) 70%, transparent)",
               }}
             >
               Enter the console

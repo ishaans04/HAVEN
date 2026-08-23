@@ -64,7 +64,7 @@ export function AuditBar({
 
         <Tier label="Deterministic" value={tierStatus.deterministic} color="var(--ok)" />
         <Tier label="Retrieval" value={tierStatus.retrieval} color="var(--info)" />
-        <Tier label="Reasoning" value={tierStatus.reasoning} color="var(--iris)" />
+        <Tier label="Reasoning" value={tierStatus.reasoning} color="var(--accent)" />
         {tierStatus.provider_chain && tierStatus.provider_chain.length > 1 ? (
           <ProviderChain
             chain={tierStatus.provider_chain}
@@ -184,7 +184,7 @@ function ProviderChain({
     <span className="flex items-center gap-2" title={`Provider chain: ${chain.join(" → ")}`}>
       <span
         className="h-1.5 w-1.5 shrink-0 rounded-full"
-        style={{ background: degraded ? "var(--warn)" : "var(--iris)" }}
+        style={{ background: degraded ? "var(--warn)" : "var(--accent)" }}
       />
       <Label className="!text-[11px]">Chain</Label>
       <span className="mono flex items-center gap-1.5 text-[12px]">

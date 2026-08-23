@@ -155,9 +155,9 @@ function ScenarioPicker({
         aria-controls={listId}
         className="glass-interactive flex items-center gap-2 rounded-full py-1.5 pl-3 pr-2.5 text-[13px] font-medium disabled:opacity-50"
         style={{
-          color: "var(--iris)",
-          background: "color-mix(in oklab, var(--iris) 14%, transparent)",
-          boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--iris) 42%, transparent)",
+          color: "var(--accent)",
+          background: "color-mix(in oklab, var(--accent) 14%, transparent)",
+          boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--accent) 42%, transparent)",
         }}
       >
         <Orbit size={13} className="shrink-0" />
@@ -192,15 +192,15 @@ function ScenarioPicker({
                   trigger.current?.focus();
                 }}
                 className="flex w-full items-start gap-2 rounded-[var(--radius-sm)] px-3 py-2.5 text-left transition-colors hover:bg-white/[0.06]"
-                style={on ? { background: "color-mix(in oklab, var(--iris) 12%, transparent)" } : undefined}
+                style={on ? { background: "color-mix(in oklab, var(--accent) 12%, transparent)" } : undefined}
               >
                 <span className="mt-[3px] w-3.5 shrink-0">
-                  {on ? <Check size={13} className="text-[var(--iris)]" /> : null}
+                  {on ? <Check size={13} className="text-[var(--accent)]" /> : null}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span
                     className="block text-[13px] font-medium"
-                    style={{ color: on ? "var(--iris)" : "var(--ink)" }}
+                    style={{ color: on ? "var(--accent)" : "var(--ink)" }}
                   >
                     {scenario.subtitle}
                   </span>

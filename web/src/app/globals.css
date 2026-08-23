@@ -28,53 +28,38 @@
   /* --- The field ---------------------------------------------------------
      Not a flat colour. A nebula gradient, so glass has something to refract:
      over a flat fill, backdrop-filter is an expensive no-op. */
-  --void: #05070e;
-  --void-deep: #03050a;
+  --void: #090b0e;
+  --void-deep: #050608;
 
   /* --- Ink ---------------------------------------------------------------
-     Cool, not violet. The old ramp was tinted toward the field (#f4f2ff,
-     #c3c0e2) which laid a purple wash over every surface and was a large part
-     of why the whole thing read as a gradient poster rather than an
-     instrument. Cockpit white is blue-cool. All three verified at 4.5:1 or
-     better on the darkest glass they sit on. */
-  --ink: #eaf0f7;
-  --ink-2: #aebccd;
-  --ink-3: #8fa0b5;
+     A luminance ladder, cool and almost hueless. Most of the state on this
+     screen is carried here rather than by colour. */
+  --ink: #f0f3f5;
+  --ink-2: #a9b3bc;
+  --ink-3: #7d8892;
 
   /* --- Status ------------------------------------------------------------
-     Two sources, neither of them taste.
-
-     The semantics are the flight-deck convention: green is nominal, amber is
-     caution, red is warning, cyan is measured data, magenta is a commanded or
-     selected value. That is the vocabulary this domain already reads under
-     stress, and it is why the accent on a selected scenario is violet rather
-     than blue — selection is a commanded state.
-
-     The values are IBM Carbon's support colours, since this is an IBM
-     challenge and the type is already IBM Plex. What they are *not* is the
-     mint / coral / lavender / pale-sky set they replace, which sat at one
-     lightness and one saturation and so gave a caution the same weight as a
-     label. */
-  --ok: #42be65;
-  --warn: #f1c21b;
-  --bad: #ff8389;
-  --crit: #fa4d56;
-  --info: #33b1ff;
-  --iris: #a56eff;
+     Two hues, and one of them is reserved for warnings. See the note at the
+     top of this file for why nominal is not green. */
+  --ok: #c8d2d9;
+  --info: #8fb4d4;
+  --warn: #d18f47;
+  --accent: #e2a55f;
+  --bad: #e4938c;
+  --crit: #e04b44;
 
   /* --- Illustration ------------------------------------------------------
-     The planet, its air and its cities. Deliberately separate from status: an
-     Earth limb is blue for reasons that have nothing to do with "info", and
-     coupling them would mean a palette change repainting the sky. */
-  --atmo: #7ec4ff;
-  --ice: #dfeaf6;
-  --city: #ffd39a;
-  --star: #e8e4ff;
+     The planet, its air and its cities. Separate from status: an Earth limb is
+     blue for reasons that have nothing to do with data. */
+  --atmo: #6ea8cf;
+  --ice: #d5e2ec;
+  --city: #e8b578;
+  --star: #dde6ee;
 
   /* --- Glass -------------------------------------------------------------
      A tier is a triple: how opaque the fill, how far the blur reaches, how
      bright the top edge catches the light. */
-  --glass-1-fill: rgba(10, 16, 30, 0.46);
+  --glass-1-fill: rgba(14, 17, 21, 0.5);
   --glass-2-fill: rgba(255, 255, 255, 0.045);
   --glass-3-fill: rgba(255, 255, 255, 0.07);
 
@@ -98,7 +83,7 @@
   --hv-degraded: var(--bad);
   --hv-critical: var(--crit);
   --hv-accent: var(--info);
-  --hv-violet: var(--iris);
+  --hv-violet: var(--accent);
 }
 
 html {
@@ -145,11 +130,11 @@ body::before {
   inset: 0;
   z-index: -2;
   background:
-    radial-gradient(56% 44% at 84% 2%, rgba(122, 40, 132, 0.2), transparent 62%),
-    radial-gradient(54% 46% at 6% 12%, rgba(44, 58, 152, 0.26), transparent 62%),
-    radial-gradient(82% 64% at 46% 114%, rgba(12, 38, 92, 0.52), transparent 64%),
-    radial-gradient(40% 26% at 92% 70%, rgba(48, 168, 216, 0.08), transparent 62%),
-    linear-gradient(178deg, #060915 0%, #04060e 48%, #060a17 100%);
+    radial-gradient(60% 40% at 50% 118%, rgba(196, 122, 58, 0.16), transparent 60%),
+    radial-gradient(70% 52% at 50% 112%, rgba(28, 54, 82, 0.42), transparent 66%),
+    radial-gradient(46% 40% at 12% 6%, rgba(32, 44, 60, 0.5), transparent 64%),
+    radial-gradient(40% 26% at 92% 74%, rgba(60, 110, 140, 0.07), transparent 62%),
+    linear-gradient(178deg, #0a0d11 0%, #06080b 46%, #080a0e 100%);
 }
 
 /* Film grain. Five per cent of noise is the difference between a gradient and a
@@ -206,7 +191,7 @@ body::after {
     rgba(255, 255, 255, 0.46) 0%,
     rgba(255, 255, 255, 0.1) 30%,
     rgba(255, 255, 255, 0) 52%,
-    rgba(189, 166, 255, 0.22) 100%
+    rgba(226, 165, 95, 0.18) 100%
   );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -476,7 +461,7 @@ html.js .reveal-in {
   font: inherit;
   text-align: left;
   text-decoration: underline dotted;
-  text-decoration-color: color-mix(in oklab, var(--iris) 55%, transparent);
+  text-decoration-color: color-mix(in oklab, var(--accent) 55%, transparent);
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
   cursor: help;
@@ -485,7 +470,7 @@ html.js .reveal-in {
 .term:hover,
 .term:focus-visible {
   color: var(--ink);
-  text-decoration-color: var(--iris);
+  text-decoration-color: var(--accent);
 }
 
 /* ------------------------------------------------------------------------
@@ -495,7 +480,7 @@ html.js .reveal-in {
    focus ring that reads as a risk state is worse than no ring.
 */
 :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
-  outline: 2px solid var(--iris);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--radius-xs);
 }

@@ -107,7 +107,7 @@ export function ArgumentWalk({
       <div className="flex flex-wrap items-start gap-x-5 gap-y-3 p-5">
         <span
           className="mt-1 shrink-0 rounded-full p-2"
-          style={{ color: "var(--iris)", background: "color-mix(in oklab, var(--iris) 14%, transparent)" }}
+          style={{ color: "var(--accent)", background: "color-mix(in oklab, var(--accent) 14%, transparent)" }}
         >
           <Route size={15} />
         </span>
@@ -150,9 +150,9 @@ export function ArgumentWalk({
               onClick={() => onIndex(index + 1)}
               className="glass-interactive flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium"
               style={{
-                color: "var(--iris)",
-                background: "color-mix(in oklab, var(--iris) 16%, transparent)",
-                boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--iris) 44%, transparent)",
+                color: "var(--accent)",
+                background: "color-mix(in oklab, var(--accent) 16%, transparent)",
+                boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--accent) 44%, transparent)",
               }}
             >
               Next
@@ -177,8 +177,8 @@ export function ArgumentWalk({
             key={b.scenario}
             className="h-[3px] flex-1 rounded-full transition-colors duration-300"
             style={{
-              background: i <= index ? "var(--iris)" : "rgba(255,255,255,0.13)",
-              boxShadow: i <= index ? "0 0 8px -2px var(--iris)" : undefined,
+              background: i <= index ? "var(--accent)" : "rgba(255,255,255,0.13)",
+              boxShadow: i <= index ? "0 0 8px -2px var(--accent)" : undefined,
             }}
           />
         ))}

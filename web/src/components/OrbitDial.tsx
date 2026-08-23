@@ -184,11 +184,11 @@ export function OrbitDial({
             <stop offset="100%" stopColor="var(--atmo)" stopOpacity="0" />
           </radialGradient>
           <radialGradient id="od-bloom" cx="50%" cy="50%" r="50%">
-            <stop offset="40%" stopColor="color-mix(in oklab, var(--iris) 26%, transparent)" />
-            <stop offset="100%" stopColor="color-mix(in oklab, var(--iris) 0%, transparent)" />
+            <stop offset="40%" stopColor="color-mix(in oklab, var(--accent) 26%, transparent)" />
+            <stop offset="100%" stopColor="color-mix(in oklab, var(--accent) 0%, transparent)" />
           </radialGradient>
           <radialGradient id="od-aurora" cx="50%" cy="50%" r="50%">
-            <stop offset={`${(AURORA_IN / AURORA_OUT) * 100}%`} stopColor="color-mix(in oklab, var(--iris) 5%, transparent)" />
+            <stop offset={`${(AURORA_IN / AURORA_OUT) * 100}%`} stopColor="color-mix(in oklab, var(--accent) 5%, transparent)" />
             <stop offset="82%" stopColor="var(--info)" stopOpacity="0.22" />
             <stop offset="100%" stopColor="var(--info)" stopOpacity="0.42" />
           </radialGradient>
@@ -253,7 +253,7 @@ export function OrbitDial({
             key={`sl${i}`}
             d={arc(a, b, BAND_R)}
             fill="none"
-            stroke="var(--iris)"
+            stroke="var(--accent)"
             strokeOpacity={0.5}
             strokeWidth={5}
             strokeLinecap="round"
@@ -476,7 +476,7 @@ export function OrbitLegend({ className }: { className?: string }) {
     ["var(--info)", "Predicted alertness", null],
     ["var(--warn)", "Execution threshold", "0.70"],
     ["var(--bad)", "Circadian low", null],
-    ["var(--iris)", "Scheduled sleep", null],
+    ["var(--accent)", "Scheduled sleep", null],
   ];
   return (
     <ul className={clsx("flex flex-wrap items-center gap-x-5 gap-y-2", className)}>

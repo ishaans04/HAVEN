@@ -156,7 +156,7 @@ export function Tour({ open, onClose }: { open: boolean; onClose: () => void }) 
             width: rect.width + pad * 2,
             height: rect.height + pad * 2,
             boxShadow:
-              "0 0 0 9999px color-mix(in oklab, var(--void-deep) 74%, transparent), inset 0 0 0 1px color-mix(in oklab, var(--iris) 50%, transparent), 0 0 60px -10px color-mix(in oklab, var(--iris) 50%, transparent)",
+              "0 0 0 9999px color-mix(in oklab, var(--void-deep) 74%, transparent), inset 0 0 0 1px color-mix(in oklab, var(--accent) 50%, transparent), 0 0 60px -10px color-mix(in oklab, var(--accent) 50%, transparent)",
           }}
         />
       ) : (
@@ -196,8 +196,8 @@ export function Tour({ open, onClose }: { open: boolean; onClose: () => void }) 
                 key={s.target}
                 className="h-[3px] flex-1 rounded-full transition-colors duration-300"
                 style={{
-                  background: i <= index ? "var(--iris)" : "rgba(255,255,255,0.14)",
-                  boxShadow: i <= index ? "0 0 8px -1px var(--iris)" : undefined,
+                  background: i <= index ? "var(--accent)" : "rgba(255,255,255,0.14)",
+                  boxShadow: i <= index ? "0 0 8px -1px var(--accent)" : undefined,
                 }}
               />
             ))}
@@ -216,9 +216,9 @@ export function Tour({ open, onClose }: { open: boolean; onClose: () => void }) 
               onClick={() => setIndex((i) => i + 1)}
               className="glass-interactive flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium"
               style={{
-                color: "var(--iris)",
-                background: "color-mix(in oklab, var(--iris) 18%, transparent)",
-                boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--iris) 45%, transparent)",
+                color: "var(--accent)",
+                background: "color-mix(in oklab, var(--accent) 18%, transparent)",
+                boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--accent) 45%, transparent)",
               }}
             >
               Next

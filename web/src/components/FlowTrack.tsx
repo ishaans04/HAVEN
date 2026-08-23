@@ -7,7 +7,7 @@ import { Term } from "./Term";
 const TIER_TONE: Record<string, string> = {
   deterministic: "var(--ok)",
   retrieval: "var(--info)",
-  reasoning: "var(--iris)",
+  reasoning: "var(--accent)",
   orchestration: "var(--warn)",
   human: "var(--ink)",
 };

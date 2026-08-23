@@ -117,7 +117,7 @@ export function ZoneNav() {
                 aria-current={on ? "true" : undefined}
                 className={clsx(
                   "relative whitespace-nowrap pb-2.5 pt-1 text-[11px] font-medium uppercase tracking-[0.12em] transition-colors",
-                  on ? "text-[var(--iris)]" : "text-[var(--ink-3)] hover:text-[var(--ink-2)]",
+                  on ? "text-[var(--accent)]" : "text-[var(--ink-3)] hover:text-[var(--ink-2)]",
                 )}
               >
                 {zone.label}
@@ -125,8 +125,8 @@ export function ZoneNav() {
                   aria-hidden
                   className="absolute inset-x-0 bottom-0 h-[2px] rounded-full transition-opacity duration-300"
                   style={{
-                    background: "var(--iris)",
-                    boxShadow: "0 0 8px -1px var(--iris)",
+                    background: "var(--accent)",
+                    boxShadow: "0 0 8px -1px var(--accent)",
                     opacity: on ? 1 : 0,
                   }}
                 />

@@ -104,7 +104,7 @@ export function TaskRiskTimeline({
               <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="2 5" vertical={false} />
 
               {sleepBands.map(([a, b], i) => (
-                <ReferenceArea key={`s${i}`} x1={a} x2={b} fill="var(--iris)" fillOpacity={0.09} />
+                <ReferenceArea key={`s${i}`} x1={a} x2={b} fill="var(--accent)" fillOpacity={0.09} />
               ))}
               {circadianBands.map(([a, b], i) => (
                 <ReferenceArea key={`c${i}`} x1={a} x2={b} fill="var(--bad)" fillOpacity={0.1} />
