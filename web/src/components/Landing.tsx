@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowRight, Compass } from "lucide-react";
+import { ArrowRight, Compass, Hand } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParallax } from "@/lib/motion";
 import { Earth } from "./Earth";
@@ -48,6 +48,26 @@ function Hero() {
   const { ref, layer } = useParallax<HTMLElement>();
   const [sunrises, setSunrises] = useState(0);
   const [wide, setWide] = useState(true);
+  const [grabbed, setGrabbed] = useState(false);
+  const [bias, setBias] = useState(0);
+
+  // The planet turns as you read down the page. Coalesced onto a frame so a
+  // fast scroll cannot queue a hundred renders.
+  useEffect(() => {
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        setBias(window.scrollY * 0.0011);
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
 
   // The globe is a portrait on a wide screen and a horizon on a narrow one.
   // Same sphere, different crop — nothing about the simulation changes.
@@ -74,7 +94,10 @@ function Hero() {
         <Earth
           className="absolute inset-0"
           placement={wide ? { cx: 0.775, cy: 0.46, r: 0.255 } : { cx: 0.5, cy: -0.3, r: 0.78 }}
+          interactive
+          spinBias={bias}
           onSunrise={setSunrises}
+          onGrab={() => setGrabbed(true)}
         />
       </div>
 
@@ -86,8 +109,14 @@ function Hero() {
         {...layer({ scroll: 0.1 })}
         className="pointer-events-none absolute inset-0 -z-10 will-change-transform"
         style={{
-          background:
-            "linear-gradient(100deg, color-mix(in oklab, var(--void-deep) 94%, transparent) 0%, color-mix(in oklab, var(--void-deep) 80%, transparent) 30%, color-mix(in oklab, var(--void-deep) 26%, transparent) 52%, transparent 68%)",
+          // Two different problems, two different scrims. On a wide screen the
+          // globe is beside the type and a sideways wash is enough. On a narrow
+          // one it is directly overhead, so the wash has to run down the frame
+          // instead — measured, not guessed: the headline was landing at 1.85
+          // against the lit limb, and body text at 2.28.
+          background: wide
+            ? "linear-gradient(100deg, color-mix(in oklab, var(--void-deep) 94%, transparent) 0%, color-mix(in oklab, var(--void-deep) 82%, transparent) 30%, color-mix(in oklab, var(--void-deep) 30%, transparent) 54%, transparent 70%)"
+            : "linear-gradient(178deg, transparent 0%, color-mix(in oklab, var(--void-deep) 62%, transparent) 12%, color-mix(in oklab, var(--void-deep) 90%, transparent) 26%, color-mix(in oklab, var(--void-deep) 96%, transparent) 46%, color-mix(in oklab, var(--void-deep) 97%, transparent) 100%)",
         }}
       />
 
@@ -154,6 +183,14 @@ function Hero() {
                 In orbit a body clock gets about sixteen a day. That is the problem.
               </p>
             </div>
+
+            <p
+              className="mt-5 flex items-center gap-2 text-[12px] text-[var(--ink-3)] transition-opacity duration-700"
+              style={{ opacity: grabbed ? 0 : 1 }}
+            >
+              <Hand size={13} />
+              Drag the planet — it is simulated, not a picture.
+            </p>
           </Reveal>
         </div>
       </div>

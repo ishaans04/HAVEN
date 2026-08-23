@@ -4,6 +4,63 @@ import { useEffect, useRef, useState } from "react";
 import { useMotionOK } from "@/lib/motion";
 
 /**
+ * The ISS, in silhouette.
+ *
+ * Drawn in screen space at a fixed size, because it is a marker: scaling it
+ * with distance would make it vanish at the far side of the orbit, and the
+ * point of the thing is knowing where the crew are. Proportions follow the real
+ * station — a long pressurised spine, a truss square across it, four array
+ * pairs outboard — at the smallest scale where that reads as the ISS and not as
+ * a generic satellite.
+ *
+ * `lit` decides the array colour: gold in sunlight, cold blue in eclipse, which
+ * is the same fact the sunrise counter is counting.
+ */
+function drawStation(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  heading: number,
+  dpr: number,
+  alpha: number,
+  lit: boolean,
+) {
+  const u = 1.5 * dpr; // one unit
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(heading);
+  ctx.globalAlpha = alpha;
+
+  const array = lit ? "rgba(226,170,96,0.95)" : "rgba(126,158,196,0.75)";
+  const metal = "rgba(232,238,244,0.95)";
+
+  // Truss: the long boom the arrays hang off, square across the flight path.
+  ctx.strokeStyle = metal;
+  ctx.lineWidth = 0.9 * dpr;
+  ctx.beginPath();
+  ctx.moveTo(0, -5.2 * u);
+  ctx.lineTo(0, 5.2 * u);
+  ctx.stroke();
+
+  // Four solar arrays, two per side.
+  ctx.fillStyle = array;
+  for (const sy of [-1, 1]) {
+    for (const off of [2.4, 4.0]) {
+      ctx.fillRect(-2.5 * u, sy * off * u - 0.62 * u, 5 * u, 1.24 * u);
+    }
+  }
+
+  // Pressurised modules along the direction of travel.
+  ctx.fillStyle = metal;
+  ctx.fillRect(-3.1 * u, -0.85 * u, 6.2 * u, 1.7 * u);
+  // Radiators.
+  ctx.fillStyle = "rgba(190,205,220,0.6)";
+  ctx.fillRect(-0.5 * u, -2.1 * u, 1 * u, 4.2 * u);
+
+  ctx.restore();
+}
+
+/**
  * Earth, actually rendered.
  *
  * What was here before was a stroked SVG arc with a gradient behind it — the
@@ -53,6 +110,8 @@ uniform vec2  uRes;      // canvas size, device pixels
 uniform vec2  uCenter;   // sphere centre, device pixels
 uniform float uRadius;   // sphere radius, device pixels
 uniform float uSpin;     // rotation about the polar axis, radians
+uniform float uLat;      // camera latitude, radians — dragged vertically
+uniform float uFlash;    // 0..1, decays after the station crosses into daylight
 uniform vec3  uSun;      // unit vector towards the sun, view space
 uniform float uTime;
 
@@ -116,8 +175,12 @@ void main() {
     vec3 n = vec3(d, 0.0);
     float lit = smoothstep(-0.42, 0.55, dot(normalize(vec3(d, 0.35)), uSun));
     vec3 sky = vec3(0.30, 0.56, 1.0);
-    col = sky * halo * lit * 0.95;
-    alpha = halo * lit * 0.95;
+    // A sunrise brightens the air on the day side and warms it, which is what
+    // a sunrise is. Driven by the same crossing that increments the counter.
+    vec3 dawn = mix(sky, vec3(1.0, 0.62, 0.30), uFlash * 0.55);
+    float gain = 1.0 + uFlash * 0.85;
+    col = dawn * halo * lit * 0.95 * gain;
+    alpha = halo * lit * 0.95 * gain;
     gl_FragColor = vec4(col, clamp(alpha, 0.0, 1.0));
     return;
   }
@@ -126,8 +189,12 @@ void main() {
   float z = sqrt(max(0.0, 1.0 - r2));
   vec3 n = vec3(d, z);                       // surface normal, view space
 
-  // Into planet space: undo the spin, then the axial tilt.
-  vec3 p = rotX(-TILT) * n;
+  // Into planet space: undo the viewing latitude, then the axial tilt, then
+  // the spin. Rotating the sample point rather than the sun keeps the lighting
+  // fixed in view space, so dragging moves the planet under the sun the way it
+  // should rather than dragging the terminator along with it.
+  vec3 p = rotX(-uLat) * n;
+  p = rotX(-TILT) * p;
   p = rotY(-uSpin) * p;
 
   /* ---- continents ------------------------------------------------------
@@ -157,7 +224,7 @@ void main() {
   /* ---- cloud deck ------------------------------------------------------
      A second field on its own slower rotation, so weather does not look
      painted onto the ground. */
-  vec3 cp = rotY(-uSpin * 1.18 - uTime * 0.004) * (rotX(-TILT) * n);
+  vec3 cp = rotY(-uSpin * 1.18 - uTime * 0.004) * (rotX(-TILT) * (rotX(-uLat) * n));
   float cloud = smoothstep(0.52, 0.72, fbm(cp * 2.6 + vec3(0.0, uTime * 0.006, 0.0), 5));
   cloud *= 0.82;
 
@@ -199,7 +266,7 @@ void main() {
 
   /* ---- atmosphere on the disc ------------------------------------------ */
   float rim = pow(1.0 - z, 3.4);
-  col += vec3(0.26, 0.50, 0.95) * rim * day * 1.15;
+  col += vec3(0.26, 0.50, 0.95) * rim * day * (1.15 + uFlash * 1.1);
   // Dusk runs warm right at the terminator, where light travels furthest.
   float dusk = exp(-abs(ndl) * 13.0) * (1.0 - rim * 0.5);
   col += vec3(1.0, 0.44, 0.16) * dusk * 0.30;
@@ -235,12 +302,24 @@ export function Earth({
   placement,
   /** Draw the station and its ground track. */
   orbit = true,
+  /** Let the reader grab and spin it. Off for the console's backdrop. */
+  interactive = false,
+  /**
+   * Extra rotation from outside, in radians — the landing feeds scroll into
+   * this so the planet turns as you read down the page.
+   */
+  spinBias = 0,
   onSunrise,
+  /** Fires the first time somebody actually grabs it. */
+  onGrab,
 }: {
   className?: string;
   placement: Placement;
   orbit?: boolean;
+  interactive?: boolean;
+  spinBias?: number;
   onSunrise?: (count: number) => void;
+  onGrab?: () => void;
 }) {
   const glCanvas = useRef<HTMLCanvasElement>(null);
   const overlay = useRef<HTMLCanvasElement>(null);
@@ -248,6 +327,12 @@ export function Earth({
   const [failed, setFailed] = useState(false);
   const sunriseCb = useRef(onSunrise);
   sunriseCb.current = onSunrise;
+  // Read inside the loop rather than closed over, so a scroll does not tear
+  // down and rebuild the whole GL context.
+  const bias = useRef(spinBias);
+  bias.current = spinBias;
+  const grabCb = useRef(onGrab);
+  grabCb.current = onGrab;
 
   useEffect(() => {
     const canvas = glCanvas.current;
@@ -303,6 +388,8 @@ export function Earth({
       center: gl.getUniformLocation(program, "uCenter"),
       radius: gl.getUniformLocation(program, "uRadius"),
       spin: gl.getUniformLocation(program, "uSpin"),
+      lat: gl.getUniformLocation(program, "uLat"),
+      flash: gl.getUniformLocation(program, "uFlash"),
       sun: gl.getUniformLocation(program, "uSun"),
       time: gl.getUniformLocation(program, "uTime"),
     };
@@ -355,6 +442,14 @@ export function Earth({
       lastLit: null as boolean | null,
       station: { x: 0, y: 0, z: 0 },
       sun: { x: 0.82, y: 0.16, z: 0.55 },
+      // What the reader has done to it.
+      userSpin: 0,
+      userLat: 0,
+      spinVel: 0,
+      latVel: 0,
+      dragging: false,
+      // Decays after each sunrise.
+      flash: 0,
     };
 
     const stationAt = (t: number) => {
@@ -375,6 +470,20 @@ export function Earth({
 
     const step = (dt: number) => {
       sim.t += dt;
+
+      // Spin-down. Not a tuned easing curve: a exp(-k·t) decay is what a thing
+      // with angular momentum and a little drag actually does, and it stays
+      // frame-rate independent when the tab throttles.
+      if (!sim.dragging) {
+        const damp = Math.exp(-2.1 * dt);
+        sim.spinVel *= damp;
+        sim.latVel *= damp;
+        sim.userSpin += sim.spinVel * dt;
+        sim.userLat += sim.latVel * dt;
+      }
+      // Latitude is bounded: past the poles the globe reads as broken.
+      sim.userLat = Math.max(-0.85, Math.min(0.85, sim.userLat));
+      sim.flash = Math.max(0, sim.flash - dt * 1.5);
       sim.spin = ((sim.t / DAY) * Math.PI * 2) % (Math.PI * 2);
 
       // The sun swings slowly through the view so the terminator sweeps the
@@ -393,6 +502,7 @@ export function Earth({
       const lit = (s.x * sim.sun.x + s.y * sim.sun.y + s.z * sim.sun.z) > 0;
       if (sim.lastLit === false && lit) {
         sim.sunrises += 1;
+        sim.flash = 1;
         sunriseCb.current?.(sim.sunrises);
       }
       sim.lastLit = lit;
@@ -403,7 +513,9 @@ export function Earth({
       gl.uniform2f(U.res, W, H);
       gl.uniform2f(U.center, cx, cy);
       gl.uniform1f(U.radius, radius);
-      gl.uniform1f(U.spin, sim.spin);
+      gl.uniform1f(U.spin, sim.spin + sim.userSpin + bias.current);
+      gl.uniform1f(U.lat, sim.userLat);
+      gl.uniform1f(U.flash, sim.flash);
       gl.uniform3f(U.sun, sim.sun.x, sim.sun.y, sim.sun.z);
       gl.uniform1f(U.time, sim.t);
       gl.clearColor(0, 0, 0, 0);
@@ -457,19 +569,23 @@ export function Earth({
       const occluded = s.z < 0 && Math.hypot(s.x - cx, s.y - (H - cy)) < radius;
       const lit =
         sim.station.x * sim.sun.x + sim.station.y * sim.sun.y + sim.station.z * sim.sun.z > 0;
-      const a = occluded ? 0.22 : 1;
-      const glow = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, 13 * dpr);
-      const hue = lit ? "226,180,120" : "150,180,215";
-      glow.addColorStop(0, `rgba(${hue},${0.85 * a})`);
+      const a = occluded ? 0.2 : 1;
+
+      // Which way is it going? Sample a moment ahead and point the hull along
+      // the screen-space difference, so the arrays sit square to the track.
+      const ahead = toPx(stationAt(sim.t + 6));
+      const heading = Math.atan2(ahead.y - s.y, ahead.x - s.x);
+
+      const glow = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, 18 * dpr);
+      const hue = lit ? "232,186,126" : "150,180,215";
+      glow.addColorStop(0, `rgba(${hue},${0.5 * a})`);
       glow.addColorStop(1, `rgba(${hue},0)`);
       ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(s.x, s.y, 13 * dpr, 0, Math.PI * 2);
+      ctx.arc(s.x, s.y, 18 * dpr, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = `rgba(255,255,255,${a})`;
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, 2.1 * dpr, 0, Math.PI * 2);
-      ctx.fill();
+
+      drawStation(ctx, s.x, s.y, heading, dpr, a, lit);
     };
 
     const render = () => {
@@ -499,6 +615,94 @@ export function Earth({
     sim.sunrises = 0;
     render();
     raf = requestAnimationFrame(frame);
+
+    /* ---- grab it -------------------------------------------------------
+       Real 3D you cannot touch is indistinguishable from a video, so the
+       overlay takes pointer events and hands them to the same spin the shader
+       already uses. Velocity is kept in radians per second and handed to the
+       inertia in `step`, which is why a throw keeps going after release. */
+    const cleanupDrag: (() => void)[] = [];
+    if (interactive) {
+      over.style.pointerEvents = "auto";
+      over.style.cursor = "grab";
+      over.style.touchAction = "pan-y"; // never trap the page scroll
+
+      let id: number | null = null;
+      let lastX = 0;
+      let lastY = 0;
+      let lastT = 0;
+
+      const inside = (e: PointerEvent) => {
+        const r = over.getBoundingClientRect();
+        const px = (e.clientX - r.left) * (W / r.width);
+        const py = (r.bottom - e.clientY) * (H / r.height);
+        return Math.hypot(px - cx, py - cy) < radius * 1.08;
+      };
+
+      const down = (e: PointerEvent) => {
+        if (!inside(e)) return;
+        id = e.pointerId;
+        over.setPointerCapture(id);
+        sim.dragging = true;
+        grabCb.current?.();
+        sim.spinVel = 0;
+        sim.latVel = 0;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        lastT = performance.now();
+        over.style.cursor = "grabbing";
+      };
+
+      const move = (e: PointerEvent) => {
+        if (id !== e.pointerId) {
+          over.style.cursor = inside(e) ? "grab" : "default";
+          return;
+        }
+        const now = performance.now();
+        const dt = Math.max((now - lastT) / 1000, 1 / 240);
+        const r = over.getBoundingClientRect();
+        // A drag across the sphere's width is a half turn: the grabbed point
+        // stays roughly under the finger.
+        const dx = ((e.clientX - lastX) / r.width) * Math.PI * 2.4;
+        const dy = ((e.clientY - lastY) / r.height) * Math.PI * 1.1;
+        sim.userSpin += dx;
+        sim.userLat = Math.max(-0.85, Math.min(0.85, sim.userLat + dy));
+        sim.spinVel = dx / dt;
+        sim.latVel = dy / dt;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        lastT = now;
+        if (!motionOK) render(); // no rAF loop to pick it up
+      };
+
+      const up = (e: PointerEvent) => {
+        if (id !== e.pointerId) return;
+        // A pointer parked for a moment before release has thrown nothing.
+        if (performance.now() - lastT > 90) {
+          sim.spinVel = 0;
+          sim.latVel = 0;
+        }
+        try {
+          over.releasePointerCapture(id);
+        } catch {
+          /* already gone */
+        }
+        id = null;
+        sim.dragging = false;
+        over.style.cursor = "grab";
+      };
+
+      over.addEventListener("pointerdown", down);
+      over.addEventListener("pointermove", move);
+      over.addEventListener("pointerup", up);
+      over.addEventListener("pointercancel", up);
+      cleanupDrag.push(() => {
+        over.removeEventListener("pointerdown", down);
+        over.removeEventListener("pointermove", move);
+        over.removeEventListener("pointerup", up);
+        over.removeEventListener("pointercancel", up);
+      });
+    }
 
     // Pause when scrolled away: this is a background flourish, not the app.
     const io = new IntersectionObserver(
@@ -533,9 +737,25 @@ export function Earth({
         render();
         return handle.state();
       },
+      /** Drag the globe by a screen-space delta, in CSS pixels. */
+      drag(dx: number, dy: number) {
+        const r = over.getBoundingClientRect();
+        sim.userSpin += (dx / r.width) * Math.PI * 2.4;
+        sim.userLat = Math.max(
+          -0.85,
+          Math.min(0.85, sim.userLat + (dy / r.height) * Math.PI * 1.1),
+        );
+        render();
+        return handle.state();
+      },
       state: () => ({
         t: +sim.t.toFixed(2),
         spin: +sim.spin.toFixed(4),
+        userSpin: +sim.userSpin.toFixed(4),
+        userLat: +sim.userLat.toFixed(4),
+        spinVel: +sim.spinVel.toFixed(4),
+        flash: +sim.flash.toFixed(3),
+        interactive,
         sunrises: sim.sunrises,
         station: {
           x: +sim.station.x.toFixed(4),
@@ -553,6 +773,7 @@ export function Earth({
     return () => {
       running = false;
       cancelAnimationFrame(raf);
+      cleanupDrag.forEach((f) => f());
       io.disconnect();
       ro.disconnect();
       canvas.removeEventListener("webglcontextlost", onLost);
@@ -560,7 +781,7 @@ export function Earth({
       gl.deleteBuffer(buf);
       delete (window as unknown as Record<string, unknown>).__havenEarth;
     };
-  }, [placement.cx, placement.cy, placement.r, placement.topAt, orbit, motionOK]);
+  }, [placement.cx, placement.cy, placement.r, placement.topAt, orbit, interactive, motionOK]);
 
   return (
     <div className={className} aria-hidden>
