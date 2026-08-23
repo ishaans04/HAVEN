@@ -114,6 +114,10 @@ uniform float uLat;      // camera latitude, radians — dragged vertically
 uniform float uFlash;    // 0..1, decays after the station crosses into daylight
 uniform vec3  uSun;      // unit vector towards the sun, view space
 uniform float uTime;
+uniform sampler2D uDay;    // NASA Blue Marble albedo
+uniform sampler2D uNight;  // NASA Black Marble city lights
+uniform sampler2D uClouds; // cloud opacity, greyscale
+uniform float uHasTex;     // 0 until all three have decoded
 
 const float TILT = 0.40910518; // 23.44 degrees, radians
 
@@ -197,36 +201,68 @@ void main() {
   p = rotX(-TILT) * p;
   p = rotY(-uSpin) * p;
 
-  /* ---- continents ------------------------------------------------------
-     Domain warping is what stops fBm reading as clouds-on-a-ball: warping the
-     lookup with another fBm produces coastlines with inlets and peninsulas
-     rather than soft blobs. */
-  vec3 w = vec3(fbm(p * 1.7 + 11.0, 4), fbm(p * 1.7 + 27.0, 4), fbm(p * 1.7 + 41.0, 4));
-  float h = fbm(p * 2.1 + w * 1.35, 6);
-
-  float land = smoothstep(0.505, 0.545, h);
-  float shelf = smoothstep(0.470, 0.510, h);   // shallow water round the coasts
-
-  // Ice, by latitude, with a ragged edge.
+  /* ---- surface ---------------------------------------------------------
+     Two ways to answer "what colour is this point, and is it water". The
+     textured path asks NASA; the procedural path asks fBm and runs whenever
+     the maps have not decoded yet. Everything downstream — lighting, specular,
+     night side — consumes the same four values either way. */
   float lat = abs(p.y);
-  float ice = smoothstep(0.70, 0.88, lat + (h - 0.5) * 0.55);
+  vec3 albedo;
+  float cloud;
+  float water;
+  vec3 cityCol;
 
-  // Deserts sit in the mid latitudes; green belts nearer the equator.
-  float arid = smoothstep(0.14, 0.42, abs(p.y)) * (1.0 - smoothstep(0.55, 0.78, abs(p.y)));
-  vec3 vegetation = mix(vec3(0.10, 0.20, 0.11), vec3(0.16, 0.15, 0.09), arid);
-  vec3 deep = vec3(0.012, 0.035, 0.085);
-  vec3 shallow = vec3(0.03, 0.10, 0.17);
+  if (uHasTex > 0.5) {
+    // Equirectangular lookup. Longitude wraps at the antimeridian, and the
+    // maps are sampled without mipmaps precisely so the derivative
+    // discontinuity there cannot drag a blurred seam down the globe.
+    vec2 uv = vec2(
+      0.5 + atan(p.z, p.x) / 6.28318531,
+      0.5 - asin(clamp(p.y, -1.0, 1.0)) / 3.14159265
+    );
+    vec3 dayTex = texture2D(uDay, uv).rgb;
+    // The deck drifts a little faster than the ground turns, so weather does
+    // not look painted onto the continents.
+    cloud = texture2D(uClouds, vec2(uv.x - uTime * 0.0007, uv.y)).r * 0.92;
+    cityCol = texture2D(uNight, uv).rgb;
+    albedo = dayTex;
+    // Ocean is the blue-dominant part of the albedo that is not ice; ice is
+    // bright in every channel and must not glint.
+    water = smoothstep(0.02, 0.17, dayTex.b - dayTex.r)
+          * (1.0 - smoothstep(0.55, 0.78, dayTex.r));
+  } else {
+    /* Domain warping is what stops fBm reading as clouds-on-a-ball: warping
+       the lookup with another fBm produces coastlines with inlets and
+       peninsulas rather than soft blobs. */
+    vec3 w = vec3(fbm(p * 1.7 + 11.0, 4), fbm(p * 1.7 + 27.0, 4), fbm(p * 1.7 + 41.0, 4));
+    float h = fbm(p * 2.1 + w * 1.35, 6);
 
-  vec3 albedo = mix(deep, shallow, shelf * (1.0 - land));
-  albedo = mix(albedo, vegetation, land);
-  albedo = mix(albedo, vec3(0.72, 0.80, 0.86), ice);
+    float land = smoothstep(0.505, 0.545, h);
+    float shelf = smoothstep(0.470, 0.510, h);
+    float ice = smoothstep(0.70, 0.88, lat + (h - 0.5) * 0.55);
 
-  /* ---- cloud deck ------------------------------------------------------
-     A second field on its own slower rotation, so weather does not look
-     painted onto the ground. */
-  vec3 cp = rotY(-uSpin * 1.18 - uTime * 0.004) * (rotX(-TILT) * (rotX(-uLat) * n));
-  float cloud = smoothstep(0.52, 0.72, fbm(cp * 2.6 + vec3(0.0, uTime * 0.006, 0.0), 5));
-  cloud *= 0.82;
+    float arid = smoothstep(0.14, 0.42, lat) * (1.0 - smoothstep(0.55, 0.78, lat));
+    vec3 vegetation = mix(vec3(0.10, 0.20, 0.11), vec3(0.16, 0.15, 0.09), arid);
+    vec3 deep = vec3(0.012, 0.035, 0.085);
+    vec3 shallow = vec3(0.03, 0.10, 0.17);
+
+    albedo = mix(deep, shallow, shelf * (1.0 - land));
+    albedo = mix(albedo, vegetation, land);
+    albedo = mix(albedo, vec3(0.72, 0.80, 0.86), ice);
+    water = 1.0 - land;
+
+    vec3 cp = rotY(-uSpin * 1.18 - uTime * 0.004) * (rotX(-TILT) * (rotX(-uLat) * n));
+    cloud = smoothstep(0.52, 0.72, fbm(cp * 2.6 + vec3(0.0, uTime * 0.006, 0.0), 5)) * 0.82;
+
+    // Cities cluster: a high-frequency field thresholded hard, gated on land,
+    // and thinned towards the poles where nobody lives.
+    float pop = fbm(p * 26.0, 3);
+    float coastal = shelf - land * 0.35;
+    float cities = smoothstep(0.60, 0.78, pop) * land
+                 * (1.0 - smoothstep(0.55, 0.80, lat))
+                 * (0.55 + 0.45 * smoothstep(0.0, 0.4, coastal));
+    cityCol = vec3(1.0, 0.72, 0.36) * cities * 1.6;
+  }
 
   /* ---- lighting --------------------------------------------------------
      The terminator. Everything the page claims about sunrises comes from
@@ -239,30 +275,21 @@ void main() {
   float limb = pow(max(z, 0.0), 0.34);
 
   vec3 sun = vec3(1.0, 0.96, 0.90);
-  vec3 lit = (albedo * (1.0 - cloud) + vec3(0.62, 0.66, 0.72) * cloud) * day * limb;
+  vec3 lit = (albedo * (1.0 - cloud) + vec3(0.72, 0.76, 0.82) * cloud) * day * limb;
 
   /* ---- specular, water only -------------------------------------------- */
   vec3 view = vec3(0.0, 0.0, 1.0);
   vec3 hv = normalize(uSun + view);
-  float spec = pow(max(dot(n, hv), 0.0), 46.0) * (1.0 - land) * (1.0 - cloud) * day;
+  float spec = pow(max(dot(n, hv), 0.0), 46.0) * water * (1.0 - cloud) * day;
   lit += sun * spec * 0.42;
 
-  /* ---- night side ------------------------------------------------------
-     Cities cluster: a high-frequency field thresholded hard, gated on land,
-     and thinned towards the poles where nobody lives. */
+  /* ---- night side ------------------------------------------------------ */
   float nightMask = 1.0 - day;
-  float pop = fbm(p * 26.0, 3);
-  float coastal = shelf - land * 0.35;
-  float cities = smoothstep(0.60, 0.78, pop) * land
-               * (1.0 - smoothstep(0.55, 0.80, lat))
-               * (0.55 + 0.45 * smoothstep(0.0, 0.4, coastal));
-  cities *= (1.0 - cloud * 0.75) * nightMask * limb;
-  vec3 lampLight = vec3(1.0, 0.72, 0.36);
-
+  vec3 lamps = cityCol * (1.0 - cloud * 0.75) * nightMask * limb;
   // A trace of airglow so the dark side is not a hole in the page.
   vec3 nightGround = albedo * 0.030 * nightMask;
 
-  col = lit + nightGround + lampLight * cities * 1.25;
+  col = lit + nightGround + lamps * 1.25;
 
   /* ---- atmosphere on the disc ------------------------------------------ */
   float rim = pow(1.0 - z, 3.4);
@@ -390,9 +417,79 @@ export function Earth({
       spin: gl.getUniformLocation(program, "uSpin"),
       lat: gl.getUniformLocation(program, "uLat"),
       flash: gl.getUniformLocation(program, "uFlash"),
+      hasTex: gl.getUniformLocation(program, "uHasTex"),
+      day: gl.getUniformLocation(program, "uDay"),
+      night: gl.getUniformLocation(program, "uNight"),
+      clouds: gl.getUniformLocation(program, "uClouds"),
       sun: gl.getUniformLocation(program, "uSun"),
       time: gl.getUniformLocation(program, "uTime"),
     };
+
+    /* ---- the maps -------------------------------------------------------
+       Three 2048x1024 equirectangular images, 1.7 MB together. Sampled with
+       LINEAR and no mipmaps on purpose: at the antimeridian the u derivative
+       jumps from ~0 to ~1, and a mipmapped sampler reads that as "minify hard",
+       which paints a blurred stripe down the globe. Without mipmaps there is a
+       little shimmer near the limb and no seam, which is the better trade for
+       a sphere that renders about a third of the texture's width. */
+    let texturesReady = false;
+    const makeTex = () => {
+      const t = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      // One dark pixel until the real thing decodes.
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE,
+        new Uint8Array([6, 8, 12]));
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return t;
+    };
+    const texDay = makeTex();
+    const texNight = makeTex();
+    const texClouds = makeTex();
+
+    gl.uniform1i(U.day, 0);
+    gl.uniform1i(U.night, 1);
+    gl.uniform1i(U.clouds, 2);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texDay);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, texNight);
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, texClouds);
+
+    let cancelledLoad = false;
+    const load = (url: string, tex: WebGLTexture, unit: number) =>
+      new Promise<void>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          if (cancelledLoad) return resolve();
+          gl.activeTexture(gl.TEXTURE0 + unit);
+          gl.bindTexture(gl.TEXTURE_2D, tex);
+          // The maps are stored north-up; the equirectangular v in the shader
+          // is also north-up, so do NOT flip.
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+          resolve();
+        };
+        img.onerror = () => reject(new Error(url));
+        img.src = url;
+      });
+
+    Promise.all([
+      load("/textures/2k_earth_daymap.jpg", texDay, 0),
+      load("/textures/2k_earth_nightmap.jpg", texNight, 1),
+      load("/textures/2k_earth_clouds.jpg", texClouds, 2),
+    ])
+      .then(() => {
+        if (cancelledLoad) return;
+        texturesReady = true;
+        render();
+      })
+      // A missing or blocked map is not a failure: the procedural planet is
+      // still there and still correct.
+      .catch(() => {});
 
     /* ---- geometry of the box ------------------------------------------- */
     let dpr = 1;
@@ -516,6 +613,7 @@ export function Earth({
       gl.uniform1f(U.spin, sim.spin + sim.userSpin + bias.current);
       gl.uniform1f(U.lat, sim.userLat);
       gl.uniform1f(U.flash, sim.flash);
+      gl.uniform1f(U.hasTex, texturesReady ? 1 : 0);
       gl.uniform3f(U.sun, sim.sun.x, sim.sun.y, sim.sun.z);
       gl.uniform1f(U.time, sim.t);
       gl.clearColor(0, 0, 0, 0);
@@ -765,6 +863,7 @@ export function Earth({
         sun: { x: +sim.sun.x.toFixed(4), y: +sim.sun.y.toFixed(4), z: +sim.sun.z.toFixed(4) },
         altitude: +Math.hypot(sim.station.x, sim.station.y, sim.station.z).toFixed(4),
         orbitsPerDay: +ORBITS_PER_DAY.toFixed(3),
+        textured: texturesReady,
         pixels: { W, H, cx, cy, radius: +radius.toFixed(1) },
       }),
     };
@@ -777,8 +876,12 @@ export function Earth({
       io.disconnect();
       ro.disconnect();
       canvas.removeEventListener("webglcontextlost", onLost);
+      cancelledLoad = true;
       gl.deleteProgram(program);
       gl.deleteBuffer(buf);
+      gl.deleteTexture(texDay);
+      gl.deleteTexture(texNight);
+      gl.deleteTexture(texClouds);
       delete (window as unknown as Record<string, unknown>).__havenEarth;
     };
   }, [placement.cx, placement.cy, placement.r, placement.topAt, orbit, interactive, motionOK]);
