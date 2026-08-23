@@ -77,7 +77,7 @@ export function TaskRiskTimeline({
 
   return (
     <div>
-      <div className="glass-2 px-2 py-3">
+      <div className="pb-1">
         <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2 px-2">
           <span className="text-[13px] text-[var(--ink-2)]">
             Predicted alertness · {crew.name}

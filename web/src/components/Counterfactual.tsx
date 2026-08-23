@@ -119,8 +119,9 @@ export function Counterfactual({ verdict }: { verdict: Verdict | null }) {
     <div
       className="rounded-[var(--radius-sm)] p-4"
       style={{
-        background: diverged ? "color-mix(in oklab, var(--warn) 7%, transparent)" : "rgba(255,255,255,0.04)",
-        boxShadow: `inset 0 0 0 1px ${diverged ? "color-mix(in oklab, var(--warn) 28%, transparent)" : "rgba(255,255,255,0.06)"}`,
+        background: diverged
+          ? "color-mix(in oklab, var(--warn) 8%, transparent)"
+          : "rgba(255,255,255,0.03)",
       }}
     >
       <div className="flex items-start gap-3">

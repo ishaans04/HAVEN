@@ -51,7 +51,7 @@ export function FlowTrack({ steps }: { steps: AuditStep[] }) {
   const shown = active === null ? null : steps[active];
 
   return (
-    <div className="glass-2 p-4">
+    <div>
       {/* The rail. */}
       <div className="flex items-end gap-1">
         {steps.map((step, i) => {

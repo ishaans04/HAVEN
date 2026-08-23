@@ -367,6 +367,39 @@ html.js .reveal-in {
 }
 
 /* ------------------------------------------------------------------------
+   Divisions inside a card
+   ------------------------------------------------------------------------
+   A hairline and some space, rather than another box. Everything inside the
+   housing is grouped this way now; nesting a filled, ringed panel inside a
+   filled, ringed card was costing two levels of visual weight to say "these
+   lines belong together", which a rule says for one pixel.
+*/
+.divide-top {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+/* A disclosure header. No fill, no ring: a row of text with a chevron, over a
+   hairline. The chevron and the pointer are enough to say it opens. */
+.disclosure {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0 14px;
+  text-align: left;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  transition: color 0.25s ease;
+}
+.disclosure:hover .disclosure-title,
+.disclosure:focus-visible .disclosure-title {
+  color: var(--accent);
+}
+.disclosure-title {
+  color: var(--ink);
+  transition: color 0.25s ease;
+}
+
+/* ------------------------------------------------------------------------
    Selectable
    ------------------------------------------------------------------------
    Scenario pills, crew cards, task rows, disclosure headers: anything with an

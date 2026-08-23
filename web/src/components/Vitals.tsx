@@ -25,7 +25,7 @@ export function Vitals({ situation }: { situation: Situation }) {
   const gap = Math.abs(threshold - score);
 
   return (
-    <div className="glass-2 p-4">
+    <div className="divide-top pt-4">
       {/* The reading that decides. */}
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="readout text-[38px] leading-none" style={{ color: colour }}>

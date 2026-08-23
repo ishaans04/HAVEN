@@ -247,61 +247,6 @@ export function StatusDot({ status, pulse }: { status: string; pulse?: boolean }
    Readouts
    -------------------------------------------------------------------------- */
 
-export function StatTile({
-  label,
-  value,
-  unit,
-  sub,
-  tone,
-  className,
-}: {
-  label: string;
-  value: string;
-  unit?: string;
-  sub?: string;
-  tone?: Tone;
-  className?: string;
-}) {
-  return (
-    <div className={clsx("glass-2 px-3 py-2.5", className)}>
-      <div className="label text-[11px]">{label}</div>
-      <div className="mt-2 flex items-baseline gap-1">
-        <span
-          className="readout text-[21px] leading-none"
-          style={{ color: tone ? TONE_VAR[tone] : "var(--ink)" }}
-        >
-          {value}
-        </span>
-        {unit ? <span className="text-[12px] text-[var(--ink-3)]">{unit}</span> : null}
-      </div>
-      {sub ? <div className="mt-2 text-[12px] leading-snug text-[var(--ink-3)]">{sub}</div> : null}
-    </div>
-  );
-}
-
-/** v1's `Stat`, kept so nothing that imports it breaks. */
-export function Stat({
-  label,
-  value,
-  sub,
-  tone,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  tone?: string;
-}) {
-  return (
-    <div className="glass-2 px-3 py-2.5">
-      <div className="label text-[11px]">{label}</div>
-      <div className="readout mt-2 text-[19px] leading-none" style={{ color: tone ?? "var(--ink)" }}>
-        {value}
-      </div>
-      {sub ? <div className="mt-2 text-[11px] text-[var(--ink-3)]">{sub}</div> : null}
-    </div>
-  );
-}
-
 /**
  * A bar. The fill is a gradient from a dimmed to a full-strength tone so it
  * reads as illuminated rather than painted, and the threshold marker is a
@@ -463,10 +408,10 @@ export function Disclosure({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls={id}
-        className="selectable flex w-full items-center gap-3 rounded-[var(--radius-sm)] px-4 py-3 text-left"
+        className="disclosure"
       >
         <span className="min-w-0 flex-1">
-          <span className="block text-[13px] font-medium text-[var(--ink)]">{summary}</span>
+          <span className="disclosure-title block text-[13px] font-medium">{summary}</span>
           {hint ? (
             <span className="mt-1 block text-[12px] leading-snug text-[var(--ink-3)]">{hint}</span>
           ) : null}
@@ -481,7 +426,7 @@ export function Disclosure({
         />
       </button>
       {open ? (
-        <div id={id} className="rise pt-3">
+        <div id={id} className="rise pb-4">
           {children}
         </div>
       ) : null}

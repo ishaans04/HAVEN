@@ -282,11 +282,8 @@ function Evidence({ refusal, situation }: { refusal: Refusal; situation: Situati
 function Panel({ children }: { children: ReactNode }) {
   return (
     <div
-      className="p-4"
-      style={{
-        background: "rgba(0,0,0,0.18)",
-        boxShadow: "inset 0 1px 0 color-mix(in oklab, var(--bad) 16%, transparent)",
-      }}
+      className="px-4 pb-4 pt-4"
+      style={{ boxShadow: "inset 0 1px 0 color-mix(in oklab, var(--bad) 18%, transparent)" }}
     >
       {children}
     </div>

@@ -87,10 +87,7 @@ export function ScenarioBar({
               <span className="sm:hidden">Argument</span>
             </button>
           ) : null}
-          <BarButton onClick={onStartTour} icon={<Compass size={13} />}>
-            Tour
-          </BarButton>
-          <Overflow onOpenProcedures={onOpenProcedures} />
+          <Overflow onOpenProcedures={onOpenProcedures} onStartTour={onStartTour} />
         </div>
       </div>
 
@@ -233,7 +230,13 @@ function ScenarioPicker({
    The overflow
    -------------------------------------------------------------------------- */
 
-function Overflow({ onOpenProcedures }: { onOpenProcedures: () => void }) {
+function Overflow({
+  onOpenProcedures,
+  onStartTour,
+}: {
+  onOpenProcedures: () => void;
+  onStartTour: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [honesty, setHonesty] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -267,6 +270,15 @@ function Overflow({ onOpenProcedures }: { onOpenProcedures: () => void }) {
             className="glass rise absolute right-0 z-50 mt-2 w-[240px] p-2"
             style={{ borderRadius: "var(--radius)" }}
           >
+            <MenuItem
+              icon={<Compass size={13} />}
+              onClick={() => {
+                setOpen(false);
+                onStartTour();
+              }}
+            >
+              Tour the console
+            </MenuItem>
             <MenuItem
               icon={<BookOpen size={13} />}
               onClick={() => {
@@ -428,24 +440,4 @@ function useDismiss(
       window.removeEventListener("mousedown", onDown);
     };
   }, [open, wrap, close]);
-}
-
-function BarButton({
-  children,
-  icon,
-  onClick,
-}: {
-  children: React.ReactNode;
-  icon: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="glass-3 glass-interactive flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] text-[var(--ink-2)] hover:text-[var(--ink)]"
-    >
-      {icon}
-      {children}
-    </button>
-  );
 }

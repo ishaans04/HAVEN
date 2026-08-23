@@ -177,8 +177,8 @@ export function VerdictCard({
 
       {/* What the action is predicted to buy. */}
       {projection ? (
-        <div className="mt-3 px-5">
-          <div className="glass-2 p-4">
+        <div className="mt-4 px-5">
+          <div className="divide-top pt-4">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <Label className="!text-[11px]">Predicted effect</Label>
               <div className="flex items-baseline gap-2">
@@ -229,8 +229,8 @@ export function VerdictCard({
 
       {/* Does the fix break the crew? Six seats say it faster than the note did. */}
       {impact ? (
-        <div className="mt-3 px-5">
-          <div className="glass-2 p-4">
+        <div className="mt-4 px-5">
+          <div className="divide-top pt-4">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
               {impact.roster_ok ? (
                 <UserCheck size={15} className="shrink-0 text-[var(--ok)]" />
@@ -268,9 +268,9 @@ export function VerdictCard({
             summary="The full reasoning, as written for the operator"
             hint={`Grounded in ${rec.citation.doc} section ${rec.citation.section}`}
           >
-            <div className="glass-2 p-4">
-              <p className="text-[13px] leading-relaxed text-[var(--ink-2)]">{rec.rationale}</p>
-            </div>
+            <p className="max-w-2xl text-[13px] leading-relaxed text-[var(--ink-2)]">
+              {rec.rationale}
+            </p>
           </Disclosure>
         ) : null}
 
@@ -279,11 +279,7 @@ export function VerdictCard({
 
       {/* Stage 7. HAVEN never actions anything itself. */}
       <div
-        className="mt-5 px-5 py-4"
-        style={{
-          background: "rgba(255,255,255,0.03)",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07)",
-        }}
+        className="divide-top mt-5 px-5 py-4"
       >
         {decision ? (
           <div className="flex items-start gap-2 text-[13px] text-[var(--ink-2)]">
