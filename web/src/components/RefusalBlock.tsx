@@ -244,7 +244,7 @@ function Evidence({ refusal, situation }: { refusal: Refusal; situation: Situati
     case "provider_unavailable":
       return (
         <Panel>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(190px,1fr))]">
             <div>
               <Label className="!text-[11px]">Still running</Label>
               <p className="mt-2 text-[13px] leading-snug text-[var(--ink-2)]">

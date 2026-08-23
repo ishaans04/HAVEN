@@ -205,7 +205,7 @@ export function Console() {
         ) : (
           <>
             {/* Zone 1 — who is running low. */}
-            <section className="rise" data-tour="crew">
+            <section className="rise" id="zone-crew" data-tour="crew">
               <div className="mb-2 flex flex-wrap items-baseline gap-x-3">
                 <Label>Crew readiness</Label>
                 {/* The instructional sentence that used to sit here explained
@@ -225,10 +225,21 @@ export function Console() {
               />
             </section>
 
-            <div className="mt-4 grid gap-4 lg:grid-cols-12">
+            <div className="mt-4 grid gap-4 md:grid-cols-12">
               {/* Zone 2 — the day, as a dial. */}
+              {/* The grid stretches both columns to the taller one, which left the
+                  dial card padded out with ~900px of empty glass and made the
+                  reader scroll through a void. The card is its own height now
+                  and sticks, so it stays as context while the answer and the
+                  reasoning scroll past it. Only at lg: stacked, a pinned dial
+                  would sit on top of everything below it. */}
+              <div className="md:col-span-6" id="zone-window">
+                <div
+                  className="md:sticky"
+                  style={{ top: "calc(var(--masthead-h, 150px) + 12px)" }}
+                >
               <GlassCard
-                className="flex flex-col p-5 lg:col-span-6"
+                className="flex flex-col p-5"
                 loading={loading}
                 style={{ animationDelay: "60ms" }}
               >
@@ -278,20 +289,22 @@ export function Console() {
                   </Disclosure>
                 </div>
               </GlassCard>
+                </div>
+              </div>
 
               {/* Zones 4, 5 and 3 — the answer, then how it was reached. */}
-              <div className="flex flex-col gap-4 lg:col-span-6">
-                <div className="rise" style={{ animationDelay: "120ms" }} data-tour="verdict">
+              <div className="flex flex-col gap-4 md:col-span-6">
+                <div className="rise" id="zone-verdict" style={{ animationDelay: "120ms" }} data-tour="verdict">
                   <VerdictCard situation={situation} readiness={evaluation.readiness} />
                 </div>
-                <div className="rise" style={{ animationDelay: "180ms" }}>
+                <div className="rise" id="zone-reasoning" style={{ animationDelay: "180ms" }}>
                   <ProcedureReasoning situation={situation} audit={audit} />
                 </div>
               </div>
             </div>
 
             {/* Zone 6 — the audit strip. */}
-            <div className="rise mt-4" style={{ animationDelay: "240ms" }} data-tour="audit">
+            <div className="rise mt-4" id="zone-audit" style={{ animationDelay: "240ms" }} data-tour="audit">
               <AuditBar
                 tierStatus={evaluation.tier_status}
                 audit={audit}
@@ -308,11 +321,11 @@ export function Console() {
 /** First paint, before the engine has answered. Glass, not a spinner. */
 function Skeleton() {
   return (
-    <div className="grid gap-4 lg:grid-cols-12" aria-busy="true" aria-live="polite">
-      <GlassCard className="lg:col-span-5" loading>
+    <div className="grid gap-4 md:grid-cols-12" aria-busy="true" aria-live="polite">
+      <GlassCard className="md:col-span-6" loading>
         <div className="aspect-square" />
       </GlassCard>
-      <div className="flex flex-col gap-4 lg:col-span-7">
+      <div className="flex flex-col gap-4 md:col-span-6">
         <GlassCard className="h-72" loading />
         <GlassCard className="h-52" loading />
       </div>

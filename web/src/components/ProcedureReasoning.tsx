@@ -201,7 +201,7 @@ export function ProcedureReasoning({
                     />
                   </div>
 
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div className="mt-3 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(190px,1fr))]">
                     <div>
                       <Label>The model proposed</Label>
                       <p className="mt-1 text-[12px] leading-snug text-[var(--ink-2)]">

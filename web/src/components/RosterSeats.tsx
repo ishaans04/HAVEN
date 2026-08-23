@@ -31,7 +31,7 @@ export function RosterSeats({
   subject: string;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+    <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(96px,1fr))]">
       {readiness.map((crew) => {
         const inScope = impact.checked_roles.includes(crew.role);
         const isCover = crew.crew_member === impact.alternate;

@@ -63,7 +63,7 @@ export function Vitals({ situation }: { situation: Situation }) {
       </div>
 
       {/* Everything else, at the size it deserves. */}
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         <MiniGauge
           icon={<Gauge size={13} />}
           value={situation.workload_score.toFixed(0)}
@@ -112,7 +112,7 @@ function MiniGauge({
   const c = 2 * Math.PI * r;
   return (
     <div
-      className="flex items-center gap-2 rounded-[var(--radius-xs)] px-2.5 py-2"
+      className="flex min-w-[112px] flex-1 items-center gap-2 rounded-[var(--radius-xs)] px-2.5 py-2"
       style={{ background: "rgba(255,255,255,0.04)" }}
       title={title}
     >

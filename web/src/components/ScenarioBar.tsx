@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { BookOpen, Check, ChevronDown, Compass, Info, MoreHorizontal, Orbit, Route } from "lucide-react";
 import type { ScenarioSummary } from "@/lib/types";
 import { DIVERGENT } from "./ArgumentWalk";
+import { ZoneNav } from "./ZoneNav";
 import { Label } from "./ui";
 
 /**
@@ -106,6 +107,13 @@ export function ScenarioBar({
           </p>
         </div>
       ) : null}
+
+      <div
+        className="mx-auto max-w-[1560px] px-5 sm:px-8"
+        style={{ boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.07)" }}
+      >
+        <ZoneNav />
+      </div>
     </header>
   );
 }
