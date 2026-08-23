@@ -75,7 +75,7 @@ export function ProcedureBrowser({ onClose }: { onClose: () => void }) {
         <p className="py-6 text-[13px] text-[var(--ink-2)]">Loading the corpus…</p>
       ) : (
         <>
-          <p className="mono border-t border-white/[0.08] py-3 text-[11.5px] text-[var(--ink-3)]">
+          <p className="mono border-t border-white/[0.08] py-3 text-[12px] text-[var(--ink-3)]">
             {total} passages across {byDoc.size} documents · {extracted} extracted from source
             documents, {total - extracted} written for this prototype
           </p>
@@ -84,7 +84,7 @@ export function ProcedureBrowser({ onClose }: { onClose: () => void }) {
             {Array.from(byDoc.entries()).map(([doc, passages]) => (
               <section key={doc}>
                 <Label className="mb-2">{doc}</Label>
-                <ul className="space-y-1.5">
+                <ul className="space-y-2">
                   {passages.map((procedure) => {
                     const open = expanded === procedure.passage_id;
                     return (
@@ -94,7 +94,7 @@ export function ProcedureBrowser({ onClose }: { onClose: () => void }) {
                           aria-expanded={open}
                           className="flex w-full items-start gap-3 px-4 py-3 text-left"
                         >
-                          <span className="mono shrink-0 text-[11.5px] text-[var(--ink-3)]">
+                          <span className="mono shrink-0 text-[12px] text-[var(--ink-3)]">
                             §{procedure.section}
                           </span>
                           <span className="min-w-0 flex-1 text-[13px] leading-snug text-[var(--ink)]">
@@ -120,7 +120,7 @@ export function ProcedureBrowser({ onClose }: { onClose: () => void }) {
                         </button>
 
                         {open ? (
-                          <div className="rise border-t border-white/[0.07] px-4 py-3.5">
+                          <div className="rise border-t border-white/[0.07] p-4">
                             <p className="text-[13px] leading-relaxed text-[var(--ink-2)]">
                               {procedure.text}
                             </p>
@@ -129,8 +129,8 @@ export function ProcedureBrowser({ onClose }: { onClose: () => void }) {
                               <p
                                 className="mt-3 rounded-[var(--radius-xs)] px-3 py-2 text-[12px] leading-snug text-[var(--warn)]"
                                 style={{
-                                  background: "rgba(255,207,107,0.08)",
-                                  boxShadow: "inset 0 0 0 1px rgba(255,207,107,0.26)",
+                                  background: "color-mix(in oklab, var(--warn) 8%, transparent)",
+                                  boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--warn) 26%, transparent)",
                                 }}
                               >
                                 Retrieved on purpose, and must be rejected:{" "}
@@ -138,7 +138,7 @@ export function ProcedureBrowser({ onClose }: { onClose: () => void }) {
                               </p>
                             ) : null}
 
-                            <dl className="mono mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[11.5px]">
+                            <dl className="mono mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[12px]">
                               <dt className="text-[var(--ink-3)]">applies to</dt>
                               <dd className="text-[var(--ink-2)]">
                                 {procedure.task_types.join(", ") || "—"}

@@ -27,14 +27,14 @@ export function AuditBar({
     <GlassCard className="overflow-hidden">
       {tierStatus.degraded ? (
         <div
-          className="flex items-start gap-2.5 px-5 py-3"
+          className="flex items-start gap-2 px-5 py-3"
           style={{
-            background: "rgba(255,207,107,0.09)",
-            boxShadow: "inset 0 -1px 0 rgba(255,207,107,0.24)",
+            background: "color-mix(in oklab, var(--warn) 9%, transparent)",
+            boxShadow: "inset 0 -1px 0 color-mix(in oklab, var(--warn) 24%, transparent)",
           }}
         >
           <TriangleAlert size={15} className="mt-[2px] shrink-0 text-[var(--warn)]" />
-          <p className="text-[12.5px] leading-snug text-[var(--warn)]">
+          <p className="text-[13px] leading-snug text-[var(--warn)]">
             <strong className="font-medium">Degraded mode.</strong> {tierStatus.degraded_reason}{" "}
             Deterministic scoring is unaffected; procedure interpretation is unavailable and
             Situations are being escalated.
@@ -42,7 +42,7 @@ export function AuditBar({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-3.5">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4">
         <span className="flex items-center gap-2">
           <span className="relative flex h-2.5 w-2.5 items-center justify-center">
             <span
@@ -58,7 +58,7 @@ export function AuditBar({
               style={{ color: tierStatus.degraded ? "var(--warn)" : "var(--ok)" }}
             />
           </span>
-          <Label className="!text-[10.5px]">Live</Label>
+          <Label className="!text-[11px]">Live</Label>
         </span>
 
         <Tier label="Deterministic" value={tierStatus.deterministic} color="var(--ok)" />
@@ -90,7 +90,7 @@ export function AuditBar({
               <span className="flex items-center gap-2 pr-1">
                 <Lock size={12} style={{ color: audit.chain_valid ? "var(--ok)" : "var(--bad)" }} />
                 <span
-                  className="text-[11.5px]"
+                  className="text-[12px]"
                   style={{ color: audit.chain_valid ? "var(--ok)" : "var(--bad)" }}
                 >
                   {audit.chain_valid ? "chain verified" : "CHAIN BROKEN"}
@@ -105,7 +105,7 @@ export function AuditBar({
               </div>
               <div className="max-h-72 overflow-auto">
                 <table className="w-full border-collapse text-left">
-                  <thead className="sticky top-0" style={{ background: "rgba(14,12,32,0.92)" }}>
+                  <thead className="sticky top-0" style={{ background: "color-mix(in oklab, var(--void-deep) 92%, transparent)" }}>
                     <tr className="label [&>th]:px-3 [&>th]:py-2 [&>th]:font-medium">
                       <th>#</th>
                       <th>Step</th>
@@ -147,8 +147,8 @@ function Tier({ label, value, color }: { label: string; value: string; color: st
         className="h-1.5 w-1.5 shrink-0 rounded-full"
         style={{ background: color, boxShadow: `0 0 7px ${color}` }}
       />
-      <Label className="!text-[10.5px]">{label}</Label>
-      <span className="mono text-[11.5px] text-[var(--ink-2)]">{value}</span>
+      <Label className="!text-[11px]">{label}</Label>
+      <span className="mono text-[12px] text-[var(--ink-2)]">{value}</span>
     </span>
   );
 }
@@ -181,8 +181,8 @@ function ProviderChain({
         className="h-1.5 w-1.5 shrink-0 rounded-full"
         style={{ background: degraded ? "var(--warn)" : "var(--iris)" }}
       />
-      <Label className="!text-[10.5px]">Chain</Label>
-      <span className="mono flex items-center gap-1.5 text-[11.5px]">
+      <Label className="!text-[11px]">Chain</Label>
+      <span className="mono flex items-center gap-1.5 text-[12px]">
         {chain.map((name, index) => (
           <span key={name} className="flex items-center gap-1.5">
             {index > 0 ? <span className="text-[var(--ink-3)]">→</span> : null}

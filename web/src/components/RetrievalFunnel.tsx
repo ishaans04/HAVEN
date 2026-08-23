@@ -92,7 +92,7 @@ export function RetrievalFunnel({
             y="13"
             fill="var(--ink-3)"
             className="mono"
-            fontSize="10.5"
+            fontSize="11"
             letterSpacing="1.5"
           >
             RETRIEVED {lanes.length}
@@ -102,7 +102,7 @@ export function RetrievalFunnel({
             y="13"
             fill="var(--warn)"
             className="mono"
-            fontSize="10.5"
+            fontSize="11"
             letterSpacing="1.5"
           >
             CHECKER
@@ -112,7 +112,7 @@ export function RetrievalFunnel({
             y="13"
             fill={survivorIndex >= 0 ? "var(--ok)" : "var(--bad)"}
             className="mono"
-            fontSize="10.5"
+            fontSize="11"
             letterSpacing="1.5"
             textAnchor="end"
           >
@@ -178,7 +178,7 @@ export function RetrievalFunnel({
                   y={y - 9}
                   fill="var(--ink-3)"
                   className="mono"
-                  fontSize="10"
+                  fontSize="11"
                 >
                   sim {lane.relevance.toFixed(3)}
                 </text>
@@ -196,7 +196,7 @@ export function RetrievalFunnel({
                     x={GATE_X + 112}
                     y={y + 20 + i * 6}
                     fill="var(--ink-3)"
-                    fontSize="10.5"
+                    fontSize="11"
                   >
                     {lane.why.length > 46 ? `${lane.why.slice(0, 44)}…` : lane.why}
                   </text>
@@ -225,7 +225,7 @@ export function RetrievalFunnel({
                 y={exitY + 14}
                 fill="var(--ink-3)"
                 textAnchor="end"
-                fontSize="10.5"
+                fontSize="11"
               >
                 verified clause by clause
               </text>

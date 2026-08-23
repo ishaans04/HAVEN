@@ -87,13 +87,13 @@ function Hero() {
         className="pointer-events-none absolute inset-0 -z-10 will-change-transform"
         style={{
           background:
-            "linear-gradient(102deg, rgba(4,3,12,0.88) 0%, rgba(4,3,12,0.62) 38%, rgba(4,3,12,0.1) 66%, rgba(4,3,12,0) 80%)",
+            "linear-gradient(102deg, color-mix(in oklab, var(--void-deep) 88%, transparent) 0%, color-mix(in oklab, var(--void-deep) 62%, transparent) 38%, color-mix(in oklab, var(--void-deep) 10%, transparent) 66%, color-mix(in oklab, var(--void-deep) 0%, transparent) 80%)",
         }}
       />
 
       <div className="mx-auto w-full max-w-[1560px]">
         <div className="max-w-3xl">
-          <Reveal className="flex flex-wrap items-center gap-2.5">
+          <Reveal className="flex flex-wrap items-center gap-2">
             <Chip tone="iris">IBM AI Builders Challenge</Chip>
             <Chip tone="neutral">Space exploration</Chip>
           </Reveal>
@@ -106,7 +106,7 @@ function Hero() {
           </Reveal>
 
           <Reveal delay={180}>
-            <p className="mt-7 max-w-xl text-[16px] leading-relaxed text-[var(--ink-2)] sm:text-[17px]">
+            <p className="mt-7 max-w-xl text-[16px] leading-relaxed text-[var(--ink-2)] sm:text-[16px]">
               A tired operator and an irreversible task are about to meet. HAVEN sees the
               collision coming, and finds the rule in the mission&rsquo;s own procedures that
               governs it. Then it hands a human the decision. When no rule fits, it says so
@@ -117,12 +117,12 @@ function Hero() {
           <Reveal delay={270} className="mt-9 flex flex-wrap items-center gap-3">
             <Link
               href="/console/"
-              className="glass-interactive group inline-flex items-center gap-2.5 rounded-full px-6 py-3.5 text-[14px] font-medium"
+              className="glass-interactive group inline-flex items-center gap-2 rounded-full px-6 py-4 text-[14px] font-medium"
               style={{
                 color: "var(--iris)",
                 background: "color-mix(in oklab, var(--iris) 18%, transparent)",
                 boxShadow:
-                  "inset 0 0 0 1px color-mix(in oklab, var(--iris) 48%, transparent), 0 20px 50px -22px rgba(120,72,255,0.7)",
+                  "inset 0 0 0 1px color-mix(in oklab, var(--iris) 48%, transparent), 0 20px 50px -22px color-mix(in oklab, var(--iris) 70%, transparent)",
               }}
             >
               Enter the console
@@ -133,7 +133,7 @@ function Hero() {
             </Link>
             <a
               href="#how"
-              className="glass-3 glass-interactive inline-flex items-center gap-2 rounded-full px-5 py-3.5 text-[14px] text-[var(--ink-2)] hover:text-[var(--ink)]"
+              className="glass-3 glass-interactive inline-flex items-center gap-2 rounded-full px-5 py-4 text-[14px] text-[var(--ink-2)] hover:text-[var(--ink)]"
             >
               How it works
             </a>
@@ -146,7 +146,7 @@ function Hero() {
               ["Every recommendation is cited", "var(--info)"],
               ["Refusal is a valid answer", "var(--iris)"],
             ].map(([text, color]) => (
-              <li key={text} className="flex items-center gap-2.5 text-[13px] text-[var(--ink-2)]">
+              <li key={text} className="flex items-center gap-2 text-[13px] text-[var(--ink-2)]">
                 <span
                   className="h-1.5 w-1.5 rounded-full"
                   style={{ background: color, boxShadow: `0 0 8px ${color}` }}
@@ -196,7 +196,7 @@ function Problem() {
             <GlassCard className="h-full p-6">
             <span className="glass-3 inline-flex rounded-full p-2.5 text-[var(--iris)]">{icon}</span>
             <h3 className="mt-4 text-[16px] font-medium leading-snug text-[var(--ink)]">{title}</h3>
-            <p className="mt-2.5 text-[13.5px] leading-relaxed text-[var(--ink-2)]">{body}</p>
+            <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-2)]">{body}</p>
             </GlassCard>
           </Reveal>
         ))}
@@ -218,7 +218,7 @@ function GoldenRule() {
         <GlassCard className="p-6" live>
           <Label>The fatigue &amp; workload engine</Label>
           <h3 className="display mt-2 text-[26px]">Ordinary maths</h3>
-          <p className="mt-3 text-[13.5px] leading-relaxed text-[var(--ink-2)]">
+          <p className="mt-3 text-[13px] leading-relaxed text-[var(--ink-2)]">
             Published, validated alertness and workload models. Same inputs, same score, every
             time. Checkable by hand.
           </p>
@@ -233,7 +233,7 @@ function GoldenRule() {
         <GlassCard className="p-6">
           <Label>The reasoning tier</Label>
           <h3 className="display mt-2 text-[26px]">Reading and explaining</h3>
-          <p className="mt-3 text-[13.5px] leading-relaxed text-[var(--ink-2)]">
+          <p className="mt-3 text-[13px] leading-relaxed text-[var(--ink-2)]">
             Reads procedures written for humans, decides which rule governs the situation, and turns
             a bare score into a cited recommendation.
           </p>
@@ -265,7 +265,7 @@ function GoldenRule() {
             <span className="readout text-[13px] text-[var(--iris)]">
               Rule {String(i + 1).padStart(2, "0")}
             </span>
-            <h4 className="mt-2 text-[14.5px] font-medium leading-snug text-[var(--ink)]">
+            <h4 className="mt-2 text-[14px] font-medium leading-snug text-[var(--ink)]">
               {title}
             </h4>
             <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-3)]">{body}</p>
@@ -290,12 +290,12 @@ function Owns({
   return (
     <dl className="mt-5 space-y-3.5 border-t border-white/[0.08] pt-5">
       <div>
-        <dt className="label !text-[10.5px]">Owns</dt>
-        <dd className="mt-1.5 text-[13px] leading-relaxed text-[var(--ink-2)]">{owns}</dd>
+        <dt className="label !text-[11px]">Owns</dt>
+        <dd className="mt-2 text-[13px] leading-relaxed text-[var(--ink-2)]">{owns}</dd>
       </div>
       <div>
-        <dt className="label !text-[10.5px]">{question}</dt>
-        <dd className="mt-1.5 text-[13.5px] font-medium" style={{ color: tone }}>
+        <dt className="label !text-[11px]">{question}</dt>
+        <dd className="mt-2 text-[13px] font-medium" style={{ color: tone }}>
           {answer}
         </dd>
       </div>
@@ -343,7 +343,7 @@ function Pipeline() {
       <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {STEPS.map(([icon, title, body], i) => (
           <Reveal key={title} delay={i * 70} className="glass-2 relative flex flex-col p-5">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
               <span
                 className="inline-flex rounded-full p-2"
                 style={{
@@ -357,8 +357,8 @@ function Pipeline() {
                 {String(i + 1).padStart(2, "0")}
               </span>
             </div>
-            <h3 className="mt-3.5 text-[15px] font-medium text-[var(--ink)]">{title}</h3>
-            <p className="mt-2 text-[12.5px] leading-relaxed text-[var(--ink-3)]">{body}</p>
+            <h3 className="mt-4 text-[16px] font-medium text-[var(--ink)]">{title}</h3>
+            <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-3)]">{body}</p>
           </Reveal>
         ))}
       </ol>
@@ -400,10 +400,10 @@ function Layout() {
         {layers.map(([name, tone, headline, body], i) => (
           <Reveal key={name} delay={i * 80}>
             <GlassCard className="flex h-full flex-col p-6">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
               <Layers size={15} style={{ color: tone }} />
               <span
-                className="text-[10.5px] uppercase tracking-[0.15em]"
+                className="text-[11px] uppercase tracking-[0.15em]"
                 style={{ color: tone }}
               >
                 Layer {i + 1} · {name}
@@ -412,7 +412,7 @@ function Layout() {
             <h3 className="mt-4 text-[16px] font-medium leading-snug text-[var(--ink)]">
               {headline}
             </h3>
-            <p className="mt-2.5 text-[13.5px] leading-relaxed text-[var(--ink-2)]">{body}</p>
+            <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-2)]">{body}</p>
             </GlassCard>
           </Reveal>
         ))}
@@ -420,7 +420,7 @@ function Layout() {
 
       <GlassCard className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-3 px-6 py-5">
         <Compass size={17} className="shrink-0 text-[var(--iris)]" />
-        <p className="min-w-0 flex-1 text-[13.5px] leading-relaxed text-[var(--ink-2)]">
+        <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-[var(--ink-2)]">
           First visit runs a four-stop tour of those layers, and it is replayable from the console
           masthead at any time.
         </p>
@@ -447,21 +447,21 @@ function Honesty() {
     >
       <div className="grid gap-3 lg:grid-cols-2">
         <GlassCard className="p-6">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <span
               className="h-1.5 w-1.5 rounded-full"
               style={{ background: "var(--ok)", boxShadow: "0 0 8px var(--ok)" }}
             />
             <Label>Real, and running</Label>
           </div>
-          <ul className="mt-4 space-y-2.5 text-[13.5px] leading-relaxed text-[var(--ink-2)]">
+          <ul className="mt-4 space-y-3 text-[13px] leading-relaxed text-[var(--ink-2)]">
             {[
               "The Three-Process Model of Alertness and NASA-TLX: the published models, computed from the inputs shown.",
               "Retrieval over the procedure corpus, with confusable near-misses deliberately in the candidate set.",
               "The compiled precondition checker that admits or rejects each passage independently of the model.",
               "The refusal path, the schedule-impact and confidence screens, and the hash-chained audit trail. All of it runs live on every evaluation.",
             ].map((line) => (
-              <li key={line} className="flex gap-2.5">
+              <li key={line} className="flex gap-2">
                 <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-[var(--ok)]" />
                 {line}
               </li>
@@ -470,21 +470,21 @@ function Honesty() {
         </GlassCard>
 
         <GlassCard className="p-6">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <span
               className="h-1.5 w-1.5 rounded-full"
               style={{ background: "var(--warn)", boxShadow: "0 0 8px var(--warn)" }}
             />
             <Label>Simulated, and labelled as such</Label>
           </div>
-          <ul className="mt-4 space-y-2.5 text-[13.5px] leading-relaxed text-[var(--ink-2)]">
+          <ul className="mt-4 space-y-3 text-[13px] leading-relaxed text-[var(--ink-2)]">
             {[
               "The crew roster is representative, not real individuals.",
               "Sleep, duty and task timelines are synthetic. No public live crew-timeline feed exists.",
               "Where a passage reports prototype authority, its text follows NASA flight-rule structure but was written for this build. The console labels every passage's provenance on the row.",
               "The reasoning model is a scripted Granite stand-in unless a live provider is configured, so the offline path is a first-class path rather than a degraded one.",
             ].map((line) => (
-              <li key={line} className="flex gap-2.5">
+              <li key={line} className="flex gap-2">
                 <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-[var(--warn)]" />
                 {line}
               </li>
@@ -507,7 +507,7 @@ function Close() {
             className="pointer-events-none absolute inset-x-0 bottom-[-60%] h-[150%] -z-10"
             style={{
               background:
-                "radial-gradient(60% 60% at 50% 100%, rgba(150,110,255,0.3), rgba(150,110,255,0) 70%)",
+                "radial-gradient(60% 60% at 50% 100%, color-mix(in oklab, var(--iris) 30%, transparent), color-mix(in oklab, var(--iris) 0%, transparent) 70%)",
             }}
           />
           <h2 className="display mx-auto max-w-2xl text-[clamp(1.75rem,4vw,2.75rem)]">
@@ -522,12 +522,12 @@ function Close() {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/console/"
-              className="glass-interactive group inline-flex items-center gap-2.5 rounded-full px-6 py-3.5 text-[14px] font-medium"
+              className="glass-interactive group inline-flex items-center gap-2 rounded-full px-6 py-4 text-[14px] font-medium"
               style={{
                 color: "var(--iris)",
                 background: "color-mix(in oklab, var(--iris) 18%, transparent)",
                 boxShadow:
-                  "inset 0 0 0 1px color-mix(in oklab, var(--iris) 48%, transparent), 0 20px 50px -22px rgba(120,72,255,0.7)",
+                  "inset 0 0 0 1px color-mix(in oklab, var(--iris) 48%, transparent), 0 20px 50px -22px color-mix(in oklab, var(--iris) 70%, transparent)",
               }}
             >
               Enter the console
@@ -538,7 +538,7 @@ function Close() {
             </Link>
             <a
               href="/docs"
-              className="glass-3 glass-interactive inline-flex items-center gap-2 rounded-full px-5 py-3.5 text-[14px] text-[var(--ink-2)] hover:text-[var(--ink)]"
+              className="glass-3 glass-interactive inline-flex items-center gap-2 rounded-full px-5 py-4 text-[14px] text-[var(--ink-2)] hover:text-[var(--ink)]"
             >
               API reference
             </a>
@@ -575,7 +575,7 @@ function Section({
         <Reveal className="max-w-3xl">
           <Label>{label}</Label>
           <h2 className="display mt-3 text-[clamp(1.6rem,3.4vw,2.5rem)]">{title}</h2>
-          <p className="mt-4 text-[14.5px] leading-relaxed text-[var(--ink-2)]">{lead}</p>
+          <p className="mt-4 text-[14px] leading-relaxed text-[var(--ink-2)]">{lead}</p>
         </Reveal>
         <div className="mt-9">{children}</div>
       </div>

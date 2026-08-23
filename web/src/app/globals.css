@@ -28,31 +28,53 @@
   /* --- The field ---------------------------------------------------------
      Not a flat colour. A nebula gradient, so glass has something to refract:
      over a flat fill, backdrop-filter is an expensive no-op. */
-  --void: #05050d;
-  --void-deep: #030308;
+  --void: #05070e;
+  --void-deep: #03050a;
 
   /* --- Ink ---------------------------------------------------------------
-     Three levels, all verified at 4.5:1 or better against the darkest glass
-     they are used on. v1's third level sat at 3.2:1 and carried the smallest
-     text in the console; that is the mistake this ramp exists not to repeat. */
-  --ink: #f4f2ff;
-  --ink-2: #c3c0e2;
-  --ink-3: #a8a4cc;
+     Cool, not violet. The old ramp was tinted toward the field (#f4f2ff,
+     #c3c0e2) which laid a purple wash over every surface and was a large part
+     of why the whole thing read as a gradient poster rather than an
+     instrument. Cockpit white is blue-cool. All three verified at 4.5:1 or
+     better on the darkest glass they sit on. */
+  --ink: #eaf0f7;
+  --ink-2: #aebccd;
+  --ink-3: #8fa0b5;
 
   /* --- Status ------------------------------------------------------------
-     Tuned for a violet field: the cold end of each hue reads as instrument
-     rather than web app, and no two are confusable at 12px. */
-  --ok: #5ce4bf;
-  --warn: #ffcf6b;
-  --bad: #ff8095;
-  --crit: #ff5d78;
-  --info: #86c2ff;
-  --iris: #bda6ff;
+     Two sources, neither of them taste.
+
+     The semantics are the flight-deck convention: green is nominal, amber is
+     caution, red is warning, cyan is measured data, magenta is a commanded or
+     selected value. That is the vocabulary this domain already reads under
+     stress, and it is why the accent on a selected scenario is violet rather
+     than blue — selection is a commanded state.
+
+     The values are IBM Carbon's support colours, since this is an IBM
+     challenge and the type is already IBM Plex. What they are *not* is the
+     mint / coral / lavender / pale-sky set they replace, which sat at one
+     lightness and one saturation and so gave a caution the same weight as a
+     label. */
+  --ok: #42be65;
+  --warn: #f1c21b;
+  --bad: #ff8389;
+  --crit: #fa4d56;
+  --info: #33b1ff;
+  --iris: #a56eff;
+
+  /* --- Illustration ------------------------------------------------------
+     The planet, its air and its cities. Deliberately separate from status: an
+     Earth limb is blue for reasons that have nothing to do with "info", and
+     coupling them would mean a palette change repainting the sky. */
+  --atmo: #7ec4ff;
+  --ice: #dfeaf6;
+  --city: #ffd39a;
+  --star: #e8e4ff;
 
   /* --- Glass -------------------------------------------------------------
      A tier is a triple: how opaque the fill, how far the blur reaches, how
      bright the top edge catches the light. */
-  --glass-1-fill: rgba(14, 12, 32, 0.44);
+  --glass-1-fill: rgba(10, 16, 30, 0.46);
   --glass-2-fill: rgba(255, 255, 255, 0.045);
   --glass-3-fill: rgba(255, 255, 255, 0.07);
 
@@ -123,11 +145,11 @@ body::before {
   inset: 0;
   z-index: -2;
   background:
-    radial-gradient(58% 46% at 82% 4%, rgba(168, 44, 148, 0.34), transparent 64%),
-    radial-gradient(52% 44% at 8% 14%, rgba(96, 46, 200, 0.32), transparent 62%),
-    radial-gradient(78% 62% at 46% 112%, rgba(22, 52, 132, 0.5), transparent 62%),
-    radial-gradient(34% 30% at 96% 66%, rgba(70, 216, 255, 0.11), transparent 62%),
-    linear-gradient(178deg, #07061a 0%, #05040f 46%, #08051a 100%);
+    radial-gradient(56% 44% at 84% 2%, rgba(122, 40, 132, 0.2), transparent 62%),
+    radial-gradient(54% 46% at 6% 12%, rgba(44, 58, 152, 0.26), transparent 62%),
+    radial-gradient(82% 64% at 46% 114%, rgba(12, 38, 92, 0.52), transparent 64%),
+    radial-gradient(40% 26% at 92% 70%, rgba(48, 168, 216, 0.08), transparent 62%),
+    linear-gradient(178deg, #060915 0%, #04060e 48%, #060a17 100%);
 }
 
 /* Film grain. Five per cent of noise is the difference between a gradient and a

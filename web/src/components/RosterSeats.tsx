@@ -54,9 +54,9 @@ export function RosterSeats({
               isSubject && "opacity-70",
             )}
             style={{
-              background: isCover ? "rgba(92,228,191,0.07)" : "rgba(255,255,255,0.04)",
+              background: isCover ? "color-mix(in oklab, var(--ok) 7%, transparent)" : "rgba(255,255,255,0.04)",
               boxShadow: isCover
-                ? "inset 0 0 0 1px rgba(92,228,191,0.42)"
+                ? "inset 0 0 0 1px color-mix(in oklab, var(--ok) 42%, transparent)"
                 : "inset 0 0 0 1px rgba(255,255,255,0.05)",
             }}
           >
@@ -72,12 +72,12 @@ export function RosterSeats({
                 </span>
               </Ring>
             </span>
-            <div className="mt-2 truncate text-[11.5px] text-[var(--ink)]">{crew.name}</div>
-            <div className="mono mt-0.5 text-[9.5px] uppercase tracking-[0.1em] text-[var(--ink-3)]">
+            <div className="mt-2 truncate text-[12px] text-[var(--ink)]">{crew.name}</div>
+            <div className="mono mt-1 text-[11px] uppercase tracking-[0.1em] text-[var(--ink-3)]">
               {DESIGNATOR[crew.role] ?? crew.role.replace(/_/g, " ")}
             </div>
             <div
-              className="mono mt-1.5 text-[9px] uppercase tracking-[0.1em]"
+              className="mono mt-2 text-[11px] uppercase tracking-[0.1em]"
               style={{ color: state.colour }}
             >
               {state.text}

@@ -179,18 +179,18 @@ export function OrbitDial({
             <stop offset="100%" stopColor="rgba(0,0,0,0.88)" />
           </radialGradient>
           <radialGradient id="od-atmo" cx="50%" cy="50%" r="50%">
-            <stop offset="70%" stopColor="rgba(126,196,255,0)" />
-            <stop offset="93%" stopColor="rgba(126,196,255,0.26)" />
-            <stop offset="100%" stopColor="rgba(126,196,255,0)" />
+            <stop offset="70%" stopColor="var(--atmo)" stopOpacity="0" />
+            <stop offset="93%" stopColor="var(--atmo)" stopOpacity="0.26" />
+            <stop offset="100%" stopColor="var(--atmo)" stopOpacity="0" />
           </radialGradient>
           <radialGradient id="od-bloom" cx="50%" cy="50%" r="50%">
-            <stop offset="40%" stopColor="rgba(126,92,255,0.26)" />
-            <stop offset="100%" stopColor="rgba(126,92,255,0)" />
+            <stop offset="40%" stopColor="color-mix(in oklab, var(--iris) 26%, transparent)" />
+            <stop offset="100%" stopColor="color-mix(in oklab, var(--iris) 0%, transparent)" />
           </radialGradient>
           <radialGradient id="od-aurora" cx="50%" cy="50%" r="50%">
-            <stop offset={`${(AURORA_IN / AURORA_OUT) * 100}%`} stopColor="rgba(189,166,255,0.05)" />
-            <stop offset="82%" stopColor="rgba(134,194,255,0.22)" />
-            <stop offset="100%" stopColor="rgba(134,194,255,0.42)" />
+            <stop offset={`${(AURORA_IN / AURORA_OUT) * 100}%`} stopColor="color-mix(in oklab, var(--iris) 5%, transparent)" />
+            <stop offset="82%" stopColor="var(--info)" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="var(--info)" stopOpacity="0.42" />
           </radialGradient>
           <clipPath id="od-clip">
             <circle cx={C} cy={C} r={PLANET_R} />
@@ -330,8 +330,8 @@ export function OrbitDial({
             )}
           </g>
           {/* Polar caps do not travel with the surface. */}
-          <ellipse cx={C} cy={C - PLANET_R + 12} rx={56} ry={16} fill="#dfeaf6" opacity={0.22} filter="url(#od-soft)" />
-          <ellipse cx={C} cy={C + PLANET_R - 10} rx={48} ry={14} fill="#dfeaf6" opacity={0.16} filter="url(#od-soft)" />
+          <ellipse cx={C} cy={C - PLANET_R + 12} rx={56} ry={16} fill="var(--ice)" opacity={0.22} filter="url(#od-soft)" />
+          <ellipse cx={C} cy={C + PLANET_R - 10} rx={48} ry={14} fill="var(--ice)" opacity={0.16} filter="url(#od-soft)" />
           <circle cx={C} cy={C} r={PLANET_R} fill="url(#od-terminator)" />
           <ellipse
             cx={C - 40}
@@ -344,7 +344,7 @@ export function OrbitDial({
             transform={`rotate(-24 ${C - 40} ${C - 46})`}
           />
         </g>
-        <circle cx={C} cy={C} r={PLANET_R} fill="none" stroke="rgba(150,205,255,0.4)" strokeWidth={1} />
+        <circle cx={C} cy={C} r={PLANET_R} fill="none" stroke="var(--atmo)" strokeOpacity="0.4" strokeWidth={1} />
 
         {/* Tasks, at their hour and at the curve's radius. */}
         {mine.map((task) => {
@@ -390,7 +390,7 @@ export function OrbitDial({
                 cx={x}
                 cy={y}
                 r={selected ? px(7.5) : px(5.5)}
-                fill={selected ? color : "#0a0818"}
+                fill={selected ? color : "var(--void-deep)"}
                 stroke={color}
                 strokeWidth={px(selected ? 2 : 2.2)}
                 style={{ filter: `drop-shadow(0 0 6px ${color})`, transition: "r .3s ease" }}
@@ -416,14 +416,14 @@ export function OrbitDial({
               left: `${(x / SIZE) * 100}%`,
               top: `${(y / SIZE) * 100}%`,
               transform: "translate(-50%, calc(-100% - 14px))",
-              background: "rgba(12,10,28,0.92)",
+              background: "color-mix(in oklab, var(--void-deep) 92%, transparent)",
               backdropFilter: "blur(14px)",
             }}
           >
             <div className="mono text-[11px] text-[var(--ink-3)]">
               {utcTime(task.scheduled)} · {task.criticality}
             </div>
-            <div className="mt-0.5 text-[12px] leading-snug text-[var(--ink)]">{task.label}</div>
+            <div className="mt-1 text-[12px] leading-snug text-[var(--ink)]">{task.label}</div>
             <div className="readout mt-1 text-[12px]" style={{ color: TONE_VAR[task.raises_situation ? toneOf(task.risk_level) : "ok"] }}>
               {task.predicted_alertness.toFixed(2)} predicted
             </div>
@@ -437,7 +437,7 @@ export function OrbitDial({
         <div className="max-w-[52%] text-center">
           {flagged ? (
             <>
-              <div className="label text-[10px] text-[var(--ink-3)]">
+              <div className="label text-[11px] text-[var(--ink-3)]">
                 {flagged.raises_situation ? "Flagged task" : "Next task"}
               </div>
               <div
@@ -446,10 +446,10 @@ export function OrbitDial({
               >
                 {utcTime(flagged.scheduled)}
               </div>
-              <div className="mt-2 text-[12px] leading-snug text-[var(--ink-2)] sm:text-[12.5px]">
+              <div className="mt-2 text-[12px] leading-snug text-[var(--ink-2)] sm:text-[13px]">
                 {flagged.label}
               </div>
-              <div className="mt-2.5 flex justify-center">
+              <div className="mt-2 flex justify-center">
                 <Chip tone={flagged.raises_situation ? toneOf(flagged.risk_level) : "ok"} solid>
                   {flagged.raises_situation ? flagged.risk_level : "cleared"}
                 </Chip>
@@ -457,8 +457,8 @@ export function OrbitDial({
             </>
           ) : (
             <>
-              <div className="label text-[10px]">24-hour window</div>
-              <div className="mt-1.5 text-[13px] leading-snug text-[var(--ink-2)]">
+              <div className="label text-[11px]">24-hour window</div>
+              <div className="mt-2 text-[13px] leading-snug text-[var(--ink-2)]">
                 No task in this window collided with a low.
               </div>
             </>
@@ -481,7 +481,7 @@ export function OrbitLegend({ className }: { className?: string }) {
   return (
     <ul className={clsx("flex flex-wrap items-center gap-x-5 gap-y-2", className)}>
       {items.map(([color, label, note]) => (
-        <li key={label} className="flex items-center gap-2 text-[11.5px] text-[var(--ink-2)]">
+        <li key={label} className="flex items-center gap-2 text-[12px] text-[var(--ink-2)]">
           <span
             className="h-[3px] w-5 shrink-0 rounded-full"
             style={{ background: color, boxShadow: `0 0 8px -1px ${color}` }}

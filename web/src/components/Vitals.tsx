@@ -25,13 +25,13 @@ export function Vitals({ situation }: { situation: Situation }) {
   const gap = Math.abs(threshold - score);
 
   return (
-    <div className="glass-2 px-4 py-4">
+    <div className="glass-2 p-4">
       {/* The reading that decides. */}
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="readout text-[38px] leading-none" style={{ color: colour }}>
           {score.toFixed(2)}
         </span>
-        <Label className="!text-[10.5px]">alertness</Label>
+        <Label className="!text-[11px]">alertness</Label>
         <span className="ml-auto text-[12px]" style={{ color: colour }}>
           {gap < 0.005
             ? "on the line"
@@ -55,7 +55,7 @@ export function Vitals({ situation }: { situation: Situation }) {
           style={{ left: `${Math.min(100, threshold * 100)}%` }}
         />
         <span
-          className="mono absolute -top-[22px] whitespace-nowrap text-[10px] text-[var(--ink-2)]"
+          className="mono absolute -top-[22px] whitespace-nowrap text-[11px] text-[var(--ink-2)]"
           style={{ left: `${Math.min(100, threshold * 100)}%`, transform: "translateX(-50%)" }}
         >
           {threshold.toFixed(2)} execution threshold
@@ -112,7 +112,7 @@ function MiniGauge({
   const c = 2 * Math.PI * r;
   return (
     <div
-      className="flex items-center gap-2.5 rounded-[var(--radius-xs)] px-2.5 py-2"
+      className="flex items-center gap-2 rounded-[var(--radius-xs)] px-2.5 py-2"
       style={{ background: "rgba(255,255,255,0.04)" }}
       title={title}
     >
@@ -139,7 +139,7 @@ function MiniGauge({
         <span className="readout block truncate text-[14px] leading-none text-[var(--ink)]">
           {value}
         </span>
-        <span className="mt-1 block text-[9.5px] uppercase tracking-[0.12em] text-[var(--ink-3)]">
+        <span className="mt-1 block text-[11px] uppercase tracking-[0.12em] text-[var(--ink-3)]">
           {label}
         </span>
       </span>

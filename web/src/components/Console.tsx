@@ -151,7 +151,7 @@ export function Console() {
             <pre className="glass-2 mono mt-3 overflow-x-auto px-4 py-3 text-[12px] text-[var(--ink)]">
               uv run --no-sync python -m scripts.run_haven
             </pre>
-            <p className="mt-3 text-[12.5px] leading-relaxed text-[var(--ink-3)]">
+            <p className="mt-3 text-[13px] leading-relaxed text-[var(--ink-3)]">
               The launcher reports whether the console is built, which provider chain will be tried,
               and which corpus manifest is loaded, then serves both tiers on one port.
             </p>
@@ -206,7 +206,7 @@ export function Console() {
           <>
             {/* Zone 1 — who is running low. */}
             <section className="rise" data-tour="crew">
-              <div className="mb-2.5 flex flex-wrap items-baseline gap-x-3">
+              <div className="mb-2 flex flex-wrap items-baseline gap-x-3">
                 <Label>Crew readiness</Label>
                 {/* The instructional sentence that used to sit here explained
                     the baseline comparison and told you to click something. The

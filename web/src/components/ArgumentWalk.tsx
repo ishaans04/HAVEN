@@ -104,22 +104,22 @@ export function ArgumentWalk({
       aria-label="Guided walk through the argument"
     >
       <div className="glass rise overflow-hidden">
-      <div className="flex flex-wrap items-start gap-x-5 gap-y-3 px-5 py-4">
+      <div className="flex flex-wrap items-start gap-x-5 gap-y-3 p-5">
         <span
-          className="mt-0.5 shrink-0 rounded-full p-2"
-          style={{ color: "var(--iris)", background: "rgba(189,166,255,0.14)" }}
+          className="mt-1 shrink-0 rounded-full p-2"
+          style={{ color: "var(--iris)", background: "color-mix(in oklab, var(--iris) 14%, transparent)" }}
         >
           <Route size={15} />
         </span>
 
         <div className="min-w-[240px] flex-1">
           <div className="flex flex-wrap items-baseline gap-x-3">
-            <Label className="!text-[10.5px]">
+            <Label className="!text-[11px]">
               The argument · {index + 1} of {BEATS.length}
             </Label>
-            <h2 className="text-[15px] font-medium text-[var(--ink)]">{beat.title}</h2>
+            <h2 className="text-[16px] font-medium text-[var(--ink)]">{beat.title}</h2>
           </div>
-          <p className="mt-1.5 max-w-3xl text-[12.5px] leading-relaxed text-[var(--ink-2)]">
+          <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-[var(--ink-2)]">
             {beat.watch}
           </p>
         </div>

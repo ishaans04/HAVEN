@@ -27,14 +27,14 @@ export function ClauseVerdict({
 }) {
   if (!clauses.length) {
     return (
-      <p className="text-[11.5px] italic text-[var(--ink-3)]">
+      <p className="text-[12px] italic text-[var(--ink-3)]">
         This passage declares no preconditions.
       </p>
     );
   }
 
   return (
-    <ul className={clsx("space-y-1.5", compact && "space-y-1")}>
+    <ul className={clsx("space-y-2", compact && "space-y-1")}>
       {clauses.map((clause) => (
         <li key={clause.clause} className="flex items-start gap-2">
           {clause.satisfied ? (
@@ -42,7 +42,7 @@ export function ClauseVerdict({
           ) : (
             <X size={13} className="mt-[2px] shrink-0 text-[var(--bad)]" />
           )}
-          <span className="min-w-0 flex-1 text-[11.5px] leading-snug">
+          <span className="min-w-0 flex-1 text-[12px] leading-snug">
             <span className="mono text-[var(--ink-2)]">{clause.clause}</span>
             {!compact ? (
               <span className="ml-1.5 text-[var(--ink-3)]">

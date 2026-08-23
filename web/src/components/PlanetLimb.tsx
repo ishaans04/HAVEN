@@ -88,9 +88,9 @@ export function PlanetLimb({ className }: { className?: string }) {
             <stop offset="100%" stopColor="#04060f" />
           </radialGradient>
           <linearGradient id="pl-haze" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0%" stopColor="rgba(120,196,255,0.5)" />
-            <stop offset="55%" stopColor="rgba(120,196,255,0.13)" />
-            <stop offset="100%" stopColor="rgba(120,196,255,0)" />
+            <stop offset="0%" stopColor="var(--atmo)" stopOpacity="0.5" />
+            <stop offset="55%" stopColor="var(--atmo)" stopOpacity="0.13" />
+            <stop offset="100%" stopColor="var(--atmo)" stopOpacity="0" />
           </linearGradient>
           <linearGradient id="pl-rim" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="rgba(160,215,255,0.15)" />
@@ -141,7 +141,7 @@ export function PlanetLimb({ className }: { className?: string }) {
           ))}
           <g filter="url(#pl-lights)">
             {LIGHTS.map((l, i) => (
-              <circle key={`l${i}`} cx={l.x} cy={l.y} r={l.r} fill="#ffd39a" opacity={l.o} />
+              <circle key={`l${i}`} cx={l.x} cy={l.y} r={l.r} fill="var(--city)" opacity={l.o} />
             ))}
           </g>
           {/* Airglow along the inside of the limb. */}

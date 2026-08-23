@@ -99,10 +99,10 @@ export function VerdictCard({
   return (
     <GlassCard live={!isRefusal} refuse={isRefusal} className="overflow-hidden">
       {/* Header — who and when, and how bad. */}
-      <div className="flex flex-wrap items-start gap-3 px-6 pt-5">
+      <div className="flex flex-wrap items-start gap-3 px-5 pt-5">
         <div className="min-w-0 flex-1">
           <Label>{isRefusal ? "HAVEN is refusing" : "HAVEN recommends"}</Label>
-          <p className="mono mt-1.5 text-[11.5px] text-[var(--ink-3)]">
+          <p className="mono mt-2 text-[12px] text-[var(--ink-3)]">
             {situation.crew_member_name} · {situation.task} · {utcTime(situation.task_scheduled)}
           </p>
         </div>
@@ -117,11 +117,11 @@ export function VerdictCard({
       </div>
 
       {/* The headline and the one-sentence reason. */}
-      <div className="px-6 pt-4">
-        <h2 className="display text-[27px] sm:text-[34px] xl:text-[38px]">
+      <div className="px-5 pt-4">
+        <h2 className="display text-[26px] sm:text-[34px] xl:text-[38px]">
           {isRefusal ? (
             <span className="flex items-start gap-3">
-              <ShieldAlert size={26} className="mt-1.5 shrink-0 text-[var(--bad)]" />
+              <ShieldAlert size={26} className="mt-2 shrink-0 text-[var(--bad)]" />
               <span>{ref?.reason_label ?? "No governing procedure"}</span>
             </span>
           ) : (
@@ -129,13 +129,13 @@ export function VerdictCard({
           )}
         </h2>
 
-        <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-[var(--ink-2)]">
+        <p className="mt-4 max-w-2xl text-[16px] leading-relaxed text-[var(--ink-2)]">
           {isRefusal ? (
             ref?.explanation
           ) : (
             <>
               <span className="text-[var(--ink)]">{situation.crew_member_name}</span> is predicted at{" "}
-              <span className="readout text-[15px]" style={{ color: TONE_VAR[riskTone] }}>
+              <span className="readout text-[16px]" style={{ color: TONE_VAR[riskTone] }}>
                 {situation.alertness_score.toFixed(2)}
               </span>{" "}
               alertness
@@ -143,7 +143,7 @@ export function VerdictCard({
                 <>
                   {" "}
                   against a line of{" "}
-                  <span className="readout text-[15px]">{projection.threshold.toFixed(2)}</span> for
+                  <span className="readout text-[16px]">{projection.threshold.toFixed(2)}</span> for
                   this job
                 </>
               ) : null}
@@ -161,8 +161,8 @@ export function VerdictCard({
             <Chip tone="info">
               {rec.citation.doc} §{rec.citation.section}
             </Chip>
-            <span className="text-[12.5px] text-[var(--ink-3)]">
-              <span className="uppercase tracking-[0.11em] text-[10.5px] font-medium">Cost</span>
+            <span className="text-[13px] text-[var(--ink-3)]">
+              <span className="uppercase tracking-[0.11em] text-[11px] font-medium">Cost</span>
               {" · "}
               {rec.resource_cost}
             </span>
@@ -171,17 +171,17 @@ export function VerdictCard({
       </div>
 
       {/* The deterministic evidence, as one reading rather than four boxes. */}
-      <div className="mt-6 px-6">
+      <div className="mt-6 px-5">
         <Vitals situation={situation} />
       </div>
 
       {/* What the action is predicted to buy. */}
       {projection ? (
-        <div className="mt-3 px-6">
-          <div className="glass-2 px-4 py-3.5">
+        <div className="mt-3 px-5">
+          <div className="glass-2 p-4">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <Label className="!text-[10.5px]">Predicted effect</Label>
-              <div className="flex items-baseline gap-2.5">
+              <Label className="!text-[11px]">Predicted effect</Label>
+              <div className="flex items-baseline gap-2">
                 <span className="readout text-[19px] text-[var(--ink-3)]">
                   {projection.before.toFixed(2)}
                 </span>
@@ -218,7 +218,7 @@ export function VerdictCard({
                 color={projection.clears_threshold ? "var(--ok)" : "var(--warn)"}
               />
             </div>
-            <p className="mt-2.5 text-[11.5px] leading-snug text-[var(--ink-3)]">
+            <p className="mt-2 text-[12px] leading-snug text-[var(--ink-3)]">
               {projection.subject_name ? `${projection.subject_name}. ` : ""}
               {projection.basis} A projection under the Three-Process Model, not a
               measurement. Nothing here observes the crew afterwards.
@@ -229,15 +229,15 @@ export function VerdictCard({
 
       {/* Does the fix break the crew? Six seats say it faster than the note did. */}
       {impact ? (
-        <div className="mt-3 px-6">
-          <div className="glass-2 px-4 py-3.5">
+        <div className="mt-3 px-5">
+          <div className="glass-2 p-4">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
               {impact.roster_ok ? (
                 <UserCheck size={15} className="shrink-0 text-[var(--ok)]" />
               ) : (
                 <CircleSlash size={15} className="shrink-0 text-[var(--bad)]" />
               )}
-              <Label className="!text-[10.5px]">
+              <Label className="!text-[11px]">
                 {impact.roster_ok ? "Roster holds" : "Roster blocked"}
               </Label>
               {impact.blocked_reason ? (
@@ -250,7 +250,7 @@ export function VerdictCard({
                 {impact.checked_roles.length === 1 ? "" : "s"} screened
               </span>
             </div>
-            <div className="mt-3.5">
+            <div className="mt-4">
               <RosterSeats
                 readiness={readiness}
                 impact={impact}
@@ -262,13 +262,13 @@ export function VerdictCard({
       ) : null}
 
       {/* Everything v1 showed by default, kept and demoted. */}
-      <div className="mt-3 space-y-2 px-6">
+      <div className="mt-3 space-y-2 px-5">
         {rec ? (
           <Disclosure
             summary="The full rationale, as cited"
             hint={`Grounded in ${rec.citation.doc} section ${rec.citation.section}`}
           >
-            <div className="glass-2 px-4 py-3.5">
+            <div className="glass-2 p-4">
               <p className="text-[13px] leading-relaxed text-[var(--ink-2)]">{rec.rationale}</p>
             </div>
           </Disclosure>
@@ -279,18 +279,18 @@ export function VerdictCard({
 
       {/* Stage 7. HAVEN never actions anything itself. */}
       <div
-        className="mt-5 px-6 py-4"
+        className="mt-5 px-5 py-4"
         style={{
           background: "rgba(255,255,255,0.03)",
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07)",
         }}
       >
         {decision ? (
-          <div className="flex items-start gap-2.5 text-[13px] text-[var(--ink-2)]">
+          <div className="flex items-start gap-2 text-[13px] text-[var(--ink-2)]">
             {decision === "approved" ? (
-              <Check size={16} className="mt-0.5 shrink-0 text-[var(--ok)]" />
+              <Check size={16} className="mt-1 shrink-0 text-[var(--ok)]" />
             ) : (
-              <X size={16} className="mt-0.5 shrink-0 text-[var(--warn)]" />
+              <X size={16} className="mt-1 shrink-0 text-[var(--warn)]" />
             )}
             <span>
               Recorded as <strong className="font-medium text-[var(--ink)]">{decision}</strong>{" "}
@@ -301,14 +301,14 @@ export function VerdictCard({
         ) : (
           <>
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <p className="text-[12.5px] text-[var(--ink-3)]">
+              <p className="text-[13px] text-[var(--ink-3)]">
                 HAVEN does not execute, defer, or reassign. Record the operator decision.
               </p>
               {/* On a refusal the escalation target is the action, so it belongs
                   next to the button rather than in a chip further up. */}
               {isRefusal && ref ? <EscalationTarget refusal={ref} /> : null}
             </div>
-            <div className="mt-3 flex flex-col gap-2.5 sm:flex-row">
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <input
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
@@ -317,7 +317,7 @@ export function VerdictCard({
                 className="min-w-0 flex-1 rounded-full bg-white/[0.05] px-4 py-2.5 text-[13px] text-[var(--ink)] outline-none transition-shadow placeholder:text-[var(--ink-3)]"
                 style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.12)" }}
               />
-              <div className="flex gap-2.5">
+              <div className="flex gap-2">
                 <DecisionButton
                   tone="ok"
                   disabled={saving}

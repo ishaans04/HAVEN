@@ -188,7 +188,7 @@ export function Chip({
   return (
     <span
       className={clsx(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-[3px] text-[11.5px] font-medium leading-tight tracking-[0.02em]",
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-[3px] text-[12px] font-medium leading-tight tracking-[0.02em]",
         className,
       )}
       style={{
@@ -264,17 +264,17 @@ export function StatTile({
 }) {
   return (
     <div className={clsx("glass-2 px-3 py-2.5", className)}>
-      <div className="label text-[10.5px]">{label}</div>
-      <div className="mt-1.5 flex items-baseline gap-1">
+      <div className="label text-[11px]">{label}</div>
+      <div className="mt-2 flex items-baseline gap-1">
         <span
-          className="readout text-[22px] leading-none"
+          className="readout text-[21px] leading-none"
           style={{ color: tone ? TONE_VAR[tone] : "var(--ink)" }}
         >
           {value}
         </span>
         {unit ? <span className="text-[12px] text-[var(--ink-3)]">{unit}</span> : null}
       </div>
-      {sub ? <div className="mt-1.5 text-[11.5px] leading-snug text-[var(--ink-3)]">{sub}</div> : null}
+      {sub ? <div className="mt-2 text-[12px] leading-snug text-[var(--ink-3)]">{sub}</div> : null}
     </div>
   );
 }
@@ -293,11 +293,11 @@ export function Stat({
 }) {
   return (
     <div className="glass-2 px-3 py-2.5">
-      <div className="label text-[10.5px]">{label}</div>
-      <div className="readout mt-1.5 text-[20px] leading-none" style={{ color: tone ?? "var(--ink)" }}>
+      <div className="label text-[11px]">{label}</div>
+      <div className="readout mt-2 text-[19px] leading-none" style={{ color: tone ?? "var(--ink)" }}>
         {value}
       </div>
-      {sub ? <div className="mt-1.5 text-[11px] text-[var(--ink-3)]">{sub}</div> : null}
+      {sub ? <div className="mt-2 text-[11px] text-[var(--ink-3)]">{sub}</div> : null}
     </div>
   );
 }
@@ -466,9 +466,9 @@ export function Disclosure({
         className="selectable flex w-full items-center gap-3 rounded-[var(--radius-sm)] px-4 py-3 text-left"
       >
         <span className="min-w-0 flex-1">
-          <span className="block text-[13.5px] font-medium text-[var(--ink)]">{summary}</span>
+          <span className="block text-[13px] font-medium text-[var(--ink)]">{summary}</span>
           {hint ? (
-            <span className="mt-0.5 block text-[12px] leading-snug text-[var(--ink-3)]">{hint}</span>
+            <span className="mt-1 block text-[12px] leading-snug text-[var(--ink-3)]">{hint}</span>
           ) : null}
         </span>
         {right}
@@ -563,7 +563,7 @@ export function Sheet({
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6"
-      style={{ background: "rgba(4,3,12,0.62)", backdropFilter: "blur(10px)" }}
+      style={{ background: "color-mix(in oklab, var(--void-deep) 62%, transparent)", backdropFilter: "blur(10px)" }}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -630,7 +630,7 @@ export function Panel({
             {title}
           </h2>
           {hint ? (
-            <p className="mt-1.5 text-[12.5px] leading-snug text-[var(--ink-3)]">{hint}</p>
+            <p className="mt-2 text-[13px] leading-snug text-[var(--ink-3)]">{hint}</p>
           ) : null}
         </div>
         {right}

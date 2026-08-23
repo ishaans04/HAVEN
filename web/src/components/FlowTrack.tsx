@@ -50,7 +50,7 @@ export function FlowTrack({ steps }: { steps: AuditStep[] }) {
   const shown = active === null ? null : steps[active];
 
   return (
-    <div className="glass-2 px-4 py-4">
+    <div className="glass-2 p-4">
       {/* The rail. */}
       <div className="flex items-end gap-1">
         {steps.map((step, i) => {
@@ -76,7 +76,7 @@ export function FlowTrack({ steps }: { steps: AuditStep[] }) {
                 }}
               />
               <span
-                className="mono block truncate text-[9px] uppercase tracking-[0.06em] transition-colors"
+                className="mono block truncate text-[11px] uppercase tracking-[0.06em] transition-colors"
                 style={{ color: on ? colour : "var(--ink-3)" }}
               >
                 {step.step.replace("SCHEDULE_IMPACT", "SCHEDULE").replace("GENERATE_FALLBACK", "FALLBACK")}
@@ -90,10 +90,10 @@ export function FlowTrack({ steps }: { steps: AuditStep[] }) {
       <div className="mt-3 min-h-[46px] border-t border-white/[0.07] pt-3">
         {shown ? (
           <>
-            <div className="flex flex-wrap items-baseline gap-x-2.5">
+            <div className="flex flex-wrap items-baseline gap-x-3">
               <span className="mono text-[12px] font-medium text-[var(--ink)]">{shown.step}</span>
               <span
-                className="text-[10px] uppercase tracking-[0.12em]"
+                className="text-[11px] uppercase tracking-[0.12em]"
                 style={{ color: TIER_TONE[shown.tier] ?? "var(--ink-3)" }}
               >
                 {shown.tier}

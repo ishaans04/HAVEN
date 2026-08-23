@@ -60,7 +60,7 @@ export function StarField() {
           <circle key={`f${i}`} cx={s.x} cy={s.y} r={s.r} fill="#fff" opacity={s.o} />
         ))}
         {NEAR.map((s, i) => (
-          <circle key={`n${i}`} cx={s.x} cy={s.y} r={s.r} fill="#e8e4ff" opacity={s.o} />
+          <circle key={`n${i}`} cx={s.x} cy={s.y} r={s.r} fill="var(--star)" opacity={s.o} />
         ))}
       </svg>
     </div>

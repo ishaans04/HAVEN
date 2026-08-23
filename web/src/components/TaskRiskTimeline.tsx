@@ -96,18 +96,18 @@ export function TaskRiskTimeline({
             >
               <defs>
                 <linearGradient id="tl-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#86c2ff" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#86c2ff" stopOpacity={0.01} />
+                  <stop offset="0%" stopColor="var(--info)" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="var(--info)" stopOpacity={0.01} />
                 </linearGradient>
               </defs>
 
               <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="2 5" vertical={false} />
 
               {sleepBands.map(([a, b], i) => (
-                <ReferenceArea key={`s${i}`} x1={a} x2={b} fill="#bda6ff" fillOpacity={0.09} />
+                <ReferenceArea key={`s${i}`} x1={a} x2={b} fill="var(--iris)" fillOpacity={0.09} />
               ))}
               {circadianBands.map(([a, b], i) => (
-                <ReferenceArea key={`c${i}`} x1={a} x2={b} fill="#ff8095" fillOpacity={0.1} />
+                <ReferenceArea key={`c${i}`} x1={a} x2={b} fill="var(--bad)" fillOpacity={0.1} />
               ))}
 
               <XAxis
@@ -117,28 +117,28 @@ export function TaskRiskTimeline({
                 ticks={[0, 4, 8, 12, 16, 20, 24]}
                 tickFormatter={(h: number) => `${String(h % 24).padStart(2, "0")}:00`}
                 stroke="rgba(255,255,255,0.2)"
-                tick={{ fontSize: 11, fill: "#a8a4cc" }}
+                tick={{ fontSize: 11, fill: "var(--ink-3)" }}
                 tickLine={false}
               />
               <YAxis
                 domain={[0, 1]}
                 ticks={[0, 0.25, 0.5, 0.7, 1]}
                 stroke="rgba(255,255,255,0.2)"
-                tick={{ fontSize: 11, fill: "#a8a4cc" }}
+                tick={{ fontSize: 11, fill: "var(--ink-3)" }}
                 tickLine={false}
                 width={46}
               />
 
               <ReferenceLine
                 y={0.7}
-                stroke="#ffcf6b"
+                stroke="var(--warn)"
                 strokeDasharray="4 4"
                 strokeOpacity={0.8}
                 label={{
                   value: "execution threshold",
                   position: "insideTopRight",
-                  fill: "#ffcf6b",
-                  fontSize: 10.5,
+                  fill: "var(--warn)",
+                  fontSize: 11,
                 }}
               />
 
@@ -164,7 +164,7 @@ export function TaskRiskTimeline({
               <Area
                 type="monotone"
                 dataKey="score"
-                stroke="#86c2ff"
+                stroke="var(--info)"
                 strokeWidth={2}
                 fill="url(#tl-fill)"
                 isAnimationActive={false}
@@ -177,7 +177,7 @@ export function TaskRiskTimeline({
                   y={task.predicted_alertness}
                   r={5}
                   fill={TONE_VAR[task.raises_situation ? toneOf(task.risk_level) : "ok"]}
-                  stroke="#0a0818"
+                  stroke="var(--void-deep)"
                   strokeWidth={2}
                 />
               ))}
@@ -186,7 +186,7 @@ export function TaskRiskTimeline({
         </div>
       </div>
 
-      <ul className="mt-2.5 space-y-1.5">
+      <ul className="mt-2 space-y-2">
         {tasks.map((task) => {
           const selected = task.situation_id === selectedSituation;
           const mine = task.assigned_to === crew.crew_member;
@@ -197,7 +197,7 @@ export function TaskRiskTimeline({
                 aria-pressed={task.situation_id ? selected : undefined}
                 onClick={() => task.situation_id && onSelectSituation(task.situation_id)}
                 className={clsx(
-                  "flex w-full items-center gap-3.5 rounded-[var(--radius-sm)] px-4 py-2.5 text-left",
+                  "flex w-full items-center gap-3 rounded-[var(--radius-sm)] px-4 py-2.5 text-left",
                   task.situation_id ? "selectable" : "glass-2 cursor-default opacity-60",
                 )}
               >

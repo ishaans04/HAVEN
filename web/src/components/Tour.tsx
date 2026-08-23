@@ -156,11 +156,11 @@ export function Tour({ open, onClose }: { open: boolean; onClose: () => void }) 
             width: rect.width + pad * 2,
             height: rect.height + pad * 2,
             boxShadow:
-              "0 0 0 9999px rgba(4,3,12,0.74), inset 0 0 0 1px rgba(189,166,255,0.5), 0 0 60px -10px rgba(150,110,255,0.5)",
+              "0 0 0 9999px color-mix(in oklab, var(--void-deep) 74%, transparent), inset 0 0 0 1px color-mix(in oklab, var(--iris) 50%, transparent), 0 0 60px -10px color-mix(in oklab, var(--iris) 50%, transparent)",
           }}
         />
       ) : (
-        <div className="absolute inset-0" style={{ background: "rgba(4,3,12,0.74)" }} />
+        <div className="absolute inset-0" style={{ background: "color-mix(in oklab, var(--void-deep) 74%, transparent)" }} />
       )}
 
       <div
@@ -172,7 +172,7 @@ export function Tour({ open, onClose }: { open: boolean; onClose: () => void }) 
             <Label>
               Step {index + 1} of {STOPS.length}
             </Label>
-            <h2 className="display mt-1.5 text-[21px] text-[var(--ink)]">{stop.title}</h2>
+            <h2 className="display mt-2 text-[21px] text-[var(--ink)]">{stop.title}</h2>
           </div>
           <button
             onClick={finish}
@@ -185,7 +185,7 @@ export function Tour({ open, onClose }: { open: boolean; onClose: () => void }) 
 
         <p className="mt-3 text-[13px] leading-relaxed text-[var(--ink-2)]">{stop.body}</p>
 
-        <p className="mt-3 text-[11.5px] text-[var(--ink-3)]">
+        <p className="mt-3 text-[12px] text-[var(--ink-3)]">
           Swipe or use the arrow keys · Esc to skip
         </p>
 

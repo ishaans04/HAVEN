@@ -104,22 +104,22 @@ export function RefusalBlock({
     <div
       className="mt-5 overflow-hidden rounded-[var(--radius-sm)]"
       style={{
-        background: "rgba(255,128,149,0.06)",
-        boxShadow: "inset 0 0 0 1px rgba(255,128,149,0.26)",
+        background: "color-mix(in oklab, var(--bad) 6%, transparent)",
+        boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--bad) 26%, transparent)",
       }}
     >
       {/* Why it stopped. */}
-      <div className="flex items-start gap-3 px-4 py-3.5">
+      <div className="flex items-start gap-3 p-4">
         <span
           className="mt-[1px] shrink-0 rounded-full p-2"
-          style={{ color: "var(--bad)", background: "rgba(255,128,149,0.12)" }}
+          style={{ color: "var(--bad)", background: "color-mix(in oklab, var(--bad) 12%, transparent)" }}
         >
           {kind.icon}
         </span>
         <div className="min-w-0 flex-1">
-          <Label className="!text-[10.5px]" >Why it stopped</Label>
-          <p className="mt-1.5 text-[13.5px] leading-relaxed text-[var(--ink)]">{kind.what}</p>
-          <p className="mt-1.5 text-[12.5px] leading-relaxed text-[var(--ink-2)]">{kind.did}</p>
+          <Label className="!text-[11px]" >Why it stopped</Label>
+          <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink)]">{kind.what}</p>
+          <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-2)]">{kind.did}</p>
         </div>
       </div>
 
@@ -165,9 +165,9 @@ function Evidence({ refusal, situation }: { refusal: Refusal; situation: Situati
             ))}
           </div>
           {refusal.best_candidate ? (
-            <div className="mt-3.5 border-t border-white/[0.07] pt-3">
+            <div className="mt-4 border-t border-white/[0.07] pt-3">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="text-[12.5px] text-[var(--ink-2)]">
+                <span className="text-[13px] text-[var(--ink-2)]">
                   Closest was {refusal.best_candidate.doc} §{refusal.best_candidate.section}
                 </span>
                 <span className="mono text-[11px] text-[var(--ink-3)]">
@@ -182,7 +182,7 @@ function Evidence({ refusal, situation }: { refusal: Refusal; situation: Situati
                   height={4}
                 />
               </div>
-              <p className="mt-2 text-[11.5px] leading-snug text-[var(--ink-3)]">
+              <p className="mt-2 text-[12px] leading-snug text-[var(--ink-3)]">
                 Being the closest is not the same as applying. Admissibility was settled clause by
                 clause, not by this number.
               </p>
@@ -206,7 +206,7 @@ function Evidence({ refusal, situation }: { refusal: Refusal; situation: Situati
           <div className="mt-3">
             <Meter value={coverage} color="var(--bad)" height={4} />
           </div>
-          <p className="mt-2.5 text-[11.5px] leading-snug text-[var(--ink-3)]">
+          <p className="mt-2 text-[12px] leading-snug text-[var(--ink-3)]">
             The deterministic tier still scored the window, and those figures above are real. What
             it will not do is attach a recommendation to them at this coverage.
           </p>
@@ -218,7 +218,7 @@ function Evidence({ refusal, situation }: { refusal: Refusal; situation: Situati
       return refusal.failed_clauses.length ? (
         <Panel>
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <Label className="!text-[10.5px]">
+            <Label className="!text-[11px]">
               {refusal.model_selected
                 ? `The checker rejected ${refusal.model_selected}`
                 : "Unsatisfied preconditions"}
@@ -229,12 +229,12 @@ function Evidence({ refusal, situation }: { refusal: Refusal; situation: Situati
           </div>
           <ul className="mt-3 space-y-2">
             {refusal.failed_clauses.map((clause) => (
-              <li key={clause.clause} className="text-[12.5px] leading-snug">
-                <span className="mono text-[11.5px] text-[var(--ink-2)]">{clause.clause}</span>
+              <li key={clause.clause} className="text-[13px] leading-snug">
+                <span className="mono text-[12px] text-[var(--ink-2)]">{clause.clause}</span>
                 <span className="ml-2 text-[var(--ink-3)]">
                   wants {clause.expected} · got {clause.actual}
                 </span>
-                <div className="mt-0.5 text-[var(--bad)]">{clause.explanation}</div>
+                <div className="mt-1 text-[var(--bad)]">{clause.explanation}</div>
               </li>
             ))}
           </ul>
@@ -246,15 +246,15 @@ function Evidence({ refusal, situation }: { refusal: Refusal; situation: Situati
         <Panel>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label className="!text-[10.5px]">Still running</Label>
-              <p className="mt-1.5 text-[12.5px] leading-snug text-[var(--ink-2)]">
+              <Label className="!text-[11px]">Still running</Label>
+              <p className="mt-2 text-[13px] leading-snug text-[var(--ink-2)]">
                 Three-Process Model and NASA-TLX scoring, the deterministic screens, and the audit
                 trail. Every figure above was computed normally.
               </p>
             </div>
             <div>
-              <Label className="!text-[10.5px]">Unavailable</Label>
-              <p className="mt-1.5 text-[12.5px] leading-snug text-[var(--bad)]">
+              <Label className="!text-[11px]">Unavailable</Label>
+              <p className="mt-2 text-[13px] leading-snug text-[var(--bad)]">
                 Procedure interpretation. Without it nothing can be cited, and an uncited
                 recommendation is one this system will not show.
               </p>
@@ -266,7 +266,7 @@ function Evidence({ refusal, situation }: { refusal: Refusal; situation: Situati
     case "roster_conflict":
       return (
         <Panel>
-          <p className="text-[12.5px] leading-relaxed text-[var(--ink-2)]">
+          <p className="text-[13px] leading-relaxed text-[var(--ink-2)]">
             A recommendation that pulls this operator would leave a safety-critical role without
             somebody qualified and rested to fill it. The roster check below shows the state it
             would have left behind.
@@ -282,10 +282,10 @@ function Evidence({ refusal, situation }: { refusal: Refusal; situation: Situati
 function Panel({ children }: { children: ReactNode }) {
   return (
     <div
-      className="px-4 py-3.5"
+      className="p-4"
       style={{
         background: "rgba(0,0,0,0.18)",
-        boxShadow: "inset 0 1px 0 rgba(255,128,149,0.16)",
+        boxShadow: "inset 0 1px 0 color-mix(in oklab, var(--bad) 16%, transparent)",
       }}
     >
       {children}

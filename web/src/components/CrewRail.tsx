@@ -26,7 +26,7 @@ export function CrewRail({
   onSelect: (crewId: string) => void;
 }) {
   return (
-    <div className="fade-x no-bar flex snap-x snap-proximity gap-2.5 overflow-x-auto px-1 pb-1">
+    <div className="fade-x no-bar flex snap-x snap-proximity gap-2 overflow-x-auto px-1 pb-1">
       {readiness.map((crew) => {
         const active = crew.crew_member === selected;
         const tone = toneOf(crew.status);
@@ -46,7 +46,7 @@ export function CrewRail({
               tone={tone}
               size={44}
             >
-              <span className="readout text-[12.5px] text-[var(--ink)]">
+              <span className="readout text-[13px] text-[var(--ink)]">
                 {crew.alertness_score.toFixed(2).slice(1)}
               </span>
             </Ring>
@@ -56,11 +56,11 @@ export function CrewRail({
                 out of step with the five beside it — so the trend rides on the
                 role line as a glyph instead of taking a row of its own. */}
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[13.5px] font-medium tracking-[-0.005em] text-[var(--ink)]">
+              <span className="block truncate text-[13px] font-medium tracking-[-0.005em] text-[var(--ink)]">
                 {crew.name}
               </span>
               <span className="mt-1 flex items-center gap-1.5">
-                <span className="truncate text-[10.5px] font-medium uppercase tracking-[0.11em] text-[var(--ink-3)]">
+                <span className="truncate text-[11px] font-medium uppercase tracking-[0.11em] text-[var(--ink-3)]">
                   {crew.role.replace(/_/g, " ")}
                 </span>
                 {crew.trend === "declining" ? (
@@ -93,7 +93,7 @@ export function CrewRail({
 export function CrewDetail({ readiness }: { readiness: CrewReadiness[] }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-left text-[12.5px]">
+      <table className="w-full border-collapse text-left text-[13px]">
         <thead>
           <tr className="label border-b border-white/10 [&>th]:px-3 [&>th]:pb-2 [&>th]:font-medium">
             <th className="!text-left">Operator</th>

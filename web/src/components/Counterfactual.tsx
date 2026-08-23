@@ -116,16 +116,16 @@ export function Counterfactual({ verdict }: { verdict: Verdict | null }) {
 
   return (
     <div
-      className="rounded-[var(--radius-sm)] px-4 py-3.5"
+      className="rounded-[var(--radius-sm)] p-4"
       style={{
-        background: diverged ? "rgba(255,207,107,0.07)" : "rgba(255,255,255,0.04)",
-        boxShadow: `inset 0 0 0 1px ${diverged ? "rgba(255,207,107,0.28)" : "rgba(255,255,255,0.06)"}`,
+        background: diverged ? "color-mix(in oklab, var(--warn) 7%, transparent)" : "rgba(255,255,255,0.04)",
+        boxShadow: `inset 0 0 0 1px ${diverged ? "color-mix(in oklab, var(--warn) 28%, transparent)" : "rgba(255,255,255,0.06)"}`,
       }}
     >
       <div className="flex items-start gap-3">
         <span
           className="mt-[1px] shrink-0 rounded-full p-1.5"
-          style={{ color: colour, background: diverged ? "rgba(255,207,107,0.12)" : "rgba(255,255,255,0.06)" }}
+          style={{ color: colour, background: diverged ? "color-mix(in oklab, var(--warn) 12%, transparent)" : "rgba(255,255,255,0.06)" }}
         >
           {verdict.kind === "should-refuse" ? (
             <ShieldAlert size={14} />
@@ -137,9 +137,9 @@ export function Counterfactual({ verdict }: { verdict: Verdict | null }) {
         </span>
 
         <div className="min-w-0 flex-1">
-          <Label className="!text-[10.5px]">If the retrieval score decided</Label>
+          <Label className="!text-[11px]">If the retrieval score decided</Label>
 
-          <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--ink)]">
+          <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink)]">
             The highest-scoring passage was{" "}
             <span className="mono">{verdict.passageId}</span> at{" "}
             <span className="readout" style={{ color: diverged ? colour : "var(--ink)" }}>

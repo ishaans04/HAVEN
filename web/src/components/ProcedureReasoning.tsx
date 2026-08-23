@@ -56,7 +56,7 @@ export function ProcedureReasoning({
     return (
       <GlassCard className="p-6">
         <Label>How it decided</Label>
-        <p className="mt-2.5 text-[13px] leading-relaxed text-[var(--ink-2)]">
+        <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-2)]">
           No Situation was raised, so no procedure was consulted. Every task in this window cleared
           the deterministic trigger on the numbers alone.
         </p>
@@ -107,14 +107,14 @@ export function ProcedureReasoning({
 
   return (
     <GlassCard className="overflow-hidden">
-      <div className="flex flex-wrap items-start gap-3 px-6 pt-5">
+      <div className="flex flex-wrap items-start gap-3 px-5 pt-5">
         <div className="min-w-0 flex-1">
           <Label>How it decided</Label>
           {/* This said the maths-owns-the-numbers line, which the masthead is
               already saying six inches above it. A slogan restated on the same
               screen stops being a principle and becomes filler. The four counts
               below demonstrate it; they do not need it announced. */}
-          <p className="mono mt-1.5 text-[11px] text-[var(--ink-3)]">
+          <p className="mono mt-2 text-[11px] text-[var(--ink-3)]">
             {situation.situation_id}
           </p>
         </div>
@@ -129,16 +129,16 @@ export function ProcedureReasoning({
 
       {checkerDisagreed ? (
         <div
-          className="mx-6 mt-4 rounded-[var(--radius-sm)] px-4 py-3"
+          className="mx-5 mt-4 rounded-[var(--radius-sm)] px-4 py-3"
           style={{
-            background: "rgba(255,128,149,0.08)",
-            boxShadow: "inset 0 0 0 1px rgba(255,128,149,0.28)",
+            background: "color-mix(in oklab, var(--bad) 8%, transparent)",
+            boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--bad) 28%, transparent)",
           }}
         >
           <div className="text-[13px] font-medium text-[var(--bad)]">
             The reasoning tier and the checker disagreed
           </div>
-          <p className="mt-1 text-[12.5px] leading-snug text-[var(--ink-2)]">
+          <p className="mt-1 text-[13px] leading-snug text-[var(--ink-2)]">
             Resolved by refusing. Disagreement fails closed in both directions: a passage the
             checker rejects is never cited, and a model refusal is never overridden upward.
           </p>
@@ -147,23 +147,23 @@ export function ProcedureReasoning({
 
       {/* Four rules in, one citation out. The tiles that used to sit here spent
           forty-six words describing this; the diagram performs it. */}
-      <div className="mt-5 px-6">
+      <div className="mt-5 px-5">
         <RetrievalFunnel lanes={lanes} citation={citation} />
       </div>
 
       {verdict ? (
-        <div className="mt-4 px-6">
+        <div className="mt-4 px-5">
           <Counterfactual verdict={verdict} />
         </div>
       ) : null}
 
       {/* The specialist layers. */}
-      <div className="mt-4 space-y-2 px-6 pb-6">
+      <div className="mt-4 space-y-2 px-5 pb-5">
         <Disclosure
           summary="Every candidate, and the checker's verdict on each"
           hint="The model reads passage prose only. It never sees the compiled preconditions the checker evaluates."
         >
-          <ul className="space-y-2.5">
+          <ul className="space-y-3">
             {candidates.map((candidate) => {
               const isGoverning = candidate.passage_id === governing;
               const rejection = rejectionById.get(candidate.passage_id);
@@ -175,25 +175,25 @@ export function ProcedureReasoning({
                   style={
                     isGoverning
                       ? {
-                          background: "rgba(92,228,191,0.07)",
-                          boxShadow: "inset 0 0 0 1px rgba(92,228,191,0.3)",
+                          background: "color-mix(in oklab, var(--ok) 7%, transparent)",
+                          boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--ok) 30%, transparent)",
                         }
                       : undefined
                   }
                 >
-                  <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                    <span className="mono text-[11.5px] text-[var(--ink-3)]">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="mono text-[12px] text-[var(--ink-3)]">
                       {candidate.passage_id}
                     </span>
                     <span className="min-w-0 flex-1 text-[13px] leading-snug text-[var(--ink)]">
                       {candidate.title}
                     </span>
-                    <span className="mono text-[11.5px] text-[var(--ink-3)]">
+                    <span className="mono text-[12px] text-[var(--ink-3)]">
                       {candidate.doc} §{candidate.section}
                     </span>
                   </div>
 
-                  <div className="mt-2.5">
+                  <div className="mt-2">
                     <Meter
                       value={candidate.relevance}
                       height={3}
@@ -217,13 +217,13 @@ export function ProcedureReasoning({
                         <span>The checker found</span>
                         <ClauseTally clauses={clausesById[candidate.passage_id] ?? []} />
                         <span
-                          className="text-[10px] tracking-normal"
+                          className="text-[11px] tracking-normal"
                           style={{ color: admissible ? "var(--ok)" : "var(--bad)" }}
                         >
                           {admissible ? "admissible" : "inadmissible"}
                         </span>
                       </Label>
-                      <div className="mt-1.5">
+                      <div className="mt-2">
                         <ClauseVerdict clauses={clausesById[candidate.passage_id] ?? []} />
                       </div>
                     </div>
@@ -232,7 +232,7 @@ export function ProcedureReasoning({
               );
             })}
             {candidates.length === 0 ? (
-              <li className="glass-2 px-4 py-3 text-[12.5px] text-[var(--ink-2)]">
+              <li className="glass-2 px-4 py-3 text-[13px] text-[var(--ink-2)]">
                 Retrieval was not invoked for this Situation.
               </li>
             ) : null}

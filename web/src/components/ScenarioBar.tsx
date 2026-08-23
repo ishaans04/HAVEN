@@ -54,12 +54,12 @@ export function ScenarioBar({
         boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.08)",
       }}
     >
-      <div className="mx-auto flex max-w-[1560px] flex-wrap items-center gap-x-5 gap-y-3 px-5 py-3.5 sm:px-8">
+      <div className="mx-auto flex max-w-[1560px] flex-wrap items-center gap-x-5 gap-y-3 px-5 py-4 sm:px-8">
         <div className="flex items-baseline gap-3">
           <h1 className="display text-[21px] tracking-[-0.03em] text-[var(--ink)]">
             <span className="em">HAVEN</span>
           </h1>
-          <span className="hidden text-[10.5px] uppercase tracking-[0.2em] text-[var(--ink-3)] lg:inline">
+          <span className="hidden text-[11px] uppercase tracking-[0.2em] text-[var(--ink-3)] lg:inline">
             Fatigue-aware safety co-pilot
           </span>
         </div>
@@ -74,7 +74,7 @@ export function ScenarioBar({
           {!walking ? (
             <button
               onClick={onStartWalk}
-              className="glass-interactive flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-[12.5px] font-medium"
+              className="glass-interactive flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-medium"
               style={{
                 color: "var(--ok)",
                 background: "color-mix(in oklab, var(--ok) 14%, transparent)",
@@ -96,12 +96,12 @@ export function ScenarioBar({
       {active ? (
         <div className="mx-auto max-w-[1560px] px-5 pb-4 sm:px-8">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
-            <h2 className="text-[15px] font-medium tracking-[-0.01em] text-[var(--ink)]">
+            <h2 className="text-[16px] font-medium tracking-[-0.01em] text-[var(--ink)]">
               {active.title}
             </h2>
             <span className="mono text-[11px] text-[var(--ink-3)]">{active.id}</span>
           </div>
-          <p className="mt-2 max-w-4xl text-[12.5px] leading-relaxed text-[var(--ink-3)]">
+          <p className="mt-2 max-w-4xl text-[13px] leading-relaxed text-[var(--ink-3)]">
             {note || active.note}
           </p>
         </div>
@@ -145,11 +145,11 @@ function ScenarioPicker({
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-controls={listId}
-        className="glass-interactive flex items-center gap-2 rounded-full py-1.5 pl-3 pr-2.5 text-[12.5px] font-medium disabled:opacity-50"
+        className="glass-interactive flex items-center gap-2 rounded-full py-1.5 pl-3 pr-2.5 text-[13px] font-medium disabled:opacity-50"
         style={{
           color: "var(--iris)",
-          background: "rgba(189,166,255,0.14)",
-          boxShadow: "inset 0 0 0 1px rgba(189,166,255,0.42)",
+          background: "color-mix(in oklab, var(--iris) 14%, transparent)",
+          boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--iris) 42%, transparent)",
         }}
       >
         <Orbit size={13} className="shrink-0" />
@@ -183,8 +183,8 @@ function ScenarioPicker({
                   setOpen(false);
                   trigger.current?.focus();
                 }}
-                className="flex w-full items-start gap-2.5 rounded-[var(--radius-sm)] px-3 py-2.5 text-left transition-colors hover:bg-white/[0.06]"
-                style={on ? { background: "rgba(189,166,255,0.12)" } : undefined}
+                className="flex w-full items-start gap-2 rounded-[var(--radius-sm)] px-3 py-2.5 text-left transition-colors hover:bg-white/[0.06]"
+                style={on ? { background: "color-mix(in oklab, var(--iris) 12%, transparent)" } : undefined}
               >
                 <span className="mt-[3px] w-3.5 shrink-0">
                   {on ? <Check size={13} className="text-[var(--iris)]" /> : null}
@@ -196,16 +196,16 @@ function ScenarioPicker({
                   >
                     {scenario.subtitle}
                   </span>
-                  <span className="mt-0.5 block text-[12px] leading-snug text-[var(--ink-3)]">
+                  <span className="mt-1 block text-[12px] leading-snug text-[var(--ink-3)]">
                     {scenario.title}
                   </span>
                   {DIVERGENT.has(scenario.id) ? (
                     <span
-                      className="mt-1.5 inline-block rounded-full px-2 py-[2px] text-[10px] font-medium"
+                      className="mt-2 inline-block rounded-full px-2 py-[2px] text-[11px] font-medium"
                       style={{
                         color: "var(--warn)",
-                        background: "rgba(255,207,107,0.12)",
-                        boxShadow: "inset 0 0 0 1px rgba(255,207,107,0.3)",
+                        background: "color-mix(in oklab, var(--warn) 12%, transparent)",
+                        boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--warn) 30%, transparent)",
                       }}
                     >
                       the checker overrules the top match
@@ -280,7 +280,7 @@ function Overflow({ onOpenProcedures }: { onOpenProcedures: () => void }) {
             <Link
               href="/"
               role="menuitem"
-              className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-left text-[13px] text-[var(--ink-2)] transition-colors hover:bg-white/[0.06] hover:text-[var(--ink)]"
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-left text-[13px] text-[var(--ink-2)] transition-colors hover:bg-white/[0.06] hover:text-[var(--ink)]"
             >
               <Compass size={13} />
               What this is
@@ -307,7 +307,7 @@ function MenuItem({
     <button
       role="menuitem"
       onClick={onClick}
-      className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-left text-[13px] text-[var(--ink-2)] transition-colors hover:bg-white/[0.06] hover:text-[var(--ink)]"
+      className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-left text-[13px] text-[var(--ink-2)] transition-colors hover:bg-white/[0.06] hover:text-[var(--ink)]"
     >
       {icon}
       {children}
@@ -343,7 +343,7 @@ function HonestySheet({ onClose }: { onClose: () => void }) {
   return (
     <div
       className="fixed inset-0 z-[55] flex items-start justify-center overflow-y-auto p-4 sm:p-6"
-      style={{ background: "rgba(4,3,12,0.62)", backdropFilter: "blur(10px)" }}
+      style={{ background: "color-mix(in oklab, var(--void-deep) 62%, transparent)", backdropFilter: "blur(10px)" }}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -357,22 +357,22 @@ function HonestySheet({ onClose }: { onClose: () => void }) {
         className="glass rise my-8 w-full max-w-3xl p-6 outline-none"
         style={{ borderRadius: "var(--radius-lg)" }}
       >
-        <h2 id={titleId} className="display text-[24px]">
+        <h2 id={titleId} className="display text-[26px]">
           What is real here, and what is not
         </h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div className="glass-2 px-4 py-3.5">
-            <Label className="!text-[10.5px]">Real, and running</Label>
-            <p className="mt-2 text-[12.5px] leading-relaxed text-[var(--ink-2)]">
+          <div className="glass-2 p-4">
+            <Label className="!text-[11px]">Real, and running</Label>
+            <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-2)]">
               The Three-Process Model of Alertness and NASA-TLX are the published models, computed
               from the inputs shown. Retrieval, precondition-checked rule selection, the refusal
               path, the deterministic screens and the hash-chained audit trail all execute live on
               every evaluation.
             </p>
           </div>
-          <div className="glass-2 px-4 py-3.5">
-            <Label className="!text-[10.5px]">Simulated, and labelled</Label>
-            <p className="mt-2 text-[12.5px] leading-relaxed text-[var(--ink-2)]">
+          <div className="glass-2 p-4">
+            <Label className="!text-[11px]">Simulated, and labelled</Label>
+            <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-2)]">
               The crew roster is representative, not real individuals. Sleep, duty and task
               timelines are synthetic. No public live crew-timeline feed exists. Where the corpus
               reports <span className="mono">prototype</span> authority, its text follows NASA
@@ -434,7 +434,7 @@ function BarButton({
   return (
     <button
       onClick={onClick}
-      className="glass-3 glass-interactive flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-[12.5px] text-[var(--ink-2)] hover:text-[var(--ink)]"
+      className="glass-3 glass-interactive flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] text-[var(--ink-2)] hover:text-[var(--ink)]"
     >
       {icon}
       {children}
