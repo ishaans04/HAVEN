@@ -1,36 +1,50 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Answer } from "@/components/Answer";
 import { ArgumentWalk, BEATS } from "@/components/ArgumentWalk";
+import { AskScreen } from "@/components/AskScreen";
 import { AuditBar } from "@/components/AuditBar";
 import { CrewDetail, CrewRail } from "@/components/CrewRail";
 import { OrbitDial, OrbitLegend } from "@/components/OrbitDial";
 import { ProcedureBrowser } from "@/components/ProcedureBrowser";
 import { ProcedureReasoning } from "@/components/ProcedureReasoning";
-import { ScenarioBar } from "@/components/ScenarioBar";
-import { StarField } from "@/components/StarField";
+import { Scene } from "@/components/Scene";
 import { TaskRiskTimeline } from "@/components/TaskRiskTimeline";
+import { TopBar } from "@/components/TopBar";
 import { Tour, tourSeen } from "@/components/Tour";
+import { ChevronDown } from "lucide-react";
 import { Disclosure, GlassCard, Label } from "@/components/ui";
 import { VerdictCard } from "@/components/VerdictCard";
+import { answerFor } from "@/lib/ask";
 import { API_BASE, fetchAudit, fetchEvaluation, fetchScenarios } from "@/lib/api";
 import type { AuditRecord, EvaluationResponse, ScenarioSummary } from "@/lib/types";
 
 const DEFAULT_SCENARIO = "burn_fatigue";
 
 /**
- * The console.
+ * The console, as a consultation.
  *
- * Three layers, deliberately ordered by who is reading.
+ * It used to be a monitoring dashboard: six zones live at once, 217 elements and
+ * 181 words in the first view, a 184px masthead, four ways to navigate. That is
+ * the right shape for somebody who watches a screen for eight hours and needs
+ * everything in peripheral vision. It is the wrong shape for somebody meeting
+ * the system for the first time, because it makes them do the work of deciding
+ * what matters.
  *
- * **The answer** — the dial and the verdict card, side by side above the fold.
- * Somebody who has never seen this should be able to read what is being
- * recommended, to whom, and why, without opening anything.
+ * So the page asks one question and answers it.
  *
- * **How it decided** — four counts and the cited rule, below.
+ * **The question and the answer** lead, at the size of the claim. Everything a
+ * person needs in order to believe the answer follows underneath in the order
+ * they would ask for it: why, then how it decided, then the proof.
  *
- * **The instrument** — every figure, clause, candidate, timing and hash from v1,
- * intact, behind disclosures. Nothing was removed to simplify the first read.
+ * **The scene** — Earth, the stars, the day as a dial — is the setting rather
+ * than a panel. The dial is unboxed and sticky beside the answer, so the state
+ * of the crew is ambient context you glance at, not a card you have to read.
+ *
+ * Nothing was removed. Every figure, clause, candidate, timing and hash from v1
+ * is still reachable; it is sequenced behind the answer instead of competing
+ * with it.
  */
 export function Console() {
   const [scenarios, setScenarios] = useState<ScenarioSummary[]>([]);
@@ -41,6 +55,7 @@ export function Console() {
   const [crewId, setCrewId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showProcedures, setShowProcedures] = useState(false);
+  const [asking, setAsking] = useState(false);
   const [tour, setTour] = useState(false);
   // null when not walking. The walk drives the scenario, not the reverse.
   const [beat, setBeat] = useState<number | null>(null);
@@ -78,20 +93,18 @@ export function Console() {
     void load(scenarioId);
   }, [scenarioId, load]);
 
-  // Publish the masthead's height so anything sticking below it can clear it.
-  // It is not a constant: the scenario note under the title runs to one line or
-  // three depending on the scenario.
+  // Publish the bar's height so the sticky dial can clear it.
   useEffect(() => {
-    const masthead = document.querySelector("header");
-    if (!masthead) return;
+    const bar = document.querySelector("header");
+    if (!bar) return;
     const publish = () =>
       document.documentElement.style.setProperty(
         "--masthead-h",
-        `${Math.round(masthead.getBoundingClientRect().height)}px`,
+        `${Math.round(bar.getBoundingClientRect().height)}px`,
       );
     publish();
     const observer = new ResizeObserver(publish);
-    observer.observe(masthead);
+    observer.observe(bar);
     return () => observer.disconnect();
   }, []);
 
@@ -135,10 +148,14 @@ export function Console() {
     if (target) setCrewId(target.crew_member);
   };
 
+  // The room takes its colour from the answer. A refusal cools it without a
+  // single word changing.
+  const tone = answerFor(situation).tone;
+
   if (error) {
     return (
       <>
-        <StarField />
+        <Scene tone="bad" />
         <main className="flex min-h-screen items-center justify-center p-6">
           <GlassCard className="max-w-lg p-7">
             <h1 className="display text-[26px] text-[var(--bad)]">Cannot reach the HAVEN engine</h1>
@@ -163,19 +180,10 @@ export function Console() {
 
   return (
     <>
-      <StarField />
-      <ScenarioBar
-        scenarios={scenarios}
-        selected={scenarioId}
-        onSelect={(id) => {
-          // Choosing a scenario by hand means leaving the guided sequence;
-          // otherwise the next click of "Next" would yank the reader somewhere
-          // they did not ask to go.
-          setBeat(null);
-          setScenarioId(id);
-        }}
-        note={evaluation?.scenario_note ?? ""}
-        loading={loading}
+      <Scene tone={tone} />
+
+      <TopBar
+        onAsk={() => setAsking(true)}
         onOpenProcedures={() => setShowProcedures(true)}
         onStartTour={() => setTour(true)}
         walking={beat !== null}
@@ -185,10 +193,23 @@ export function Console() {
         }}
       />
 
+      {asking ? (
+        <AskScreen
+          scenarios={scenarios}
+          selected={scenarioId}
+          onSelect={(id) => {
+            // Choosing a case by hand means leaving the guided sequence.
+            setBeat(null);
+            setScenarioId(id);
+          }}
+          onClose={() => setAsking(false)}
+        />
+      ) : null}
+
       {showProcedures ? <ProcedureBrowser onClose={() => setShowProcedures(false)} /> : null}
       <Tour open={tour} onClose={() => setTour(false)} />
 
-      <main className="mx-auto max-w-[1560px] px-5 pb-14 pt-5 sm:px-8">
+      <main className="mx-auto max-w-[1400px] px-5 pb-24 pt-6 sm:px-8">
         {beat !== null ? (
           <ArgumentWalk
             index={beat}
@@ -203,45 +224,97 @@ export function Console() {
         {!evaluation ? (
           <Skeleton />
         ) : (
-          <>
-            {/* Zone 1 — who is running low. */}
-            <section className="rise" id="zone-crew" data-tour="crew">
-              <div className="mb-2 flex flex-wrap items-baseline gap-x-3">
-                <Label>Crew readiness</Label>
-                {/* The instructional sentence that used to sit here explained
-                    the baseline comparison and told you to click something. The
-                    notch on each ring now shows the comparison, the tour covers
-                    the interaction once, and an instrument that narrates itself
-                    on every screen reads as one that does not trust its own
-                    labels. */}
-                <span className="mono text-[11px] text-[var(--ink-3)]">
-                  {evaluation.readiness.length} operators
-                </span>
-              </div>
-              <CrewRail
-                readiness={evaluation.readiness}
-                selected={crew?.crew_member ?? null}
-                onSelect={setCrewId}
-              />
-            </section>
-
-            <div className="mt-4 grid gap-4 md:grid-cols-12">
-              {/* Zone 2 — the day, as a dial. */}
-              {/* The grid stretches both columns to the taller one, which left the
-                  dial card padded out with ~900px of empty glass and made the
-                  reader scroll through a void. The card is its own height now
-                  and sticks, so it stays as context while the answer and the
-                  reasoning scroll past it. Only at lg: stacked, a pinned dial
-                  would sit on top of everything below it. */}
-              <div className="md:col-span-6" id="zone-window">
-                <div
-                  className="md:sticky"
-                  style={{ top: "calc(var(--masthead-h, 150px) + 12px)" }}
+          <div className="grid gap-x-10 gap-y-8 lg:grid-cols-12">
+            {/* ---------------------------------------------------------------
+                The consultation. One question, one answer, then the case for
+                it in the order a person would ask for it.
+                --------------------------------------------------------------- */}
+            <div className="min-w-0 lg:col-span-7">
+              {/* The answer owns the first screen. Everything under it is the
+                  case for it, and the reader should meet the two in that
+                  order rather than at the same time. */}
+              <div
+                className="rise flex flex-col lg:min-h-[calc(100svh-var(--masthead-h,56px)-104px)]"
+                data-tour="verdict"
+              >
+                <Answer situation={situation} />
+                <a
+                  href="#why"
+                  className="group mt-auto hidden items-center gap-2 pt-10 text-[12px] uppercase tracking-[0.14em] text-[var(--ink-3)] transition-colors hover:text-[var(--accent)] lg:flex"
                 >
-              <GlassCard
-                className="flex flex-col p-5"
-                loading={loading}
-                style={{ animationDelay: "60ms" }}
+                  <ChevronDown
+                    size={14}
+                    className="transition-transform duration-500 group-hover:translate-y-1"
+                  />
+                  {situation ? "Why HAVEN says so" : "What the system checked"}
+                </a>
+              </div>
+
+              {situation ? (
+                <div className="space-y-4 lg:pt-4" id="why">
+                  <div className="rise" style={{ animationDelay: "120ms" }}>
+                    <VerdictCard situation={situation} readiness={evaluation.readiness} />
+                  </div>
+                  <div className="rise" style={{ animationDelay: "180ms" }}>
+                    <ProcedureReasoning situation={situation} audit={audit} />
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="rise mt-4" style={{ animationDelay: "240ms" }} data-tour="audit">
+                <AuditBar
+                  tierStatus={evaluation.tier_status}
+                  audit={audit}
+                  evaluationId={evaluation.evaluation_id}
+                />
+              </div>
+
+              {/* The readings behind the dial. Detail about the evidence,
+                  so it belongs with the evidence rather than in the scene. */}
+              <div className="rise mt-4" style={{ animationDelay: "280ms" }}>
+                <Disclosure
+                  summary="The readings, as a chart"
+                  hint="Every task in the window, and the curve with values you can read off"
+                >
+                  <TaskRiskTimeline
+                    crew={crew}
+                    tasks={evaluation.timeline}
+                    windowStart={evaluation.window.start}
+                    selectedSituation={situationId}
+                    onSelectSituation={selectSituation}
+                  />
+                </Disclosure>
+
+                <Disclosure
+                  summary="Every operator, every figure"
+                  hint="Baseline, workload, sleep debt, hours awake, window low and record coverage"
+                >
+                  <div className="glass-2 px-1 py-2">
+                    <CrewDetail readiness={evaluation.readiness} />
+                  </div>
+                </Disclosure>
+              </div>
+
+              {/* What this case is here to show. Backend copy, kept as a
+                  footnote: it is commentary about the demonstration rather
+                  than part of the answer. */}
+              {evaluation.scenario_note ? (
+                <p className="mt-6 max-w-2xl text-[12px] leading-relaxed text-[var(--ink-3)]">
+                  <span className="uppercase tracking-[0.14em]">About this case</span>
+                  {" · "}
+                  {evaluation.scenario_note}
+                </p>
+              ) : null}
+            </div>
+
+            {/* ---------------------------------------------------------------
+                The scene. The day as a dial, unboxed and sticky: ambient
+                context you glance at rather than a card you have to read.
+                --------------------------------------------------------------- */}
+            <div className="min-w-0 lg:col-span-5 lg:col-start-8 lg:row-start-1">
+              <div
+                className="lg:sticky"
+                style={{ top: "calc(var(--masthead-h, 56px) + 16px)" }}
               >
                 <div data-tour="dial">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3">
@@ -251,7 +324,7 @@ export function Console() {
                     </span>
                   </div>
 
-                  <div className="mx-auto w-full max-w-[620px]">
+                  <div className="mx-auto w-full max-w-[560px]">
                     <OrbitDial
                       crew={crew}
                       tasks={evaluation.timeline}
@@ -265,53 +338,23 @@ export function Console() {
                   <OrbitLegend className="mt-1" />
                 </div>
 
-                <div className="mt-4 space-y-2">
-                  <Disclosure
-                    summary="The readings, as a chart"
-                    hint="Every task in the window, and the curve with values you can read off"
-                  >
-                    <TaskRiskTimeline
-                      crew={crew}
-                      tasks={evaluation.timeline}
-                      windowStart={evaluation.window.start}
-                      selectedSituation={situationId}
-                      onSelectSituation={selectSituation}
-                    />
-                  </Disclosure>
+                <div className="mt-6" data-tour="crew">
+                  <div className="mb-2 flex flex-wrap items-baseline gap-x-3">
+                    <Label>Crew readiness</Label>
+                    <span className="mono text-[11px] text-[var(--ink-3)]">
+                      {evaluation.readiness.length} operators
+                    </span>
+                  </div>
+                  <CrewRail
+                    readiness={evaluation.readiness}
+                    selected={crew?.crew_member ?? null}
+                    onSelect={setCrewId}
+                  />
+                </div>
 
-                  <Disclosure
-                    summary="Every operator, every figure"
-                    hint="Baseline, workload, sleep debt, hours awake, window low and record coverage"
-                  >
-                    <div className="glass-2 px-1 py-2">
-                      <CrewDetail readiness={evaluation.readiness} />
-                    </div>
-                  </Disclosure>
-                </div>
-              </GlassCard>
-                </div>
-              </div>
-
-              {/* Zones 4, 5 and 3 — the answer, then how it was reached. */}
-              <div className="flex flex-col gap-4 md:col-span-6">
-                <div className="rise" id="zone-verdict" style={{ animationDelay: "120ms" }} data-tour="verdict">
-                  <VerdictCard situation={situation} readiness={evaluation.readiness} />
-                </div>
-                <div className="rise" id="zone-reasoning" style={{ animationDelay: "180ms" }}>
-                  <ProcedureReasoning situation={situation} audit={audit} />
-                </div>
               </div>
             </div>
-
-            {/* Zone 6 — the audit strip. */}
-            <div className="rise mt-4" id="zone-audit" style={{ animationDelay: "240ms" }} data-tour="audit">
-              <AuditBar
-                tierStatus={evaluation.tier_status}
-                audit={audit}
-                evaluationId={evaluation.evaluation_id}
-              />
-            </div>
-          </>
+          </div>
         )}
       </main>
     </>
@@ -321,14 +364,14 @@ export function Console() {
 /** First paint, before the engine has answered. Glass, not a spinner. */
 function Skeleton() {
   return (
-    <div className="grid gap-4 md:grid-cols-12" aria-busy="true" aria-live="polite">
-      <GlassCard className="md:col-span-6" loading>
+    <div className="grid gap-10 lg:grid-cols-12" aria-busy="true" aria-live="polite">
+      <div className="flex flex-col gap-4 lg:col-span-7">
+        <GlassCard className="h-40" loading />
+        <GlassCard className="h-72" loading />
+      </div>
+      <GlassCard className="lg:col-span-5" loading>
         <div className="aspect-square" />
       </GlassCard>
-      <div className="flex flex-col gap-4 md:col-span-6">
-        <GlassCard className="h-72" loading />
-        <GlassCard className="h-52" loading />
-      </div>
       <span className="sr-only">Evaluating the window</span>
     </div>
   );

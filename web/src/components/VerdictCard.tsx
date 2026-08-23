@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import clsx from "clsx";
-import { ArrowRight, Check, CircleSlash, ShieldAlert, UserCheck, X } from "lucide-react";
+import { ArrowRight, Check, CircleSlash, UserCheck, X } from "lucide-react";
 import type { CrewReadiness, Situation } from "@/lib/types";
 import { recordDecision } from "@/lib/api";
 import { EscalationTarget, RefusalBlock } from "./RefusalBlock";
 import { RosterSeats } from "./RosterSeats";
 import { Vitals } from "./Vitals";
-import { Chip, Disclosure, GlassCard, Label, Meter, TONE_VAR, toneOf, utcTime } from "./ui";
+import { Chip, Disclosure, GlassCard, Label, Meter, TONE_VAR } from "./ui";
 
 const CONFIDENCE_TONE: Record<string, "ok" | "warn" | "bad"> = {
   high: "ok",
@@ -22,8 +22,6 @@ const BLOCK_LABEL: Record<string, string> = {
   alternate_below_alertness_floor: "Qualified alternates are below the alertness floor",
   alternate_committed_elsewhere: "Alternates are committed to concurrent safety-critical work",
 };
-
-const humanise = (value: string) => value.replace(/_/g, " ");
 
 /**
  * The answer.
@@ -58,27 +56,15 @@ export function VerdictCard({
     setReason("");
   }, [situation?.situation_id]);
 
-  if (!situation) {
-    return (
-      <GlassCard className="flex min-h-[280px] flex-col items-center justify-center p-8 text-center">
-        <div className="glass-3 mb-4 rounded-full p-3">
-          <Check size={20} className="text-[var(--ok)]" />
-        </div>
-        <h2 className="display text-[26px]">Nothing needs a decision</h2>
-        <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-[var(--ink-2)]">
-          Every task in this window came through on the numbers alone. A quiet console is a
-          working one, not a broken one, and the strip below shows the system is running.
-        </p>
-      </GlassCard>
-    );
-  }
+  // Nothing to evidence. The hero already said so, and a card restating it
+  // would be the console answering the same question twice.
+  if (!situation) return null;
 
   const isRefusal = situation.outcome === "refusal";
   const rec = situation.recommendation;
   const ref = situation.refusal;
   const impact = rec?.schedule_impact ?? null;
   const projection = rec?.projection ?? null;
-  const riskTone = toneOf(situation.risk_level);
 
   async function submit(choice: "approved" | "overridden") {
     if (!situation) return;
@@ -98,80 +84,29 @@ export function VerdictCard({
 
   return (
     <GlassCard live={!isRefusal} refuse={isRefusal} className="overflow-hidden">
-      {/* Header — who and when, and how bad. */}
-      <div className="flex flex-wrap items-start gap-3 px-5 pt-5">
-        <div className="min-w-0 flex-1">
-          <Label>{isRefusal ? "HAVEN is refusing" : "HAVEN recommends"}</Label>
-          <p className="mono mt-2 text-[12px] text-[var(--ink-3)]">
-            {situation.crew_member_name} · {situation.task} · {utcTime(situation.task_scheduled)}
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <Chip tone={riskTone} solid>
-            {situation.risk_level}
-          </Chip>
-          <Chip tone={CONFIDENCE_TONE[situation.confidence] ?? "neutral"}>
-            {situation.confidence} confidence
-          </Chip>
-        </div>
-      </div>
-
-      {/* The headline and the one-sentence reason. */}
-      <div className="px-5 pt-4">
-        <h2 className="display text-[26px] sm:text-[34px] xl:text-[38px]">
-          {isRefusal ? (
-            <span className="flex items-start gap-3">
-              <ShieldAlert size={26} className="mt-2 shrink-0 text-[var(--bad)]" />
-              <span>{ref?.reason_label ?? "No governing procedure"}</span>
-            </span>
-          ) : (
-            rec?.action_label
-          )}
-        </h2>
-
-        <p className="mt-4 max-w-2xl text-[16px] leading-relaxed text-[var(--ink-2)]">
-          {isRefusal ? (
-            ref?.explanation
-          ) : (
-            <>
-              <span className="text-[var(--ink)]">{situation.crew_member_name}</span> is predicted at{" "}
-              <span className="readout text-[16px]" style={{ color: TONE_VAR[riskTone] }}>
-                {situation.alertness_score.toFixed(2)}
-              </span>{" "}
-              alertness
-              {projection ? (
-                <>
-                  {" "}
-                  against a line of{" "}
-                  <span className="readout text-[16px]">{projection.threshold.toFixed(2)}</span> for
-                  this job
-                </>
-              ) : null}
-              , with {humanise(situation.task_label)} due at {utcTime(situation.task_scheduled)} at{" "}
-              {situation.task_criticality} criticality
-              {situation.circadian_flag ? ", inside their body-clock low" : ""}.
-            </>
-          )}
-        </p>
-
-        {isRefusal && ref ? <RefusalBlock refusal={ref} situation={situation} /> : null}
-
+      {/* The answer is the hero above this card; this is the case for it. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-5 pt-5">
+        <Label>{isRefusal ? "Why it stopped" : "Why"}</Label>
+        <Chip tone={CONFIDENCE_TONE[situation.confidence] ?? "neutral"}>
+          {situation.confidence} confidence
+        </Chip>
         {rec ? (
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Chip tone="info">
-              {rec.citation.doc} §{rec.citation.section}
-            </Chip>
-            <span className="text-[13px] text-[var(--ink-3)]">
-              <span className="uppercase tracking-[0.11em] text-[11px] font-medium">Cost</span>
-              {" · "}
-              {rec.resource_cost}
-            </span>
-          </div>
+          <span className="ml-auto text-[13px] text-[var(--ink-3)]">
+            <span className="text-[11px] font-medium uppercase tracking-[0.11em]">Cost</span>
+            {" · "}
+            {rec.resource_cost}
+          </span>
         ) : null}
       </div>
 
+      {isRefusal && ref ? (
+        <div className="px-5 pt-4">
+          <RefusalBlock refusal={ref} situation={situation} />
+        </div>
+      ) : null}
+
       {/* The deterministic evidence, as one reading rather than four boxes. */}
-      <div className="mt-6 px-5">
+      <div className="mt-5 px-5">
         <Vitals situation={situation} />
       </div>
 

@@ -367,6 +367,57 @@ html.js .reveal-in {
 }
 
 /* ------------------------------------------------------------------------
+   The question chooser
+   ------------------------------------------------------------------------
+   A card you pick a question from. It gets a hover lift because it is one of
+   the few genuinely clickable surfaces in the product, and the reader arrives
+   at this screen needing to know that.
+*/
+.ask-card {
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition:
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.32s ease,
+    box-shadow 0.32s ease;
+}
+.ask-card:hover,
+.ask-card:focus-visible {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.15),
+    0 18px 40px -22px rgba(0, 0, 0, 0.9);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ask-card:hover,
+  .ask-card:focus-visible {
+    transform: none;
+  }
+}
+
+/* The horizon glow. It breathes, slowly enough that you notice it only if you
+   stop and look, which is the correct amount of life for a background. */
+.scene-ember {
+  animation: ember 19s ease-in-out infinite;
+}
+@keyframes ember {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-ember {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------------
    Divisions inside a card
    ------------------------------------------------------------------------
    A hairline and some space, rather than another box. Everything inside the

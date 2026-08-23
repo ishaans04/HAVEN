@@ -2,227 +2,88 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
-import clsx from "clsx";
-import { BookOpen, Check, ChevronDown, Compass, Info, MoreHorizontal, Orbit, Route } from "lucide-react";
-import type { ScenarioSummary } from "@/lib/types";
-import { DIVERGENT } from "./ArgumentWalk";
-import { ZoneNav } from "./ZoneNav";
+import { BookOpen, Compass, Info, MessageCircleQuestion, MoreHorizontal, Route } from "lucide-react";
 import { Label } from "./ui";
 
 /**
- * The masthead.
+ * The bar.
  *
- * It used to offer twelve controls — eight scenario pills and four utility
- * buttons — every one of them met before the reader saw a single number. That
- * is more decisions than the console asks of an operator in a whole session,
- * and it made the busiest thing on screen the part that carries no data.
+ * It was 184px tall — a fifth of the screen — before the reader met a single
+ * number, and it carried a scenario picker, a zone nav, a title, an id and a
+ * three-line note. Four navigation mechanisms competing above the fold, none of
+ * them the content.
  *
- * Three now. A scenario picker naming where you are, the tour, and an overflow
- * for everything consulted rarely. The seven other scenarios did not go
- * anywhere; they moved one click inside the picker, where each one can finally
- * afford to say what it demonstrates instead of being compressed into a pill.
+ * Two controls now. "Ask another question" is the only way to change case, and
+ * it opens a screen rather than a 581px dropdown, so each case can state the
+ * question it answers instead of being compressed into a menu row. The guided
+ * walk stays because it is the one thing a first-time reader most benefits from
+ * and it disappears while it is running.
+ *
+ * The zone nav went entirely. It existed to navigate six simultaneous panels;
+ * the console does not have six simultaneous panels any more.
  */
-export function ScenarioBar({
-  scenarios,
-  selected,
-  onSelect,
-  note,
-  loading,
+export function TopBar({
+  onAsk,
   onOpenProcedures,
   onStartTour,
   walking,
   onStartWalk,
 }: {
-  scenarios: ScenarioSummary[];
-  selected: string;
-  onSelect: (id: string) => void;
-  note: string;
-  loading: boolean;
+  onAsk: () => void;
   onOpenProcedures: () => void;
   onStartTour: () => void;
   walking: boolean;
   onStartWalk: () => void;
 }) {
-  const active = scenarios.find((s) => s.id === selected);
-
   return (
     <header
       className="sticky top-0 z-40"
       style={{
-        background: "rgba(7,6,20,0.66)",
+        background: "color-mix(in oklab, var(--void-deep) 62%, transparent)",
         backdropFilter: "blur(26px) saturate(170%)",
         WebkitBackdropFilter: "blur(26px) saturate(170%)",
-        boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.08)",
+        boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.07)",
       }}
     >
-      <div className="mx-auto flex max-w-[1560px] flex-wrap items-center gap-x-5 gap-y-3 px-5 py-4 sm:px-8">
-        <div className="flex items-baseline gap-3">
-          <h1 className="display text-[21px] tracking-[-0.03em] text-[var(--ink)]">
+      <div className="mx-auto flex max-w-[1400px] items-center gap-x-4 px-5 py-3 sm:px-8">
+        <Link href="/" className="flex items-baseline gap-3">
+          <span className="display text-[19px] tracking-[-0.03em] text-[var(--ink)]">
             <span className="em">HAVEN</span>
-          </h1>
+          </span>
           <span className="hidden text-[11px] uppercase tracking-[0.2em] text-[var(--ink-3)] lg:inline">
             Fatigue-aware safety co-pilot
           </span>
-        </div>
+        </Link>
 
         <div className="ml-auto flex items-center gap-2">
-          <ScenarioPicker
-            scenarios={scenarios}
-            selected={selected}
-            onSelect={onSelect}
-            loading={loading}
-          />
+          <button
+            onClick={onAsk}
+            className="glass-interactive flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-medium"
+            style={{
+              color: "var(--accent)",
+              background: "color-mix(in oklab, var(--accent) 14%, transparent)",
+              boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--accent) 42%, transparent)",
+            }}
+          >
+            <MessageCircleQuestion size={13} />
+            <span className="hidden sm:inline">Ask another question</span>
+            <span className="sm:hidden">Ask</span>
+          </button>
+
           {!walking ? (
             <button
               onClick={onStartWalk}
-              className="glass-interactive flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-medium"
-              style={{
-                color: "var(--ok)",
-                background: "color-mix(in oklab, var(--ok) 14%, transparent)",
-                boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--ok) 40%, transparent)",
-              }}
+              className="glass-3 glass-interactive hidden shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-medium text-[var(--ink-2)] hover:text-[var(--ink)] sm:flex"
             >
               <Route size={13} />
-              <span className="hidden sm:inline">See the argument</span>
-              <span className="sm:hidden">Argument</span>
+              See the argument
             </button>
           ) : null}
+
           <Overflow onOpenProcedures={onOpenProcedures} onStartTour={onStartTour} />
         </div>
       </div>
-
-      {active ? (
-        <div className="mx-auto max-w-[1560px] px-5 pb-4 sm:px-8">
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
-            <h2 className="text-[16px] font-medium tracking-[-0.01em] text-[var(--ink)]">
-              {active.title}
-            </h2>
-            <span className="mono text-[11px] text-[var(--ink-3)]">{active.id}</span>
-          </div>
-          <p className="mt-2 max-w-4xl text-[13px] leading-relaxed text-[var(--ink-3)]">
-            {note || active.note}
-          </p>
-        </div>
-      ) : null}
-
-      <div
-        className="mx-auto max-w-[1560px] px-5 sm:px-8"
-        style={{ boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.07)" }}
-      >
-        <ZoneNav />
-      </div>
     </header>
-  );
-}
-
-/* --------------------------------------------------------------------------
-   The picker
-   -------------------------------------------------------------------------- */
-
-function ScenarioPicker({
-  scenarios,
-  selected,
-  onSelect,
-  loading,
-}: {
-  scenarios: ScenarioSummary[];
-  selected: string;
-  onSelect: (id: string) => void;
-  loading: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const wrap = useRef<HTMLDivElement>(null);
-  const trigger = useRef<HTMLButtonElement>(null);
-  const listId = useId();
-  const active = scenarios.find((s) => s.id === selected);
-
-  useDismiss(open, wrap, () => {
-    setOpen(false);
-    trigger.current?.focus();
-  });
-
-  return (
-    <div ref={wrap} className="relative">
-      <button
-        ref={trigger}
-        onClick={() => setOpen((v) => !v)}
-        disabled={loading || !scenarios.length}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        aria-controls={listId}
-        className="glass-interactive flex items-center gap-2 rounded-full py-1.5 pl-3 pr-2.5 text-[13px] font-medium disabled:opacity-50"
-        style={{
-          color: "var(--accent)",
-          background: "color-mix(in oklab, var(--accent) 14%, transparent)",
-          boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--accent) 42%, transparent)",
-        }}
-      >
-        <Orbit size={13} className="shrink-0" />
-        <span className="max-w-[42vw] truncate sm:max-w-none">
-          {active?.subtitle ?? "Scenario"}
-        </span>
-        <ChevronDown
-          size={13}
-          className={clsx("shrink-0 transition-transform duration-300", open && "rotate-180")}
-        />
-      </button>
-
-      {open ? (
-        <div
-          id={listId}
-          role="listbox"
-          aria-label="Demonstration scenario"
-          className="glass rise absolute right-0 z-50 mt-2 max-h-[70vh] w-[min(400px,calc(100vw-2.5rem))] overflow-y-auto p-2"
-          style={{ borderRadius: "var(--radius)" }}
-        >
-          <Label className="px-3 pb-1 pt-2">Eight demonstration cases</Label>
-          {scenarios.map((scenario) => {
-            const on = scenario.id === selected;
-            return (
-              <button
-                key={scenario.id}
-                role="option"
-                aria-selected={on}
-                onClick={() => {
-                  onSelect(scenario.id);
-                  setOpen(false);
-                  trigger.current?.focus();
-                }}
-                className="flex w-full items-start gap-2 rounded-[var(--radius-sm)] px-3 py-2.5 text-left transition-colors hover:bg-white/[0.06]"
-                style={on ? { background: "color-mix(in oklab, var(--accent) 12%, transparent)" } : undefined}
-              >
-                <span className="mt-[3px] w-3.5 shrink-0">
-                  {on ? <Check size={13} className="text-[var(--accent)]" /> : null}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span
-                    className="block text-[13px] font-medium"
-                    style={{ color: on ? "var(--accent)" : "var(--ink)" }}
-                  >
-                    {scenario.subtitle}
-                  </span>
-                  <span className="mt-1 block text-[12px] leading-snug text-[var(--ink-3)]">
-                    {scenario.title}
-                  </span>
-                  {DIVERGENT.has(scenario.id) ? (
-                    <span
-                      className="mt-2 inline-block rounded-full px-2 py-[2px] text-[11px] font-medium"
-                      style={{
-                        color: "var(--warn)",
-                        background: "color-mix(in oklab, var(--warn) 12%, transparent)",
-                        boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--warn) 30%, transparent)",
-                      }}
-                    >
-                      the checker overrules the top match
-                    </span>
-                  ) : null}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
-    </div>
   );
 }
 
@@ -271,7 +132,7 @@ function Overflow({
             style={{ borderRadius: "var(--radius)" }}
           >
             <MenuItem
-              icon={<Compass size={13} />}
+              icon={<Route size={13} />}
               onClick={() => {
                 setOpen(false);
                 onStartTour();
@@ -336,11 +197,9 @@ function MenuItem({
 }
 
 /**
- * The honesty statement, moved out of the masthead.
- *
- * It was an inline panel that pushed the whole console down when opened. It is
- * consulted once, by somebody deciding how much to believe, so it belongs in a
- * sheet rather than in the furniture of every screen.
+ * The honesty statement. Consulted once, by somebody deciding how much to
+ * believe, so it belongs in a sheet rather than in the furniture of every
+ * screen.
  */
 function HonestySheet({ onClose }: { onClose: () => void }) {
   const panel = useRef<HTMLDivElement>(null);
@@ -363,7 +222,10 @@ function HonestySheet({ onClose }: { onClose: () => void }) {
   return (
     <div
       className="fixed inset-0 z-[55] flex items-start justify-center overflow-y-auto p-4 sm:p-6"
-      style={{ background: "color-mix(in oklab, var(--void-deep) 62%, transparent)", backdropFilter: "blur(10px)" }}
+      style={{
+        background: "color-mix(in oklab, var(--void-deep) 62%, transparent)",
+        backdropFilter: "blur(10px)",
+      }}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
