@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import { Link2, Lock, Radio, TriangleAlert } from "lucide-react";
 import type { AuditRecord, TierStatus } from "@/lib/types";
+import { Term } from "./Term";
 import { Chip, Disclosure, GlassCard, Label } from "./ui";
 
 /**
@@ -35,9 +36,9 @@ export function AuditBar({
         >
           <TriangleAlert size={15} className="mt-[2px] shrink-0 text-[var(--warn)]" />
           <p className="text-[13px] leading-snug text-[var(--warn)]">
-            <strong className="font-medium">Degraded mode.</strong> {tierStatus.degraded_reason}{" "}
-            Deterministic scoring is unaffected; procedure interpretation is unavailable and
-            Situations are being escalated.
+            <strong className="font-medium">Running degraded.</strong> {tierStatus.degraded_reason}{" "}
+            The maths is unaffected and every figure is still real, but no rule can be read or
+            cited, so anything flagged is being handed to a human.
           </p>
         </div>
       ) : null}
@@ -85,7 +86,7 @@ export function AuditBar({
                 <span className="mono text-[12px]">{audit.audit_ref}</span>
               </span>
             }
-            hint={`${audit.steps.length} logged steps, hash-chained`}
+            hint={`${audit.steps.length} logged steps, each one sealed to the last`}
             right={
               <span className="flex items-center gap-2 pr-1">
                 <Lock size={12} style={{ color: audit.chain_valid ? "var(--ok)" : "var(--bad)" }} />
@@ -93,7 +94,11 @@ export function AuditBar({
                   className="text-[12px]"
                   style={{ color: audit.chain_valid ? "var(--ok)" : "var(--bad)" }}
                 >
-                  {audit.chain_valid ? "chain verified" : "CHAIN BROKEN"}
+                  {audit.chain_valid ? (
+                    <Term k="hash-chained">chain verified</Term>
+                  ) : (
+                    "CHAIN BROKEN"
+                  )}
                 </span>
               </span>
             }

@@ -48,12 +48,12 @@ interface Kind {
 const KINDS: Record<string, Kind> = {
   no_governing_procedure: {
     icon: <FileSearch size={15} />,
-    what: "The corpus was searched and no passage governs this situation.",
-    did: "Rather than reach for the nearest plausible rule, the flow declined and escalated.",
+    what: "Every rule in the book was checked. None of them covers this situation.",
+    did: "Rather than reach for the nearest plausible rule, HAVEN stopped and handed the decision up.",
   },
   insufficient_input: {
     icon: <SignalLow size={15} />,
-    what: "The sleep and duty record behind this operator is too sparse to score confidently.",
+    what: "There is not enough sleep and duty history for this operator to score them confidently.",
     did: "The recommendation was withheld rather than issued at false confidence.",
   },
   roster_conflict: {
@@ -68,8 +68,8 @@ const KINDS: Record<string, Kind> = {
   },
   precondition_unmet: {
     icon: <Gavel size={15} />,
-    what: "The passage the model proposed did not satisfy its own compiled preconditions.",
-    did: "The checker rejected it. A citation the checker will not stand behind is never shown.",
+    what: "The rule the AI picked does not meet its own stated conditions.",
+    did: "The checker rejected it. A citation the checker will not stand behind is never shown to an operator.",
   },
   checker_model_disagreement: {
     icon: <Scale size={15} />,
@@ -78,7 +78,7 @@ const KINDS: Record<string, Kind> = {
   },
   numeric_integrity_failure: {
     icon: <Sigma size={15} />,
-    what: "A safety-critical figure in the drafted output did not match the deterministic tier.",
+    what: "A safety figure in the draft did not match what the maths computed.",
     did: "The output was discarded. The maths owns the numbers, and a number that drifted is a failed draft, not a rounding difference.",
   },
 };
@@ -183,8 +183,8 @@ function Evidence({ refusal, situation }: { refusal: Refusal; situation: Situati
                 />
               </div>
               <p className="mt-2 text-[12px] leading-snug text-[var(--ink-3)]">
-                Being the closest is not the same as applying. Admissibility was settled clause by
-                clause, not by this number.
+                Being the closest match is not the same as applying. That was settled condition by
+                condition, not by this number.
               </p>
             </div>
           ) : null}

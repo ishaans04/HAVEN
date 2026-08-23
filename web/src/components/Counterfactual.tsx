@@ -2,6 +2,7 @@
 
 import { AlertTriangle, Check, ShieldAlert } from "lucide-react";
 import type { Citation } from "@/lib/types";
+import { Term } from "./Term";
 import { Label } from "./ui";
 
 /**
@@ -137,23 +138,27 @@ export function Counterfactual({ verdict }: { verdict: Verdict | null }) {
         </span>
 
         <div className="min-w-0 flex-1">
-          <Label className="!text-[11px]">If the retrieval score decided</Label>
+          <Label className="!text-[11px]">If the closest match had won</Label>
 
           <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink)]">
-            The highest-scoring passage was{" "}
+            The closest match by wording was{" "}
             <span className="mono">{verdict.passageId}</span> at{" "}
             <span className="readout" style={{ color: diverged ? colour : "var(--ink)" }}>
               {verdict.relevance.toFixed(3)}
             </span>
             {verdict.kind === "agreed" ? (
-              <>, and the checker admitted it. Ranking and judgement agreed here.</>
+              <>
+                , and the <Term k="checker">checker</Term> allowed it. Closest and correct were
+                the same rule this time.
+              </>
             ) : verdict.kind === "wrong-rule" ? (
               <>
                 . It failed{" "}
                 <span className="readout" style={{ color: colour }}>
                   {verdict.total - verdict.met} of its {verdict.total}
                 </span>{" "}
-                preconditions, and one is enough. The rule that actually governs is{" "}
+                <Term k="preconditions">conditions</Term>, and one failure is enough. The rule
+                that actually applies is{" "}
                 <span className="mono text-[var(--ok)]">
                   {verdict.instead.doc} §{verdict.instead.section}
                 </span>
@@ -165,8 +170,8 @@ export function Counterfactual({ verdict }: { verdict: Verdict | null }) {
                 <span className="readout" style={{ color: colour }}>
                   {verdict.total - verdict.met} of its {verdict.total}
                 </span>{" "}
-                preconditions, and one is enough. Nothing else applied either, so the correct
-                output was to refuse.
+                <Term k="preconditions">conditions</Term>, and one failure is enough. Nothing
+                else applied either, so the right answer was to refuse.
               </>
             )}
           </p>
@@ -174,8 +179,8 @@ export function Counterfactual({ verdict }: { verdict: Verdict | null }) {
           {diverged ? (
             <p className="mt-2 text-[12px] leading-snug text-[var(--ink-2)]">
               {verdict.kind === "should-refuse"
-                ? "A pipeline that cited its top match would have answered this with a real section number from a real document, for a situation no rule covers. That is the failure this checker exists to prevent."
-                : "A pipeline that cited its top match would have cited the wrong section here, with a perfect-looking score behind it."}
+                ? "A system that just cites its best match would have answered this with a real section number, from a real document, for a situation no rule covers. A wrong answer that checks out is worse than no answer, and preventing it is what the checker is for."
+                : "A system that just cites its best match would have named the wrong rule here, with a perfect-looking score behind it."}
             </p>
           ) : null}
         </div>

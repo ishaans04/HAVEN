@@ -8,6 +8,7 @@ import type {
   Situation,
 } from "@/lib/types";
 import { ClauseTally, ClauseVerdict } from "./ClauseVerdict";
+import { Term } from "./Term";
 import { Counterfactual, compareToSimilarity } from "./Counterfactual";
 import { FlowTrack } from "./FlowTrack";
 import { RetrievalFunnel } from "./RetrievalFunnel";
@@ -57,8 +58,8 @@ export function ProcedureReasoning({
       <GlassCard className="p-6">
         <Label>How it decided</Label>
         <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-2)]">
-          No Situation was raised, so no procedure was consulted. Every task in this window cleared
-          the deterministic trigger on the numbers alone.
+          Nothing was flagged, so no procedure needed looking up. Every task in this window came
+          through on the numbers alone.
         </p>
       </GlassCard>
     );
@@ -123,7 +124,7 @@ export function ProcedureReasoning({
             {governing} {verified ? "verified" : "rejected by checker"}
           </Chip>
         ) : (
-          <Chip tone="bad">no governing rule</Chip>
+          <Chip tone="bad">no rule applies</Chip>
         )}
       </div>
 
@@ -160,8 +161,8 @@ export function ProcedureReasoning({
       {/* The specialist layers. */}
       <div className="mt-4 space-y-2 px-5 pb-5">
         <Disclosure
-          summary="Every candidate, and the checker's verdict on each"
-          hint="The model reads passage prose only. It never sees the compiled preconditions the checker evaluates."
+          summary="Every rule considered, and what the checker said"
+          hint="The AI reads only the wording of each rule. It never sees the conditions the checker will test it against."
         >
           <ul className="space-y-3">
             {candidates.map((candidate) => {
@@ -220,7 +221,11 @@ export function ProcedureReasoning({
                           className="text-[11px] tracking-normal"
                           style={{ color: admissible ? "var(--ok)" : "var(--bad)" }}
                         >
-                          {admissible ? "admissible" : "inadmissible"}
+                          {admissible ? (
+                            <Term k="admissible">allowed</Term>
+                          ) : (
+                            "not allowed"
+                          )}
                         </span>
                       </Label>
                       <div className="mt-2">

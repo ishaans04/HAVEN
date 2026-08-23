@@ -464,6 +464,31 @@ html.js .reveal-in {
 }
 
 /* ------------------------------------------------------------------------
+   Glossary terms
+   ------------------------------------------------------------------------
+   A dotted underline and nothing else. These sit mid-sentence and there may be
+   two in a line; anything heavier turns a paragraph into a field of links.
+*/
+.term {
+  display: inline;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in oklab, var(--iris) 55%, transparent);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  cursor: help;
+  transition: text-decoration-color 0.2s ease, color 0.2s ease;
+}
+.term:hover,
+.term:focus-visible {
+  color: var(--ink);
+  text-decoration-color: var(--iris);
+}
+
+/* ------------------------------------------------------------------------
    Focus
    ------------------------------------------------------------------------
    The browser default is orange, and this palette spends orange on "watch". A

@@ -250,7 +250,7 @@ function GoldenRule() {
         {[
           [
             "Scores are calculated, never generated",
-            "Every figure originates in the deterministic tier. The model receives them fixed and may echo them, never alter them.",
+            "Every figure comes from the maths. The model is handed them already computed. It may repeat them and can never change them.",
           ],
           [
             "It flags risk, it never decides fitness",
@@ -319,7 +319,7 @@ const STEPS: [ReactNode, string, string][] = [
   [
     <FileSearch key="i" size={16} />,
     "Read the manual",
-    "When alertness is low, the reasoning tier searches the mission's own procedures for the rule that governs the upcoming task. A deterministic checker then tests whether it really applies.",
+    "When alertness is low, the AI searches the mission's own procedures for the rule covering the upcoming task. Then a separate check, ordinary code with no AI in it, tests whether that rule really applies.",
   ],
   [
     <UserCheck key="i" size={16} />,
@@ -380,13 +380,13 @@ function Layout() {
       "How it decided",
       "var(--info)",
       "Four counts: measured, offered, allowed, cited",
-      "The whole architecture in numbers you can hold. The maths went first. Retrieval offered several candidate rules, near-misses on purpose. A deterministic checker threw most of them out. What survived is the citation on the card above.",
+      "The whole design in four numbers. The maths went first. The search offered several candidate rules, including ones that look right and are not. A separate check threw most of them out. What survived is the rule quoted on the card above.",
     ],
     [
       "The instrument",
       "var(--ok)",
       "The whole evidence trail",
-      "The candidate passages with the checker's verdict clause by clause, the orchestrated flow with per-step timings, the hash-chained log, and every figure for every crew member. One click each. None of it was deleted to keep the first read clean.",
+      "Every rule considered and how it was judged, condition by condition. Each step of the run and what it took. The sealed log, and every figure for every crew member. One click each. None of it was cut to keep the first read clean.",
     ],
   ];
 
@@ -394,7 +394,7 @@ function Layout() {
     <Section
       label="The console"
       title="Read it in three layers"
-      lead="One screen. A newcomer should be able to read what is being recommended and why without opening anything; somebody auditing the decision should be able to reach every clause that produced it."
+      lead="One screen. Somebody seeing it for the first time should be able to read what is being recommended and why without opening anything. Somebody checking the decision should be able to reach every condition behind it."
     >
       <div className="grid gap-3 lg:grid-cols-3">
         {layers.map(([name, tone, headline, body], i) => (
@@ -457,9 +457,9 @@ function Honesty() {
           <ul className="mt-4 space-y-3 text-[13px] leading-relaxed text-[var(--ink-2)]">
             {[
               "The Three-Process Model of Alertness and NASA-TLX: the published models, computed from the inputs shown.",
-              "Retrieval over the procedure corpus, with confusable near-misses deliberately in the candidate set.",
-              "The compiled precondition checker that admits or rejects each passage independently of the model.",
-              "The refusal path, the schedule-impact and confidence screens, and the hash-chained audit trail. All of it runs live on every evaluation.",
+              "The search across the procedure documents, with rules that look right but are not deliberately left in the results.",
+              "The check that allows or rejects each rule on its own stated conditions, worked out separately from the model.",
+              "Refusing, the roster and confidence checks, and the sealed log where each entry is bound to the one before it. All of it runs live on every evaluation.",
             ].map((line) => (
               <li key={line} className="flex gap-2">
                 <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-[var(--ok)]" />
@@ -481,7 +481,7 @@ function Honesty() {
             {[
               "The crew roster is representative, not real individuals.",
               "Sleep, duty and task timelines are synthetic. No public live crew-timeline feed exists.",
-              "Where a passage reports prototype authority, its text follows NASA flight-rule structure but was written for this build. The console labels every passage's provenance on the row.",
+              "Where a rule is marked prototype, its wording follows NASA flight-rule structure but was written for this build. The console says which is which on every row.",
               "The reasoning model is a scripted Granite stand-in unless a live provider is configured, so the offline path is a first-class path rather than a degraded one.",
             ].map((line) => (
               <li key={line} className="flex gap-2">

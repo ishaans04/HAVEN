@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { AuditStep } from "@/lib/types";
+import { Term } from "./Term";
 
 const TIER_TONE: Record<string, string> = {
   deterministic: "var(--ok)",
@@ -106,12 +107,13 @@ export function FlowTrack({ steps }: { steps: AuditStep[] }) {
           </>
         ) : (
           <p className="text-[12px] leading-snug text-[var(--ink-3)]">
-            {steps.length} step{steps.length === 1 ? "" : "s"} in {total.toFixed(1)} ms,{" "}
-            {deterministic} of them deterministic.
+            {steps.length} step{steps.length === 1 ? "" : "s"} in {total.toFixed(1)} ms.{" "}
+            {deterministic} of them were{" "}
+            <Term k="deterministic">ordinary arithmetic</Term>.
             {verifies
-              ? " The passage the model proposed was put to the checker before it could be cited."
+              ? " The rule the AI picked went to the checker before it could be cited."
               : ""}{" "}
-            Hover any segment for what it did.
+            Hover any segment to see what it did.
           </p>
         )}
       </div>

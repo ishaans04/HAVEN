@@ -66,8 +66,8 @@ export function VerdictCard({
         </div>
         <h2 className="display text-[26px]">Nothing needs a decision</h2>
         <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-[var(--ink-2)]">
-          Every task in this window cleared the deterministic trigger. A quiet console is a
-          valid state, not a broken one. The tier strip below shows the system is live.
+          Every task in this window came through on the numbers alone. A quiet console is a
+          working one, not a broken one, and the strip below shows the system is running.
         </p>
       </GlassCard>
     );
@@ -265,7 +265,7 @@ export function VerdictCard({
       <div className="mt-3 space-y-2 px-5">
         {rec ? (
           <Disclosure
-            summary="The full rationale, as cited"
+            summary="The full reasoning, as written for the operator"
             hint={`Grounded in ${rec.citation.doc} section ${rec.citation.section}`}
           >
             <div className="glass-2 p-4">
@@ -302,7 +302,7 @@ export function VerdictCard({
           <>
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <p className="text-[13px] text-[var(--ink-3)]">
-                HAVEN does not execute, defer, or reassign. Record the operator decision.
+                HAVEN never acts on this itself. Record what the operator decided.
               </p>
               {/* On a refusal the escalation target is the action, so it belongs
                   next to the button rather than in a chip further up. */}
