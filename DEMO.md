@@ -3,6 +3,28 @@
 Roughly eight minutes. Each scenario shows one thing the architecture claims,
 and they are ordered so each answers the doubt the last one raises.
 
+> **The argument, in one line.** A language model asked what the procedures
+> require will answer even when nothing governs, cite the most *similar* rule
+> rather than the one that *applies*, and state a number it computed rather than
+> one that was measured. These six scenarios show each of those failures being
+> caught — by something other than the model.
+
+```mermaid
+flowchart LR
+    A["1 · burn_fatigue<br/><b>it works</b>"] --> B["2 · eva_near_miss<br/><b>it discriminates</b>"]
+    B --> C["3 · no_procedure<br/><b>it refuses</b>"]
+    C --> D["4 · roster_block<br/><b>maths overrules the AI</b>"]
+    D --> E["5 · thin_data<br/><b>it withholds</b>"]
+    E --> F["6 · provider_outage<br/><b>it fails loudly</b>"]
+
+    style A fill:#e8f4ff
+    style B fill:#0F62FE,color:#fff
+    style C fill:#0F62FE,color:#fff
+    style D fill:#e8f4ff
+    style E fill:#e8f4ff
+    style F fill:#e8f4ff
+```
+
 Start it:
 
 ```bash
@@ -16,6 +38,14 @@ chain will be tried, both of which fail silently otherwise.
 `--no-sync` is not optional: `uv run` re-syncs by default, and a bare sync
 prunes the optional extras — including the watsonx packages — thirty seconds
 before a demo.
+
+Confirm it is live before an audience is watching — a chain that fell through to
+the offline stand-in returns a perfectly well-formed recommendation, so the only
+outward sign is Zone 6:
+
+```bash
+uv run --no-sync python -m scripts.smoke
+```
 
 For development with hot reload, run the console separately instead:
 
@@ -142,12 +172,22 @@ uv run python -m scripts.check_providers
 **"How do you know it works?"**
 
 ```bash
-uv run python -m evaluation.run_eval --provider mock --verbose
+uv run --no-sync python -m evaluation.run_eval --provider watsonx
 ```
 
 Twenty labelled Situations, weighted towards cases where *nothing* governs. Two
-accuracies are reported: what the model proposed, and what the system did after
-the checker disposed of it. Unsafe citations must be zero, and CI fails on one.
+accuracies are reported, and the distance between them is the point.
+
+Measured against live watsonx.ai, `ibm/granite-4-h-small`:
+
+| | Granite alone | HAVEN |
+|---|:---:|:---:|
+| Accuracy | 65.0% | **95.0%** |
+
+Refusal recall 100%, near-miss rejection 80%, **six checker saves**, **zero
+unsafe citations**. Granite proposed the wrong governing rule six times in
+twenty; the checker caught every one. A system that trusted the proposal would
+have shipped six. Unsafe citations must be zero, and CI fails the build on one.
 
 **"Are the NASA documents real?"** The documents are: NASA-STD-3001 Volumes 1
 and 2, the HIDH, and three NTRS papers, each version-verified against its
@@ -161,8 +201,14 @@ checker enforces that before it evaluates a single precondition.
 
 **"What is not real?"** The crew roster is representative, not real individuals.
 Sleep and duty timelines are synthetic. The runtime corpus is written for this
-prototype and labelled `synthesised` and `prototype` in the browser. No
-live-provider figures have been produced, because the credentials are not
-available here. The ledger is tamper-evident, not tamper-proof. All of this is
-in the README under Honest limits, and the console has a "Real vs simulated"
-panel in the header.
+prototype and labelled `synthesised` and `prototype` in the browser. The ledger
+is tamper-evident, not tamper-proof — an attacker holding the signing key *and*
+write access can re-chain it. All of this is in the README under Honest limits,
+and the console has a "Real vs simulated" panel in the header.
+
+**"Is the watsonx integration real?"** Yes, and it is measured rather than
+asserted — see the table above. All eight scenarios have been run end to end
+against `watsonx-granite` with `degraded: false`, and Zone 6 names the link that
+served each answer. What has *not* been verified is the Docker image (Docker was
+not installed in the build environment) and the Ollama adapter (no local Granite
+on this machine).
