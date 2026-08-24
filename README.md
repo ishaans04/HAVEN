@@ -30,29 +30,132 @@
 
 ---
 
-## The problem
+## Why HAVEN?
 
 A fatigued crew member on a long-duration mission is not an edge case. NASA's own
-Human Research Program lists *sleep loss, circadian desynchronization and work
-overload* as a standing risk to crew performance, and NASA-STD-3001 Volume 1
-requires that crew schedule planning include circadian entrainment, work/rest
-assessment and fatigue management.
+Human Research Program maintains a standing evidence report on *sleep loss,
+circadian desynchronization and work overload* as a risk to crew performance, and
+NASA-STD-3001 Volume 1 requires that crew schedule planning include circadian
+entrainment, work/rest assessment and fatigue management.
 
-Knowing an operator is impaired is the easy half. The hard half is **what the
-procedures say to do about it, right now, for this task** — and that is where a
-language model is both the obvious tool and a genuinely dangerous one:
+Detecting that an operator is impaired is the easy half. Sleep debt, circadian
+phase and workload are well-studied and computable. The hard half is the question
+that follows immediately:
 
-- It will produce an answer even when no procedure governs the situation.
-- It will cite the most *similar* rule rather than the one that *applies*.
-- It will state a number it computed rather than one that was measured.
+> **What do the procedures require us to do about it — right now, for this task,
+> for this crew member?**
 
-Each of those is confidently wrong in exactly the register a tired operator is
-least able to challenge. HAVEN is built so that none of them can reach the crew.
+That is what a language model looks perfectly suited to answer, and it is also
+where a language model is genuinely dangerous. Three failure modes, all of them
+confident:
+
+| Failure | What it looks like |
+|---|---|
+| **It answers when nothing governs** | No procedure covers fatigue during a medical contingency, so the model reaches for the closest rule and presents it as the governing one. |
+| **It cites the most *similar* rule, not the one that *applies*** | A pre-EVA sleep-shifting protocol shares almost every keyword with the EVA fatigue rule — and is scoped to *planning*, not execution. |
+| **It states a number it computed** | Given alertness 0.65 and a threshold of 0.70, it writes "a shortfall of 0.05" — a figure no instrument measured and no model produced. |
+
+Each is wrong in exactly the register a tired operator is least able to
+challenge: fluent, cited, specific. HAVEN is built so that none of them can reach
+the crew — not by asking the model to be more careful, but by making it
+structurally unable to be the last word.
 
 > ### The architectural invariant
 > The maths owns the numbers. **The compiler owns the rules; the AI proposes; a deterministic checker disposes.** The human owns the decision.
 >
 > No code path lets the reasoning tier emit a safety-critical figure, cite a rule the checker rejected, or take an irreversible action.
+
+---
+
+## What makes HAVEN different?
+
+Most retrieval-augmented systems are a pipeline: retrieve, prompt, return. The
+model is the last component in the chain, so whatever it says *is* the answer.
+HAVEN inverts that — the model's output is an **input** to a deterministic
+component that can overrule it.
+
+| | Typical RAG assistant | HAVEN |
+|---|---|---|
+| **Who decides which rule applies** | The model. Retrieval ranks, the model picks, the pick ships. | The model **proposes**; a deterministic checker evaluates the rule's compiled preconditions independently and can veto. |
+| **Numbers in the answer** | Whatever the model writes. | Every numeral must trace to a value the deterministic tier computed. A violation is caught, repaired once, then **refused**. |
+| **When nothing applies** | Returns the nearest match, confidently. | **Refusal is a first-class output** — it records what was searched, the closest candidate, and escalates. |
+| **Near-misses in retrieval** | Filtered out to improve precision. | **Deliberately kept.** Filtering would delete the discrimination problem rather than solve it. |
+| **Source authority** | All retrieved text is equally citable. | A standard says *shall*, a handbook says *should*, a paper reports a measurement. **Only a requirement may ground an action.** |
+| **Orchestration** | An agent loop; variable-length tool trajectory. | A **compiled static state machine**. No LLM routes, no cycles, topology asserted against a committed snapshot. |
+| **Audit** | Logs, if any. | Every step written to an **HMAC-signed, globally chained ledger**; every decision records the corpus digest it was made under. |
+| **Provider failure** | An error, or a silent fallback. | Falls through a provider chain and **says so** — `degraded: true`, and the console names the link that answered. |
+
+The measurable consequence is below: on the same twenty cases, Granite alone is
+right 65% of the time and HAVEN is right 95% of the time. The difference is not a
+better prompt. It is the checker.
+
+---
+
+## The core idea in one example
+
+The `eva_near_miss` scenario, start to finish. Every number below is from the
+running system.
+
+**The situation.** A suited crew member is assigned an EVA. The deterministic
+tier computes predicted alertness **0.65** against an execution threshold of
+**0.70**, task criticality **high**. A Situation is raised.
+
+**Retrieval returns four candidates.** Two matter:
+
+| Passage | Document | Relevance | What it is |
+|---|---|:--:|---|
+| `P-SLP-2.1` | OPS-SLEEP-02 §2.1 | **0.9839** | Pre-extravehicular **sleep-shifting protocol** |
+| `P-FAT-4.4` | OPS-FATIGUE-04 §4.4 | **0.9683** | Extravehicular activity with **degraded crew alertness** |
+
+Note the order. **The wrong passage ranks first.** Both are EVA-scoped, both
+discuss sleep and extravehicular activity, and the near-miss scores *higher* than
+the rule that actually governs. A pipeline that trusted retrieval ranking would
+cite `P-SLP-2.1`.
+
+**The checker reads both, before the model speaks.** Their compiled preconditions
+are not similar at all:
+
+```text
+P-SLP-2.1   applies_when: { task_types: [eva], phase: "planning" }
+            prescribes:   null
+            phase is "execution", not "planning"      FAIL
+            states no action a fatigue decision can take
+            -> INADMISSIBLE
+
+P-FAT-4.4   applies_when: { task_types: [eva],
+                            alertness_below: 0.70,
+                            criticality_in: [high, medium] }
+            prescribes:   short_rest_then_proceed
+            eva = eva                                 OK
+            0.65 is below 0.70                        OK
+            high is in [high, medium]                 OK
+            authority: may prescribe                  OK
+            -> ADMISSIBLE
+```
+
+**The model never sees any of that.** It receives passage prose only —
+`passage_id`, `doc`, `section`, `title`, `text`. No preconditions, no prescribed
+action, no near-miss annotation. It has to read `P-SLP-2.1` and notice that its
+own wording scopes it to planning days before egress. Live Granite proposes
+**`P-FAT-4.4`**.
+
+**VERIFY compares the two verdicts.** Model says `P-FAT-4.4`; checker says
+`P-FAT-4.4` is admissible. They agree, so the recommendation stands — and it
+carries the checker's clause-by-clause verdict with it, so an operator can audit
+the citation rather than trust it.
+
+**What live Granite actually wrote:**
+
+> *Alertness is below the extravehicular execution threshold. The task is high
+> criticality. Therefore, extravehicular activity shall not commence.*
+
+No arithmetic, no invented figure. An earlier run of this exact scenario produced
+*"the shortfall of 0.05"* — Granite had computed `0.70 − 0.65` — and the numeric
+guard **refused the entire recommendation** rather than publish it.
+
+**Had the model proposed `P-SLP-2.1` instead**, the checker would have rejected it
+on the `phase` clause and HAVEN would have returned a refusal naming that clause.
+The wrong answer is unreachable from either direction.
 
 ---
 
@@ -182,36 +285,102 @@ Linux and is unaffected.
 
 ## System architecture
 
-Five tiers with hard boundaries. The arrows that matter are the ones that
-**don't** exist: nothing flows from the reasoning tier into the deterministic
-one.
+Five tiers with hard boundaries. **Blue** is deterministic, **dark green** is the
+reasoning tier, **amber** is the offline corpus compiler, **grey** is durable
+storage. The two edges that matter most both leave retrieval: the checker
+receives the **compiled preconditions**, the model receives the **prose only**.
 
 ```mermaid
-flowchart TB
-    UI["🖥️ <b>Operator console</b><br/>Next.js 14 · React 18 · six zones"]
-    API["⚡ <b>FastAPI</b> · Python 3.12+<br/>REST · OpenAPI contract, types generated both sides"]
-    GRAPH["🔀 <b>LangGraph</b><br/>compiled static state machine<br/>no LLM routes · no cycles · topology snapshotted"]
-    RAG["📚 <b>Retrieval</b> — decides nothing<br/>BM25 + optional Chroma dense · RRF"]
-    LLM["🤖 <b>IBM Granite</b><br/>watsonx.ai · Ollama · offline stand-in<br/>sees passage prose only"]
-    DET["🔢 <b>Deterministic tier</b> — owns every safety number<br/>Three-Process Model · NASA-TLX · triggers · screens<br/><b>precondition checker</b>"]
-    LEDGER["🔐 <b>Audit ledger</b><br/>HMAC-SHA256 · globally chained · SQLite · INSERT-only"]
+flowchart TD
+    %% ================= lane 1: crew state, deterministic =================
+    REQ["Scenario or API request<br/>POST /api/evaluate"]
+    ROSTER[("Crew roster<br/>sleep log · duty log · tasks")]
+    REQ --> INGEST["INGEST<br/>contract validation · UTC normalise"]
+    ROSTER --> INGEST
 
-    UI <==>|"JSON"| API
-    API ==> GRAPH
-    GRAPH ==>|"candidates<br/>near-misses included"| RAG
-    RAG ==>|"<b>prose only</b><br/>preconditions redacted"| LLM
-    LLM ==>|"proposal"| DET
-    DET ==>|"admissible, or refused"| GRAPH
-    GRAPH -.->|"every step"| LEDGER
+    INGEST --> TPM["Three-Process Model<br/>homeostatic · circadian · inertia"]
+    INGEST --> TLX["NASA-TLX<br/>weighted workload"]
+    TPM --> READY["SCORE<br/>readiness + risk band"]
+    TLX --> READY
+    READY --> TRIGGER["TRIGGER<br/>alertness and workload thresholds"]
 
-    style DET fill:#0F62FE,color:#fff
-    style LLM fill:#1C3C3C,color:#fff
-    style LEDGER fill:#f4f4f4
+    TRIGGER -->|nominal| ARCHIVE["Archived<br/>no Situation raised"]
+    TRIGGER -->|Situation raised| CONF["CONFIDENCE<br/>data coverage gate"]
+    CONF -->|coverage too thin| WITHHOLD["WITHHOLD<br/>the data gap is the finding"]
+
+    %% ================= lane 2: corpus compiler, offline =================
+    PDFS["NASA source documents<br/>STD-3001 V1 + V2 · HIDH · 3 NTRS papers"]
+    PDFS --> EXTRACT["Extract<br/>pypdf · pdfplumber"]
+    EXTRACT --> CHUNK["Requirement-aware chunking<br/>rule kept apart from its rationale"]
+    CHUNK --> PROPOSE["Propose preconditions<br/>Granite · offline · never at request time"]
+    PROPOSE --> GATE["Human review gate<br/>refuses anything unapproved"]
+    GATE -->|approved| CORPUS[("Procedure corpus<br/>passages + manifest digest")]
+
+    %% ================= lane 3: retrieval =================
+    CONF -->|sufficient| RETRIEVE["RETRIEVE"]
+    CORPUS --> BM25["BM25 lexical<br/>rank_bm25 · offline terminal"]
+    CORPUS --> DENSE["Chroma + fastembed<br/>ONNX · opt-in"]
+    RETRIEVE --> BM25
+    RETRIEVE --> DENSE
+    BM25 --> RRF["Reciprocal Rank Fusion<br/>k = 60"]
+    DENSE --> RRF
+    RRF --> CAND["Top-k candidates<br/>near-misses included on purpose"]
+
+    %% ================= lane 4: propose / dispose =================
+    CAND --> ADM["ADMISSIBILITY<br/>checker reads every candidate"]
+    CAND -->|"prose only · preconditions redacted"| SELECT["SELECT<br/>model proposes a governing rule"]
+
+    CHAIN["Provider chain<br/>watsonx → ollama → mock"] --> SELECT
+    WX["IBM watsonx.ai<br/>granite-4-h-small"] --> CHAIN
+    OLL["Ollama · local Granite"] --> CHAIN
+    MOCK["Offline stand-in<br/>terminal link, never fails open"] --> CHAIN
+
+    ADM --> VERIFY["VERIFY<br/>model proposal vs checker verdict"]
+    SELECT --> VERIFY
+
+    VERIFY -->|"disagree, either direction"| REFUSE["REFUSE<br/>names the unmet clause"]
+    VERIFY -->|agree| FUSE["FUSE<br/>justification"]
+    FUSE --> GEN["GENERATE<br/>operator-facing text"]
+    GEN --> NUM["Numeric guard<br/>every figure traces to a computed value"]
+    NUM -->|invented figure| REFUSE
+    NUM -->|clean| SCREEN["SCREEN<br/>roster + schedule impact"]
+
+    SCREEN -->|cover available| REC["Recommendation<br/>cited · clause-by-clause verdict"]
+    SCREEN -->|no cover| FALLBACK["Prescribed fallback<br/>from the same cited passage"]
+    SCREEN --> PROJ["Forward projection<br/>what the action is predicted to buy"]
+
+    %% ================= lane 5: presentation + audit =================
+    REC --> PRESENT["PRESENT"]
+    FALLBACK --> PRESENT
+    REFUSE --> PRESENT
+    WITHHOLD --> PRESENT
+    ARCHIVE --> PRESENT
+    PROJ --> PRESENT
+
+    PRESENT --> API["FastAPI gateway<br/>REST · OpenAPI contract · static console mount"]
+    API --> UI["Operator console<br/>Next.js 14 · React 18 · six zones"]
+    UI --> HUMAN["Human decision<br/>approve · override · escalate"]
+
+    LEDGER[("Audit ledger<br/>HMAC-SHA256 · globally chained · SQLite")]
+    INGEST -.->|every step| LEDGER
+    ADM -.-> LEDGER
+    VERIFY -.-> LEDGER
+    NUM -.-> LEDGER
+    HUMAN -.-> LEDGER
+
+    %% ================= styling =================
+    classDef det fill:#0F62FE,stroke:#0043ce,color:#ffffff
+    classDef ai fill:#1C3C3C,stroke:#0f2424,color:#ffffff
+    classDef store fill:#e0e0e0,stroke:#8d8d8d,color:#161616
+    classDef offline fill:#fff8e1,stroke:#f1c21b,color:#161616
+    classDef out fill:#d0e8ff,stroke:#0F62FE,color:#161616
+
+    class TPM,TLX,READY,TRIGGER,CONF,ADM,VERIFY,NUM,SCREEN,GATE det
+    class SELECT,FUSE,GEN,CHAIN,WX,OLL,MOCK ai
+    class CORPUS,LEDGER,ROSTER store
+    class PDFS,EXTRACT,CHUNK,PROPOSE offline
+    class REC,FALLBACK,REFUSE,WITHHOLD,ARCHIVE,HUMAN out
 ```
-
-Follow the thick path: retrieval hands the model **prose only**, the model
-returns a **proposal**, and the deterministic tier — not the model — decides
-whether it stands. That loop is the whole design.
 
 ### Tier boundaries
 
@@ -228,50 +397,36 @@ whether it stands. That loop is the whole design.
 ## The workflow, as a compiled state machine
 
 LangGraph is used as a **finite state machine, not an agent**. The safety
-property *is* the fixed, auditable step sequence — a model-chosen, variable-length
-tool trajectory would be strictly worse to audit. Every edge is either static or
-conditional on a deterministic predicate, and the topology is asserted against a
-committed snapshot in CI.
+property *is* the fixed, auditable step sequence — a model-chosen,
+variable-length tool trajectory would be strictly worse to audit. Every edge is
+either static or conditional on a deterministic predicate, and the topology is
+asserted against a committed snapshot in CI.
 
-```mermaid
-flowchart LR
-    INGEST([INGEST]) --> SCORE([SCORE])
-    SCORE --> TRIGGER{TRIGGER}
-    TRIGGER -- "no Situation" --> ARCHIVE([archive])
-    TRIGGER -- "Situation raised" --> SITUATIONS([SITUATIONS])
-    SITUATIONS --> PRESENT([PRESENT])
+**The outer graph** runs once per evaluation:
 
-    style TRIGGER fill:#0F62FE,color:#fff
+```text
+INGEST → SCORE → TRIGGER → SITUATIONS → PRESENT
 ```
 
-Per raised Situation, a subgraph runs — and this is where propose/dispose lives:
+`TRIGGER` decides whether a Situation is raised at all. A rested crew produces
+none, and the console distinguishes that silence from a failure.
 
-```mermaid
-flowchart LR
-    CONF{CONFIDENCE} -- "data too thin" --> WITHHOLD([WITHHOLD])
-    CONF -- "sufficient" --> RETRIEVE([RETRIEVE])
-    RETRIEVE --> ADM([ADMISSIBILITY])
-    ADM --> SELECT([SELECT])
-    SELECT --> VERIFY{VERIFY}
-    VERIFY -- "checker agrees" --> FUSE([FUSE])
-    VERIFY -- "disagreement" --> REFUSE([REFUSE])
-    FUSE --> GENERATE([GENERATE])
-    GENERATE --> SCREEN{SCREEN}
-    SCREEN -- "staffed" --> REC([recommendation])
-    SCREEN -- "no cover" --> FALLBACK([prescribed fallback])
+**The situation subgraph** runs once per raised Situation:
 
-    style VERIFY fill:#0F62FE,color:#fff
-    style CONF fill:#0F62FE,color:#fff
-    style SCREEN fill:#0F62FE,color:#fff
-    style SELECT fill:#1C3C3C,color:#fff
-    style FUSE fill:#1C3C3C,color:#fff
-    style GENERATE fill:#1C3C3C,color:#fff
+```text
+CONFIDENCE ──┬── withhold ─────────────────────────────────────────────→ END
+             │
+             └── RETRIEVE → ADMISSIBILITY → SELECT → VERIFY ──┬── FUSE → GENERATE ──┐
+                                                              │                      │
+                                                              └── REFUSE ────────────┤
+                                                                                     │
+                                                                     SCREEN ←────────┘
+                                                                        ↓
+                                                                       END
 ```
 
-**The model is consulted at exactly three nodes** — SELECT, FUSE, GENERATE (dark
-green) — and routes nothing. Every branch (blue) is a deterministic predicate.
-
-Two properties are worth pausing on:
+The model is consulted at exactly **three** nodes — `SELECT`, `FUSE`, `GENERATE`
+— and routes nothing. Two properties are worth pausing on:
 
 - **ADMISSIBILITY runs before SELECT, and does not filter.** The checker
   evaluates every retrieved candidate *before the model speaks*, and records its
@@ -284,27 +439,14 @@ Two properties are worth pausing on:
 
 ### Propose / dispose
 
-```mermaid
-sequenceDiagram
-    participant R as Retrieval
-    participant C as Deterministic checker
-    participant M as Granite
-    participant V as VERIFY
-    participant H as Human
+`VERIFY` is deterministic and its disposition table is exhaustive:
 
-    R->>C: all candidates (near-misses included)
-    C->>C: evaluate compiled preconditions
-    Note over C: verdict recorded before the model speaks
-    R->>M: passage prose only<br/>(preconditions redacted — S4)
-    M->>V: "P-FAT-4.4 governs"
-    C->>V: "P-FAT-4.4 admissible"
-    alt model and checker agree
-        V->>H: cited recommendation + clause-by-clause verdict
-    else disagree, either direction
-        V->>H: refusal naming the unmet clause
-    end
-    Note over H: the human decides. HAVEN never acts.
-```
+| Model proposed | Checker says | Result |
+|---|---|---|
+| passage *P* | *P* is admissible | **Proceed** — recommendation, with the clause verdict attached |
+| passage *P* | *P* is inadmissible | **Refuse**, naming the unmet clause |
+| none govern | something is admissible | **Refuse**, logging the disagreement |
+| none govern | nothing is admissible | **Refuse** — no governing procedure |
 
 Both disagreement directions fail closed, and a passage the model did *not*
 select is never promoted. A `governing_passage_id` outside the candidate set is
@@ -315,17 +457,22 @@ an identifier.
 
 ## Retrieval and the RAG pipeline
 
-```mermaid
-flowchart LR
-    Q["Situation<br/>task · criticality · alertness"] --> BM25["BM25<br/>rank_bm25"]
-    Q --> DENSE["Chroma + fastembed<br/>ONNX, opt-in"]
-    BM25 --> RRF["Reciprocal Rank Fusion<br/>k = 60"]
-    DENSE --> RRF
-    RRF --> TOPK["top-k candidates<br/>near-misses included on purpose"]
-    TOPK --> ADM["ADMISSIBILITY"]
+Two backends, fused by reciprocal rank:
 
-    style RRF fill:#6E4AFF,color:#fff
-```
+- **BM25** (`rank_bm25`) is lexical and is the **offline terminal** — no
+  download, no service, no network. It is a base dependency rather than an extra,
+  because the offline guarantee depends on it.
+- **Dense** retrieval adds ChromaDB with fastembed ONNX embeddings (~50 MB,
+  deliberately not sentence-transformers/PyTorch at ~2 GB). It is opt-in via
+  `HAVEN_RETRIEVAL_MODE=hybrid`, because it fetches its model on first use and
+  therefore cannot be part of the offline guarantee. When it is unavailable the
+  tier degrades to BM25 and records why.
+- **Reciprocal Rank Fusion** (k = 60) combines them. It is implemented directly
+  rather than via LangChain's `EnsembleRetriever`, which returns fused documents
+  without exposing the fused score — and the console renders that number.
+
+The index sees **title and text only**. The compiled preconditions never enter
+it, which is safety requirement S4 arrived at from a second direction.
 
 In `eva_near_miss` the near-miss passage retrieves at **0.984 against the
 governing rule's 0.968** — retrieval ranks the wrong passage *first*, and the
@@ -333,29 +480,16 @@ system cites the right one anyway. That is the case the architecture exists for,
 and it is why ADMISSIBILITY does not filter: a pipeline that dropped the
 near-miss would have deleted the problem instead of solving it.
 
-**BM25 alone is the offline terminal** — no download, no service, no network.
-Dense retrieval adds Chroma with fastembed ONNX embeddings (~50 MB, deliberately
-not sentence-transformers/PyTorch at ~2 GB) and is opt-in via
-`HAVEN_RETRIEVAL_MODE=hybrid`, because it fetches its model on first use and
-therefore cannot be part of the offline guarantee.
-
-RRF is implemented directly rather than via LangChain's `EnsembleRetriever`,
-which returns fused documents without exposing the fused score — and the console
-renders that number.
-
 ### The procedure corpus, and where it comes from
 
-```mermaid
-flowchart LR
-    PDF["6 NASA documents<br/>version-verified · SHA-256 pinned"] --> EXTRACT["extract<br/>pypdf / pdfplumber"]
-    EXTRACT --> CHUNK["requirement-aware chunking<br/>rule ≠ its rationale block"]
-    CHUNK --> PROPOSE["propose<br/>model drafts preconditions"]
-    PROPOSE --> GATE{"human review gate"}
-    GATE -- "approved" --> EMIT["compiled corpus<br/>+ manifest digest"]
-    GATE -- "unapproved" --> REFUSE["build fails"]
+The corpus compiler turns source PDFs into passages carrying machine-checkable
+preconditions, under human review. It runs **offline and never at request time** —
+a test asserts that nothing under `haven/` imports it.
 
-    style GATE fill:#0F62FE,color:#fff
-    style REFUSE fill:#c62828,color:#fff
+```text
+NASA PDFs → extract → requirement-aware chunk → propose → HUMAN REVIEW → emit
+                                                               │
+                                                               └─ unapproved → build fails
 ```
 
 Six documents are acquired and compiled to **131 passages**: NASA-STD-3001
@@ -427,44 +561,48 @@ uv run pytest tests/test_safety_invariants.py tests/test_offline_guard.py
 
 ## Technology stack
 
-```mermaid
-flowchart TB
-    subgraph FE["Frontend"]
-        N["Next.js 14.2 · static export"]
-        RE["React 18 · TypeScript 5"]
-        TW["Tailwind CSS · Recharts"]
-    end
-    subgraph BE["Backend"]
-        F["FastAPI · Pydantic v2"]
-        U["uvicorn"]
-        P["Python 3.12+ · uv · Ruff"]
-    end
-    subgraph AI["AI / orchestration"]
-        LG["LangGraph 1.x"]
-        LC["langchain-core 1.x"]
-        IBM["langchain-ibm → watsonx.ai"]
-        OL["langchain-ollama → local Granite"]
-    end
-    subgraph DATA["Retrieval + storage"]
-        BM["rank_bm25"]
-        CH["ChromaDB + fastembed"]
-        SQ["SQLite · HMAC-chained ledger"]
-    end
-
-    FE -->|"REST / OpenAPI"| BE
-    BE --> AI
-    BE --> DATA
-```
-
-| Layer | Choice | Why |
+| Layer | Technology | Used for |
 |---|---|---|
-| **Reasoning** | IBM Granite via **watsonx.ai** (`langchain-ibm`) | IBM's own LangChain package — the integration stays explicit rather than hidden behind a generic gateway |
-| **Orchestration** | **LangGraph**, compiled static graph | Topology becomes declarative, inspectable and testable as data |
-| **RAG** | LangChain `Document` interchange, BM25 + Chroma, RRF | BM25 keeps the offline path real; dense is additive |
-| **API** | **FastAPI** + Pydantic v2 | The contract is the schema; console types are generated from it |
-| **Console** | **Next.js 14** static export, **React 18** | Fully client-side, so one FastAPI process serves it from the same origin |
-| **Ledger** | SQLite, HMAC-SHA256, globally chained | Tamper-*evident* across trails, not merely per-trail |
-| **Tooling** | uv · Ruff · pytest · GitHub Actions | One lockfile, one lint config, three CI jobs |
+| **Frontend** | Next.js 14.2 *(static export)* | The six-zone operator console, exported as static files so one process serves everything |
+| | React 18 · TypeScript 5 | Component model and type safety across the console |
+| | Tailwind CSS 3.4 | Styling, via the shared `ui.tsx` primitives |
+| | Recharts 3 | Alertness curves and the forward-projection overlay |
+| | lucide-react · clsx | Icons; conditional class composition |
+| | openapi-typescript 7 | Generates `api-types.ts` from `openapi.json` — CI fails on drift |
+| **Backend** | Python 3.12+ | Runtime floor; CI runs the floor, not the newest interpreter |
+| | FastAPI 0.115+ | REST API, OpenAPI schema, and the static console mount |
+| | Pydantic v2 | The locked contract — validation, range constraints, UTC normalisation |
+| | uvicorn *(standard)* | ASGI server |
+| | python-dotenv | Loads `.env` before any setting resolves |
+| **AI / orchestration** | LangGraph 1.x | The seven-stage cycle as a **compiled static state machine** |
+| | langchain-core 1.x | `Document` interchange, message types, prompt templates |
+| | langchain-ibm | **IBM watsonx.ai** Granite — IBM's own package, so the integration stays explicit |
+| | langchain-ollama | Local Granite, for free unmetered iteration |
+| | *scripted stand-in* | Offline terminal of the provider chain; the default, so a demo cannot fail on a network call |
+| **Retrieval** | rank_bm25 | Lexical retrieval; the **offline terminal**, and a base dependency |
+| | ChromaDB 0.5+ | Persistent vector store for dense retrieval |
+| | fastembed | ONNX embeddings (~50 MB) rather than PyTorch (~2 GB) |
+| | langchain-chroma | Chroma integration |
+| | *hand-written RRF* | Reciprocal rank fusion, k = 60 — written rather than imported so the fused score is exposed |
+| **Corpus compiler** | pypdf · pdfplumber | Page text and layout from source PDFs; called directly rather than via the sunset `langchain-community` |
+| | langchain-text-splitters | Prose splitting between numbered requirements |
+| **Data + storage** | SQLite *(WAL, INSERT-only)* | The audit ledger |
+| | HMAC-SHA256 | Ledger entry signing, chained **globally** across trails |
+| | NumPy 2 | Vectorised alertness-curve sampling |
+| | JSON artefacts | Compiled corpus + manifest digest; source registry with pinned SHA-256 |
+| **Testing** | pytest 8 | 737 tests, with `integration` and `live` markers excluded by default |
+| | Hypothesis | Property tests — the checker must be total over arbitrary input shapes |
+| | *evaluation harness* | 20-case golden set; **fails the build on one unsafe citation** |
+| **DevOps** | GitHub Actions | Three jobs: engine (base install), full (all extras), contract (type drift) |
+| | uv | Dependency resolution and locking — one `uv.lock` |
+| | Ruff | Lint and format, one configuration |
+| | Docker | Two-stage build; Node builds the console, Python serves it. Port 7860 for HF Spaces |
+
+**Deliberately not adopted:** the `langchain` meta-package; `langchain-community`
+(being sunset); LangSmith tracing (it would breach the offline guarantee, and a
+test asserts it stays off); LangGraph's checkpointer as system of record (it
+provides neither HMAC nor global chaining); LiteLLM (it would hide the watsonx
+integration behind a generic gateway).
 
 ---
 

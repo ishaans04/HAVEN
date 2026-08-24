@@ -61,20 +61,12 @@ carrying a real citation to a real NASA document an operator can look up, where
 the sentence cited says *should*. An uncited guess would be safer, because it
 does not check out.
 
-```mermaid
-flowchart LR
-    A["📕 <b>authoritative</b><br/>NASA-STD-3001<br/><i>shall</i>"] --> P{"may ground<br/>an action?"}
-    G["📗 <b>guidance</b><br/>HIDH<br/><i>should</i>"] --> P
-    R["📘 <b>research</b><br/>NTRS papers<br/><i>was measured</i>"] --> P
-    T["📙 <b>prototype</b><br/>hand-authored<br/>stands in for a flight rule"] --> P
-    P -->|"yes"| YES(["cited in a recommendation"])
-    P -->|"no"| NO(["retrievable · readable · never binding"])
-
-    style A fill:#0F62FE,color:#fff
-    style T fill:#0F62FE,color:#fff
-    style P fill:#1C3C3C,color:#fff
-    style NO fill:#f4f4f4
-```
+| Class | Source | Says | May ground an action? |
+|---|---|---|:--:|
+| `authoritative` | NASA-STD-3001 | *shall* | **yes** |
+| `prototype` | hand-authored, stands in for a flight rule | *shall* | **yes**, and is labelled simulated everywhere |
+| `guidance` | HIDH | *should* | no — retrievable, readable, never binding |
+| `research` | NTRS papers | *was measured* | no — evidence for a rule, never the rule |
 
 So `authority` is a field on every passage, carried from the registry, never
 proposed by a model, and enforced at two independent points:

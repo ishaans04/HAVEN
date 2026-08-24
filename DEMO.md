@@ -9,20 +9,15 @@ and they are ordered so each answers the doubt the last one raises.
 > one that was measured. These six scenarios show each of those failures being
 > caught — by something other than the model.
 
-```mermaid
-flowchart LR
-    A["1 · burn_fatigue<br/><b>it works</b>"] --> B["2 · eva_near_miss<br/><b>it discriminates</b>"]
-    B --> C["3 · no_procedure<br/><b>it refuses</b>"]
-    C --> D["4 · roster_block<br/><b>maths overrules the AI</b>"]
-    D --> E["5 · thin_data<br/><b>it withholds</b>"]
-    E --> F["6 · provider_outage<br/><b>it fails loudly</b>"]
+The running order, and what each one is for:
 
-    style A fill:#e8f4ff
-    style B fill:#0F62FE,color:#fff
-    style C fill:#0F62FE,color:#fff
-    style D fill:#e8f4ff
-    style E fill:#e8f4ff
-    style F fill:#e8f4ff
+```text
+1  burn_fatigue      it works
+2  eva_near_miss     it discriminates      <- the core claim
+3  no_procedure      it refuses            <- the core claim
+4  roster_block      maths overrules the AI
+5  thin_data         it withholds
+6  provider_outage   it fails loudly
 ```
 
 Start it:
