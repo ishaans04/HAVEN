@@ -126,7 +126,8 @@ uv run python -m compiler.cli propose --out corpus/review.json --provider ollama
 uv run python -m compiler.cli emit --review corpus/review.json \
     --sources corpus/sources.json --version 2026.08 --out corpus/compiled
 
-HAVEN_CORPUS=corpus/compiled/corpus-2026.08.json \n    uv run --no-sync python -m scripts.run_haven
+HAVEN_CORPUS=corpus/compiled/corpus-2026.08.json \
+    uv run --no-sync python -m scripts.run_haven
 ```
 
 The PDFs are gitignored — they are redistributable only from their publishers —
