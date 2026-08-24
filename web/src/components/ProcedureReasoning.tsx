@@ -9,7 +9,7 @@ import type {
 } from "@/lib/types";
 import { ClauseTally, ClauseVerdict } from "./ClauseVerdict";
 import { Term } from "./Term";
-import { Counterfactual, compareToSimilarity } from "./Counterfactual";
+import { Counterfactual, verdictFromAudit } from "./Counterfactual";
 import { FlowTrack } from "./FlowTrack";
 import { RetrievalFunnel } from "./RetrievalFunnel";
 import { Disclosure, GlassCard, Label, Meter } from "./ui";
@@ -96,15 +96,9 @@ export function ProcedureReasoning({
   const citation = situation.recommendation?.citation;
 
   // What ranking on the retrieval score alone would have selected, and what the
-  // checker did with it. The most persuasive thing this card can say.
-  const verdict = compareToSimilarity({
-    candidates,
-    admissible: admissibleIds,
-    clauses: clausesById,
-    citation,
-    outcome: situation.outcome,
-    refusalReason: situation.refusal?.reason,
-  });
+  // checker did with it. The most persuasive thing this card can say — and the
+  // landing page now says it too, so the derivation lives in one place.
+  const verdict = verdictFromAudit(situation, audit);
 
   return (
     <GlassCard className="overflow-hidden">

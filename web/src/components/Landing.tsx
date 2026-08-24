@@ -5,6 +5,8 @@ import type { ReactNode } from "react";
 import { ArrowRight, Compass, Hand } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParallax } from "@/lib/motion";
+import { fetchAudit, fetchEvaluation } from "@/lib/api";
+import { Counterfactual, verdictFromAudit, type Verdict } from "./Counterfactual";
 import { Earth } from "./Earth";
 import { AlertnessGap, HardLine, LayerStack, PipelineRail } from "./LandingVisuals";
 import { StarField } from "./StarField";
@@ -33,6 +35,7 @@ export function Landing() {
         <Hero />
         <Problem />
         <GoldenRule />
+        <Overrule />
         <Pipeline />
         <Layout />
         <Honesty />
@@ -285,6 +288,73 @@ function GoldenRule() {
             <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-3)]">{body}</p>
           </Reveal>
         ))}
+      </div>
+    </Section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The argument, running live on the front door.
+ *
+ * The product's strongest fact used to be reachable only by entering the
+ * console, choosing the right one of eight questions, and scrolling past two
+ * cards. A judge who never did all three never saw it. It is the same
+ * `Counterfactual` the console renders, fed the real `eva_near_miss`
+ * evaluation, so the page cannot drift from the engine: the score, the
+ * condition lamps and the rule that applies instead are all read off the audit
+ * record at load.
+ *
+ * Nothing here is written down. That is the point, and it is also why the
+ * section removes itself when the engine cannot be reached rather than falling
+ * back to numbers typed into the page — a landing page that hardcodes
+ * "1.000" to make its case is doing the exact thing the case is against.
+ */
+function Overrule() {
+  const [verdict, setVerdict] = useState<Verdict | null>(null);
+  const [ready, setReady] = useState<"waiting" | "live" | "unavailable">("waiting");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const evaluation = await fetchEvaluation("eva_near_miss");
+        const situation = evaluation.situations[0];
+        if (!situation) throw new Error("no situation raised");
+        const audit = await fetchAudit(situation.audit_ref);
+        const computed = verdictFromAudit(situation, audit);
+        if (cancelled) return;
+        if (!computed) throw new Error("nothing to compare");
+        setVerdict(computed);
+        setReady("live");
+      } catch {
+        if (!cancelled) setReady("unavailable");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (ready === "unavailable") return null;
+
+  return (
+    <Section
+      label="The overrule"
+      title="A perfect score, on the wrong rule"
+      lead="Retrieval ranks by wording. The checker judges each rule on its stated conditions — and it wins. Computed live, not written."
+    >
+      {/* No `GlassCard` around it, unlike the other sections: their visuals are
+          bare SVG and need a surface, and this one already brings its own
+          tinted panel and inset ring. Wrapping it would be a filled panel
+          inside a filled panel — the thing the unboxing pass spent 42 boxes
+          getting down to 3 to be rid of.
+
+          The reserved height keeps arriving data from shoving the page under a
+          reader who is already scrolling through it. */}
+      <div className="min-h-[188px]">
+        <Reveal>{ready === "live" ? <Counterfactual verdict={verdict} /> : null}</Reveal>
       </div>
     </Section>
   );

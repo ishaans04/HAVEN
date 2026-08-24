@@ -1,6 +1,12 @@
 "use client";
 
-import type { Citation } from "@/lib/types";
+import type {
+  AuditRecord,
+  Citation,
+  ClauseDetail,
+  RetrievedCandidate,
+  Situation,
+} from "@/lib/types";
 import { useMotionOK, useReveal } from "@/lib/motion";
 import { Label } from "./ui";
 
@@ -122,6 +128,34 @@ export function compareToSimilarity({
     };
   }
   return null;
+}
+
+/**
+ * The same comparison, straight from an evaluation and its audit record.
+ *
+ * The extraction is fiddly — the candidate list, the admissible set and the
+ * clause tables each live in the `outputs` of a different audit step, and those
+ * payloads are `Record<string, unknown>` on both sides of the contract. Having
+ * two pages assert that shape independently is how they end up disagreeing
+ * about the same evaluation, so both go through here.
+ */
+export function verdictFromAudit(
+  situation: Situation | null | undefined,
+  audit: AuditRecord | null | undefined,
+): Verdict | null {
+  if (!situation || !audit) return null;
+
+  const step = (name: string) => audit.steps.find((s) => s.step === name);
+  const admissibility = step("ADMISSIBILITY");
+
+  return compareToSimilarity({
+    candidates: (step("RETRIEVE")?.outputs.candidates ?? []) as RetrievedCandidate[],
+    admissible: new Set((admissibility?.outputs.admissible ?? []) as string[]),
+    clauses: (admissibility?.outputs.clauses ?? {}) as Record<string, ClauseDetail[]>,
+    citation: situation.recommendation?.citation,
+    outcome: situation.outcome,
+    refusalReason: situation.refusal?.reason,
+  });
 }
 
 /** Timings, in ms. One shared clock so the beats cannot drift apart. */
