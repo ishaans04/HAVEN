@@ -87,9 +87,15 @@ export function VerdictCard({
       {/* The answer is the hero above this card; this is the case for it. */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-5 pt-5">
         <Label>{isRefusal ? "Why it stopped" : "Why"}</Label>
-        <Chip tone={CONFIDENCE_TONE[situation.confidence] ?? "neutral"}>
+        {/* Small caps in the tone, not a capsule. It sits directly beside a
+            micro-caps label, and a pill next to a label reads as two different
+            kinds of thing saying one kind of thing. */}
+        <span
+          className="label"
+          style={{ color: TONE_VAR[CONFIDENCE_TONE[situation.confidence] ?? "neutral"] }}
+        >
           {situation.confidence} confidence
-        </Chip>
+        </span>
         {rec ? (
           <span className="ml-auto text-[13px] text-[var(--ink-3)]">
             <span className="text-[11px] font-medium uppercase tracking-[0.11em]">Cost</span>
@@ -138,12 +144,12 @@ export function VerdictCard({
                   {projection.delta.toFixed(3)}
                 </span>
               </div>
-              <Chip
-                tone={projection.clears_threshold ? "ok" : "warn"}
-                className="ml-auto"
+              <span
+                className="label ml-auto"
+                style={{ color: projection.clears_threshold ? "var(--ok)" : "var(--warn)" }}
               >
                 {projection.clears_threshold ? "clears the line" : "still below the line"}
-              </Chip>
+              </span>
             </div>
             <div className="mt-3">
               <Meter

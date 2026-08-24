@@ -3,7 +3,7 @@
 import { ShieldAlert } from "lucide-react";
 import type { Situation } from "@/lib/types";
 import { answerFor, questionFor } from "@/lib/ask";
-import { Chip, TONE_VAR, toneOf, utcTime } from "./ui";
+import { Field, TONE_VAR, toneOf, utcTime } from "./ui";
 
 /**
  * The consultation.
@@ -81,18 +81,36 @@ export function Answer({ situation }: { situation: Situation | null }) {
         </p>
       </div>
 
-      {/* The engine's own term, always travelling with the plain words. */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Chip tone={answer.tone} solid>
-          {answer.precise}
-        </Chip>
-        <Chip tone={riskTone}>{situation.risk_level} risk</Chip>
+      {/* The engine's own term, always travelling with the plain words.
+
+          This was three pill-shaped chips in three different colours, side by
+          side and all at the same rank — the badge row every generated
+          dashboard ships. Two things were wrong with it beyond the shape. It
+          spent three hues on three items of which exactly one, the risk, is a
+          state the engine actually reports, against a palette whose whole rule
+          is that colour means something. And a bare pill reading
+          "OPS-FATIGUE-04 §4.2" never says what that string *is*.
+
+          A register says both: the field is named, the value sits under it, and
+          only the one that is a state is coloured. The headline above is
+          already carrying the verdict at 56px, so this row can be quiet. */}
+      <dl className="mt-6 flex flex-wrap gap-x-7 gap-y-4 border-t border-white/[0.09] pt-4">
+        <Field label="Action">
+          <span className="text-[var(--ink)]">{answer.precise}</span>
+        </Field>
+        <Field label="Risk">
+          <span className="capitalize" style={{ color: TONE_VAR[riskTone] }}>
+            {situation.risk_level}
+          </span>
+        </Field>
         {rec ? (
-          <Chip tone="info">
-            {rec.citation.doc} §{rec.citation.section}
-          </Chip>
+          <Field label="Governing rule">
+            <span className="mono text-[12px] text-[var(--ink-2)]">
+              {rec.citation.doc} §{rec.citation.section}
+            </span>
+          </Field>
         ) : null}
-      </div>
+      </dl>
 
       {/* One sentence. */}
       <p className="mt-5 text-[16px] leading-relaxed text-[var(--ink-2)]">

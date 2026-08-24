@@ -12,7 +12,7 @@ import { Term } from "./Term";
 import { Counterfactual, compareToSimilarity } from "./Counterfactual";
 import { FlowTrack } from "./FlowTrack";
 import { RetrievalFunnel } from "./RetrievalFunnel";
-import { Chip, Disclosure, GlassCard, Label, Meter } from "./ui";
+import { Disclosure, GlassCard, Label, Meter } from "./ui";
 
 
 const FLOW_STEPS = [
@@ -119,12 +119,24 @@ export function ProcedureReasoning({
             {situation.situation_id}
           </p>
         </div>
+        {/* The passage and the checker's verdict on it, as two readings rather
+            than one capsule. They are different kinds of fact — an identifier
+            and a state — and running them together in a pill made the identifier
+            look like part of the status. Splitting them lets the verdict sit at
+            label weight in its own colour, which matters most in the case this
+            whole product exists to show: a passage the retrieval tier scored at
+            the top and the checker threw out anyway. */}
         {governing ? (
-          <Chip tone={verified ? "ok" : "bad"}>
-            {governing} {verified ? "verified" : "rejected by checker"}
-          </Chip>
+          <div className="shrink-0 text-right">
+            <div className="mono text-[12px] text-[var(--ink-2)]">{governing}</div>
+            <div className="label mt-1" style={{ color: verified ? "var(--ok)" : "var(--bad)" }}>
+              {verified ? "verified" : "rejected by checker"}
+            </div>
+          </div>
         ) : (
-          <Chip tone="bad">no rule applies</Chip>
+          <div className="label shrink-0 text-right" style={{ color: "var(--bad)" }}>
+            no rule applies
+          </div>
         )}
       </div>
 

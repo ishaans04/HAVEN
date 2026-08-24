@@ -227,9 +227,9 @@ body::after {
 .glass-live {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 0 0 1px rgba(189, 166, 255, 0.24),
-    0 0 0 1px rgba(189, 166, 255, 0.1),
-    0 30px 90px -30px rgba(120, 72, 255, 0.4),
+    inset 0 0 0 1px color-mix(in oklab, var(--accent) 30%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--accent) 12%, transparent),
+    0 30px 90px -30px color-mix(in oklab, var(--accent) 34%, transparent),
     0 36px 80px -34px rgba(0, 0, 0, 0.9);
 }
 
@@ -480,18 +480,26 @@ html.js .reveal-in {
 .selectable:active {
   transform: none;
 }
+/* Selected is a brighter edge, not a colour.
+
+   This was a violet fill and a violet glow — a third hue that is in no part of
+   the palette, hard-coded in rgb, left over from v1's token names. It put a
+   lilac cast on whichever crew card was chosen, which read as a *state* the
+   engine never reported. Colour here means something: copper is the signature,
+   red is a stop, and silver is nominal. Selection is not a state of the
+   operator, so it gets weight instead of hue. */
 .selectable[aria-pressed="true"],
 .selectable[aria-expanded="true"] {
-  background: rgba(189, 166, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
   box-shadow:
-    inset 0 0 0 1px rgba(189, 166, 255, 0.46),
-    0 14px 34px -18px rgba(120, 72, 255, 0.5);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.42),
+    0 14px 34px -18px rgba(0, 0, 0, 0.9);
 }
 .selectable[aria-pressed="true"]:hover,
 .selectable[aria-expanded="true"]:hover {
   box-shadow:
-    inset 0 0 0 1px rgba(189, 166, 255, 0.62),
-    0 18px 40px -18px rgba(120, 72, 255, 0.66);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.58),
+    0 18px 40px -18px rgba(0, 0, 0, 0.95);
 }
 
 /* ------------------------------------------------------------------------

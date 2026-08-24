@@ -162,6 +162,48 @@ export function Label({ children, className }: { children: ReactNode; className?
   return <div className={clsx("label", className)}>{children}</div>;
 }
 
+/**
+ * One named reading in a register.
+ *
+ * The console kept saying things in capsules — a pill for the action, a pill
+ * for the risk, a pill for the citation, a pill for the confidence — which is
+ * the badge row every generated dashboard ships, and which never says what any
+ * of the values *are*. A field names the reading, puts it underneath, and lets
+ * a hairline do the separating. Colour is spent only where the value is a state
+ * the engine actually reported.
+ *
+ * A hairline on the left rather than a box around each one: these are rows of
+ * readings, and boxing them would put containers back on a page that spent a
+ * whole pass getting down to three.
+ */
+export function Field({
+  label,
+  note,
+  children,
+  className,
+}: {
+  label: string;
+  /** The provenance of the figure — the model or scale it came off. */
+  note?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={clsx(
+        "min-w-0 border-l border-white/[0.09] pl-4 first:border-l-0 first:pl-0",
+        className,
+      )}
+    >
+      <dt className="label">{label}</dt>
+      <dd className="mt-1.5 text-[13px] leading-snug">{children}</dd>
+      {note ? (
+        <dd className="mt-1 text-[11px] leading-snug text-[var(--ink-3)]">{note}</dd>
+      ) : null}
+    </div>
+  );
+}
+
 /* --------------------------------------------------------------------------
    Chip
    --------------------------------------------------------------------------

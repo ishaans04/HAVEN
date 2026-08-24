@@ -1,8 +1,7 @@
 "use client";
 
-import { Clock3, Gauge, MoonStar } from "lucide-react";
 import type { Situation } from "@/lib/types";
-import { Label, TONE_VAR } from "./ui";
+import { Field, Label, TONE_VAR } from "./ui";
 
 /**
  * The four figures, as one reading.
@@ -13,8 +12,9 @@ import { Label, TONE_VAR } from "./ui";
  *
  * So alertness gets the track, with the threshold drawn on it. You can see the
  * miss without reading a digit, which is the whole point for a reader meeting
- * this screen for the first time. Workload, hours awake and the body clock keep
- * their numbers and lose their captions to the three small gauges beside it.
+ * this screen for the first time. Workload, hours awake and the body clock sit
+ * under it as a register — named, unboxed, and each carrying the instrument it
+ * was read off.
  */
 export function Vitals({ situation }: { situation: Situation }) {
   const score = situation.alertness_score;
@@ -62,88 +62,56 @@ export function Vitals({ situation }: { situation: Situation }) {
         </span>
       </div>
 
-      {/* Everything else, at the size it deserves. */}
-      <div className="mt-4 flex flex-wrap gap-2">
-        <MiniGauge
-          icon={<Gauge size={13} />}
-          value={situation.workload_score.toFixed(0)}
-          label="workload"
-          fraction={situation.workload_score / 100}
-          colour="var(--info)"
-          title={`NASA-TLX ${situation.workload_score.toFixed(1)}, ${situation.evidence.workload_band.replace(/_/g, " ")}`}
-        />
-        <MiniGauge
-          icon={<Clock3 size={13} />}
-          value={`${situation.evidence.hours_awake.toFixed(1)}h`}
-          label="awake"
-          fraction={Math.min(1, situation.evidence.hours_awake / 18)}
-          colour={situation.evidence.hours_awake > 12 ? "var(--warn)" : "var(--ok)"}
-          title={`Sleep debt ${situation.evidence.sleep_debt_h.toFixed(1)} hours`}
-        />
-        <MiniGauge
-          icon={<MoonStar size={13} />}
-          value={situation.circadian_flag ? "Trough" : "Clear"}
-          label="body clock"
-          fraction={situation.circadian_flag ? 1 : 0.18}
-          colour={situation.circadian_flag ? "var(--bad)" : "var(--ok)"}
-          title={`Karolinska sleepiness ${situation.evidence.kss.toFixed(1)}`}
-        />
-      </div>
-    </div>
-  );
-}
+      {/* Everything else, at the size it deserves.
 
-function MiniGauge({
-  icon,
-  value,
-  label,
-  fraction,
-  colour,
-  title,
-}: {
-  icon: React.ReactNode;
-  value: string;
-  label: string;
-  fraction: number;
-  colour: string;
-  title: string;
-}) {
-  const r = 12;
-  const c = 2 * Math.PI * r;
-  return (
-    <div
-      className="flex min-w-[112px] flex-1 items-center gap-2 rounded-[var(--radius-xs)] px-2.5 py-2"
-      style={{ background: "rgba(255,255,255,0.04)" }}
-      title={title}
-    >
-      <span className="relative inline-flex h-[30px] w-[30px] shrink-0 items-center justify-center">
-        <svg width="30" height="30" className="-rotate-90" aria-hidden>
-          <circle cx="15" cy="15" r={r} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="2.5" />
-          <circle
-            cx="15"
-            cy="15"
-            r={r}
-            fill="none"
-            stroke={colour}
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeDasharray={c}
-            strokeDashoffset={c * (1 - Math.max(0, Math.min(1, fraction)))}
-          />
-        </svg>
-        <span className="absolute" style={{ color: colour }}>
-          {icon}
-        </span>
-      </span>
-      <span className="min-w-0">
-        <span className="readout block truncate text-[14px] leading-none text-[var(--ink)]">
-          {value}
-        </span>
-        <span className="mt-1 block text-[11px] uppercase tracking-[0.12em] text-[var(--ink-3)]">
-          {label}
-        </span>
-      </span>
-      <span className="sr-only">{title}</span>
+          This was three filled boxes, each with a small ring gauge and an icon
+          inside it — nested panels of exactly the kind the unboxing pass took
+          the card count from 42 down to 3 to be rid of, and a ring apiece on
+          top.
+
+          Two of those rings were quantities divided by an arbitrary ceiling
+          (hours awake over an assumed 18) and the third was not a quantity at
+          all: "body clock clear" was drawn as 18% of a ring, a number that
+          exists nowhere in the engine and means nothing. Rendering an invented
+          figure as a gauge is the precise thing `lib/ask.ts` exists to prevent,
+          done in pixels instead of words.
+
+          So the ring goes and the provenance arrives. Each figure now names the
+          instrument it came off — NASA-TLX, the sleep debt behind the hours,
+          the Karolinska score behind the verdict — which had been sitting in a
+          `title` attribute all along, reachable by hover on a desktop and by
+          nothing at all on a touch screen. */}
+      <dl className="mt-5 flex flex-wrap gap-x-7 gap-y-4">
+        <Field
+          label="Workload"
+          note={`NASA-TLX · ${situation.evidence.workload_band.replace(/_/g, " ")}`}
+        >
+          <span className="readout text-[15px] text-[var(--ink)]">
+            {situation.workload_score.toFixed(0)}
+          </span>
+        </Field>
+        <Field
+          label="Awake"
+          note={`sleep debt ${situation.evidence.sleep_debt_h.toFixed(1)} h`}
+        >
+          <span
+            className="readout text-[15px]"
+            style={{
+              color: situation.evidence.hours_awake > 12 ? "var(--warn)" : "var(--ink)",
+            }}
+          >
+            {situation.evidence.hours_awake.toFixed(1)}h
+          </span>
+        </Field>
+        <Field label="Body clock" note={`KSS ${situation.evidence.kss.toFixed(1)}`}>
+          <span
+            className="text-[15px]"
+            style={{ color: situation.circadian_flag ? "var(--bad)" : "var(--ink)" }}
+          >
+            {situation.circadian_flag ? "In the trough" : "Clear"}
+          </span>
+        </Field>
+      </dl>
     </div>
   );
 }

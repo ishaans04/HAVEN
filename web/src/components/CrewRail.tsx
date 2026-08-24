@@ -2,7 +2,7 @@
 
 import { TrendingDown } from "lucide-react";
 import type { CrewReadiness } from "@/lib/types";
-import { Chip, Ring, toneOf } from "./ui";
+import { Chip, TONE_VAR, toneOf } from "./ui";
 
 /**
  * Zone 1 — Readiness Overview, reduced to what a scan needs.
@@ -12,9 +12,32 @@ import { Chip, Ring, toneOf } from "./ui";
  * was read. Thirty-odd figures, all at 10px, none of them the question being
  * asked at this altitude — which is only ever "who here is running low?"
  *
- * So the rail carries one dial per person and a word for the state. The rest of
- * it is intact and one click away, under "the numbers", where somebody who
- * wants the trailing sleep debt to one decimal place can have it.
+ * So the roster carries one reading per person. The rest is intact and one
+ * click away, under "the numbers", where somebody who wants the trailing sleep
+ * debt to one decimal place can have it.
+ *
+ * ## Why this stopped being a rail of dials
+ *
+ * It was six ring gauges on six rounded cards in a horizontal scroller, and
+ * both halves of that fought the one question the section exists to answer.
+ *
+ * **A ring cannot be compared to the ring beside it.** Judging "who is lowest"
+ * from six arcs means comparing angles across six separated circles, which is
+ * near the bottom of every ranking of how accurately people read a quantity.
+ * Length against a common baseline is at the top. The old docstring argued a
+ * dial "invites reading the state" — true of *one* dial, and the opposite of
+ * what a rail of six needs, which is precisely a comparison. Bars on one shared
+ * scale put the low operator in front of you before you have read a digit.
+ *
+ * **A scroller hides the answer.** Six operators at 186px each in a sidebar
+ * showed three. If the question is who is running low and the low one is
+ * off-screen, the component has failed at its only job — and nothing on screen
+ * says there is more to see. Every operator is now visible at once.
+ *
+ * The notch stays: it is the operator's own baseline, and it is the difference
+ * between a bar that reports a number and one that reports a departure. ".37"
+ * means nothing until you can see it sitting well inside where that person
+ * normally runs.
  */
 export function CrewRail({
   readiness,
@@ -26,60 +49,91 @@ export function CrewRail({
   onSelect: (crewId: string) => void;
 }) {
   return (
-    <div className="fade-x no-bar flex snap-x snap-proximity gap-2 overflow-x-auto px-1 pb-1">
+    <ul className="w-full">
       {readiness.map((crew) => {
         const active = crew.crew_member === selected;
         const tone = toneOf(crew.status);
+        const colour = TONE_VAR[tone];
+        const pct = (v: number) => `${Math.max(0, Math.min(1, v)) * 100}%`;
         return (
-          <button
-            key={crew.crew_member}
-            onClick={() => onSelect(crew.crew_member)}
-            aria-pressed={active}
-            className="selectable flex w-[186px] shrink-0 snap-start items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-left"
-          >
-            {/* The notch is the operator's own baseline. Without it the ring
-                reports a number; with it the ring reports a departure, which is
-                what the section claims to be showing. */}
-            <Ring
-              value={crew.alertness_score}
-              mark={crew.baseline_alertness}
-              tone={tone}
-              size={44}
+          <li key={crew.crew_member} className="border-b border-white/[0.055] last:border-b-0">
+            <button
+              onClick={() => onSelect(crew.crew_member)}
+              aria-pressed={active}
+              className="group flex w-full items-center gap-3 py-2 pl-3 pr-1 text-left transition-colors"
+              style={{
+                // Selection is weight, not hue — see the note on `.selectable`
+                // in globals.css. A rule down the left edge marks the chosen
+                // row the way a roster marks one, without a box around it.
+                background: active ? "rgba(255,255,255,0.055)" : undefined,
+                boxShadow: active ? "inset 2px 0 0 0 var(--ink-2)" : undefined,
+              }}
             >
-              <span className="readout text-[13px] text-[var(--ink)]">
-                {crew.alertness_score.toFixed(2).slice(1)}
-              </span>
-            </Ring>
-
-            {/* Two lines on every card, always. A third line that appears only
-                for the one operator who is declining knocks that card's rhythm
-                out of step with the five beside it — so the trend rides on the
-                role line as a glyph instead of taking a row of its own. */}
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[13px] font-medium tracking-[-0.005em] text-[var(--ink)]">
-                {crew.name}
-              </span>
-              <span className="mt-1 flex items-center gap-1.5">
-                <span className="truncate text-[11px] font-medium uppercase tracking-[0.11em] text-[var(--ink-3)]">
-                  {crew.role.replace(/_/g, " ")}
+              <span className="flex min-w-0 flex-[1.1] items-center gap-1.5">
+                <span className="truncate text-[13px] font-medium tracking-[-0.005em] text-[var(--ink)]">
+                  {crew.name}
                 </span>
                 {crew.trend === "declining" ? (
                   <TrendingDown size={12} aria-hidden className="shrink-0 text-[var(--bad)]" />
                 ) : null}
               </span>
-              {/* Ring colour carries the state visually and carries nothing at
-                  all to a screen reader. This is the same information in the
-                  channel that does not depend on seeing it. */}
+
+              {/* Shown at every width and allowed to truncate, rather than
+                  dropped below a breakpoint: the column this sits in is far
+                  narrower than the viewport, so a viewport media query hid the
+                  role on a row that had room to spare for it. */}
+              <span className="min-w-0 flex-1 truncate text-[11px] font-medium uppercase tracking-[0.11em] text-[var(--ink-3)]">
+                {crew.role.replace(/_/g, " ")}
+              </span>
+
+              {/* The reading, on a scale shared with every other row. Longer is
+                  strictly better here — the whole value of a common baseline is
+                  in how finely two rows can be told apart along it. */}
+              <span
+                aria-hidden
+                className="relative h-[5px] w-[72px] shrink-0 overflow-hidden rounded-full sm:w-[104px]"
+                style={{ background: "rgba(255,255,255,0.08)" }}
+              >
+                <span
+                  className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-700 ease-out"
+                  style={{
+                    width: pct(crew.alertness_score),
+                    background: colour,
+                    boxShadow: `0 0 10px -3px ${colour}`,
+                  }}
+                />
+                {/* The operator's own baseline, cut through rather than drawn
+                    over, so it reads as a graduation on the scale. */}
+                <span
+                  className="absolute top-0 h-full w-[1.5px]"
+                  style={{
+                    left: pct(crew.baseline_alertness),
+                    background: "var(--void-deep)",
+                    boxShadow: "0 0 0 0.5px rgba(255,255,255,0.35)",
+                  }}
+                />
+              </span>
+
+              <span
+                className="readout w-[34px] shrink-0 text-right text-[13px]"
+                style={{ color: colour }}
+              >
+                {crew.alertness_score.toFixed(2).slice(1)}
+              </span>
+
+              {/* Bar length and colour carry the state visually and carry
+                  nothing at all to a screen reader. This is the same
+                  information in the channel that does not depend on seeing it. */}
               <span className="sr-only">
                 alertness {crew.alertness_score.toFixed(2)}, baseline{" "}
                 {crew.baseline_alertness.toFixed(2)}, {crew.status}
                 {crew.trend === "declining" ? ", declining" : ""}
               </span>
-            </span>
-          </button>
+            </button>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }
 

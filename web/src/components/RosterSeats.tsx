@@ -2,7 +2,7 @@
 
 import clsx from "clsx";
 import type { CrewReadiness, ScheduleImpact } from "@/lib/types";
-import { Ring, toneOf } from "./ui";
+import { TONE_VAR, toneOf } from "./ui";
 
 const DESIGNATOR: Record<string, string> = {
   commander: "CDR",
@@ -60,17 +60,20 @@ export function RosterSeats({
                 : "inset 0 0 0 1px rgba(255,255,255,0.05)",
             }}
           >
-            <span className="mx-auto flex justify-center">
-              <Ring
-                value={crew.alertness_score}
-                tone={isSubject ? "bad" : toneOf(crew.status)}
-                size={38}
-                stroke={3}
-              >
-                <span className="readout text-[11px] text-[var(--ink)]">
-                  {crew.alertness_score.toFixed(2).slice(1)}
-                </span>
-              </Ring>
+            {/* The figure, plainly. It used to be wrapped in a ring gauge, and
+                the ring was doing no work here: this operator's alertness is
+                already drawn on a shared scale in the roster above, and the
+                question this block answers is not how alert anybody is but
+                whether the seats still cover the job. A gauge repeating a
+                number from another section, in the section where it is not the
+                point, is decoration — so the number stays and the ring goes,
+                which leaves the state line below as the loudest thing in the
+                seat, where the answer actually is. */}
+            <span
+              className="readout block text-[17px] leading-none"
+              style={{ color: TONE_VAR[isSubject ? "bad" : toneOf(crew.status)] }}
+            >
+              {crew.alertness_score.toFixed(2).slice(1)}
             </span>
             <div className="mt-2 truncate text-[12px] text-[var(--ink)]">{crew.name}</div>
             <div className="mono mt-1 text-[11px] uppercase tracking-[0.1em] text-[var(--ink-3)]">
