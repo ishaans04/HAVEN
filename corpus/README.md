@@ -4,6 +4,9 @@ The rulebook HAVEN reasons over. Either the hand-authored corpus in
 `haven/rag/corpus.py`, or an artefact compiled from the real NASA documents
 named in `sources.json`.
 
+*Part of [HAVEN](../README.md). See [`EXTRACTION.md`](EXTRACTION.md) for what
+each document actually yielded.*
+
 ## The documents
 
 Six, all cleared by NASA for public release, all version-verified against their
@@ -58,6 +61,21 @@ carrying a real citation to a real NASA document an operator can look up, where
 the sentence cited says *should*. An uncited guess would be safer, because it
 does not check out.
 
+```mermaid
+flowchart LR
+    A["📕 <b>authoritative</b><br/>NASA-STD-3001<br/><i>shall</i>"] --> P{"may ground<br/>an action?"}
+    G["📗 <b>guidance</b><br/>HIDH<br/><i>should</i>"] --> P
+    R["📘 <b>research</b><br/>NTRS papers<br/><i>was measured</i>"] --> P
+    T["📙 <b>prototype</b><br/>hand-authored<br/>stands in for a flight rule"] --> P
+    P -->|"yes"| YES(["cited in a recommendation"])
+    P -->|"no"| NO(["retrievable · readable · never binding"])
+
+    style A fill:#0F62FE,color:#fff
+    style T fill:#0F62FE,color:#fff
+    style P fill:#1C3C3C,color:#fff
+    style NO fill:#f4f4f4
+```
+
 So `authority` is a field on every passage, carried from the registry, never
 proposed by a model, and enforced at two independent points:
 
@@ -108,7 +126,7 @@ uv run python -m compiler.cli propose --out corpus/review.json --provider ollama
 uv run python -m compiler.cli emit --review corpus/review.json \
     --sources corpus/sources.json --version 2026.08 --out corpus/compiled
 
-HAVEN_CORPUS=corpus/compiled/corpus-2026.08.json uv run uvicorn haven.api.main:app
+HAVEN_CORPUS=corpus/compiled/corpus-2026.08.json \n    uv run --no-sync python -m scripts.run_haven
 ```
 
 The PDFs are gitignored — they are redistributable only from their publishers —

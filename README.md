@@ -327,6 +327,12 @@ flowchart LR
     style RRF fill:#6E4AFF,color:#fff
 ```
 
+In `eva_near_miss` the near-miss passage retrieves at **0.984 against the
+governing rule's 0.968** — retrieval ranks the wrong passage *first*, and the
+system cites the right one anyway. That is the case the architecture exists for,
+and it is why ADMISSIBILITY does not filter: a pipeline that dropped the
+near-miss would have deleted the problem instead of solving it.
+
 **BM25 alone is the offline terminal** — no download, no service, no network.
 Dense retrieval adds Chroma with fastembed ONNX embeddings (~50 MB, deliberately
 not sentence-transformers/PyTorch at ~2 GB) and is opt-in via
@@ -378,7 +384,7 @@ same engine over different inputs — nothing is bypassed or replayed.
 | Scenario | What it demonstrates |
 |---|---|
 | **burn_fatigue** | The core case. Chronic sleep restriction before a reboost burn → cited second-operator verification, staffed. |
-| **eva_near_miss** | **Discrimination.** A near-miss retrieves at 0.708 against the governing rule's 0.715 — near-tied on similarity — and is rejected on its preconditions. |
+| **eva_near_miss** | **Discrimination.** The near-miss P-SLP-2.1 retrieves at 0.984, *above* the governing rule's 0.968 — retrieval ranks it first and the system still cites P-FAT-4.4. |
 | **no_procedure** | **Refusal.** Nothing governs fatigue during a medical contingency. The system escalates rather than reaching for the nearest plausible rule. |
 | **roster_block** | A deterministic screen vetoing a well-formed AI recommendation, then regenerating the text for the fallback the same passage prescribes. |
 | **circadian_trap** | An 03:20 capture that passes a sleep-totals check and fails on circadian phase and sleep inertia. |
