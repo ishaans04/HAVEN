@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useMotionOK } from "@/lib/motion";
+import { ISS } from "@/lib/iss";
 
 /**
  * The ISS, in silhouette.
@@ -540,9 +541,19 @@ export function Earth({
        moves; the orbit keeps its true ratio to that day, so the station still
        makes ~15.5 revolutions per rotation and the sunrise count stays real. */
     const DAY = 96;
-    const ORBITS_PER_DAY = 86400 / 5580; // ISS: ~92.9 min period
-    const INCLINATION = (51.64 * Math.PI) / 180;
-    const ALT = 1.062; // 420 km above a 6371 km radius
+    // Every one of these is read out of a real Celestrak element set for ISS
+    // (ZARYA) rather than typed in -- see `lib/iss.ts`. They used to be an
+    // inclination rounded to 51.64, a period rounded to 5580 seconds, and an
+    // altitude ratio of 1.062 annotated "420 km" that actually worked out to
+    // 395. Close enough to look right, and asserted rather than produced.
+    //
+    // From the shipped TLE: 51.6332 degrees, 15.49604681 revolutions a day, a
+    // 92.93 minute period and a mean altitude of 417.9 km. The eccentricity is
+    // 0.0007699, which spreads perigee and apogee by about ten kilometres on a
+    // 6,796 km radius -- roughly a pixel here, so the circle stays a circle.
+    const ORBITS_PER_DAY = ISS.revsPerDay;
+    const INCLINATION = ISS.inclinationRad;
+    const ALT = ISS.radiusRatio;
 
     const sim = {
       t: 0,
@@ -875,6 +886,12 @@ export function Earth({
         sun: { x: +sim.sun.x.toFixed(4), y: +sim.sun.y.toFixed(4), z: +sim.sun.z.toFixed(4) },
         altitude: +Math.hypot(sim.station.x, sim.station.y, sim.station.z).toFixed(4),
         orbitsPerDay: +ORBITS_PER_DAY.toFixed(3),
+        tle: {
+          epoch: ISS.epoch.toISOString(),
+          inclinationDeg: ISS.inclinationDeg,
+          altitudeKm: +ISS.altitudeKm.toFixed(1),
+          periodMinutes: +ISS.periodMinutes.toFixed(3),
+        },
         textured: texturesReady,
         pixels: { W, H, cx, cy, radius: +radius.toFixed(1) },
       }),
