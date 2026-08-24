@@ -284,26 +284,50 @@ export function OrbitDial({
    * projected path points.
    */
   const [scrub, setScrub] = useState<number | null>(null);
+  /** The hour the reader has dragged the flagged task to, as a what-if. */
+  const [proposed, setProposed] = useState<number | null>(null);
+  const taskDrag = useRef<{ id: number | null }>({ id: null });
 
-  const updateScrub = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!finePointer) return;
+  /**
+   * The hour under the pointer.
+   *
+   * `inBandOnly` is the difference between reading and moving: a reading taken
+   * off the ring must actually be on it, whereas a task being dragged keeps
+   * following the pointer even when it strays outside, because letting the mark
+   * stick at the last good angle feels broken.
+   */
+  const hourFromPointer = (
+    event: React.PointerEvent<HTMLDivElement>,
+    inBandOnly: boolean,
+  ): number | null => {
     const rect = event.currentTarget.getBoundingClientRect();
-    if (!rect.width) return;
+    if (!rect.width) return null;
     const scale = SIZE / rect.width;
     const px0 = (event.clientX - rect.left) * scale - C;
     const py0 = (event.clientY - rect.top) * scale - C;
-    // Outside the band the reading would be invented, so there is not one.
-    const radial = Math.hypot(px0, py0 / Math.sin(tilt));
-    if (radial < AURORA_IN - 34 || radial > LABEL_R + 18) {
-      setScrub(null);
-      return;
+    if (inBandOnly) {
+      const radial = Math.hypot(px0, py0 / Math.sin(tilt));
+      if (radial < AURORA_IN - 34 || radial > LABEL_R + 18) return null;
     }
     const angle = Math.atan2(py0 / Math.sin(tilt), px0);
-    const hour = (((angle + Math.PI / 2) / TAU) * 24 + 24) % 24;
-    setScrub(Math.round(hour * 10) / 10);
+    return (((angle + Math.PI / 2) / TAU) * 24 + 24) % 24;
+  };
+
+  const updateScrub = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!finePointer) return;
+    // Outside the band the reading would be invented, so there is not one.
+    const hour = hourFromPointer(event, true);
+    setScrub(hour === null ? null : Math.round(hour * 10) / 10);
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    // A task being dragged owns the gesture: neither the camera nor the
+    // reading under the pointer should move while it does.
+    if (taskDrag.current.id === event.pointerId) {
+      const hour = hourFromPointer(event, false);
+      if (hour !== null) setProposed(Math.round(hour * 10) / 10);
+      return;
+    }
     const state = drag.current;
     if (state.id !== event.pointerId) {
       updateScrub(event);
@@ -337,6 +361,17 @@ export function OrbitDial({
   };
 
   const endDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (taskDrag.current.id === event.pointerId) {
+      taskDrag.current = { id: null };
+      // The proposal stays on screen after release. Dropping it back the
+      // instant you let go would make the whole gesture unreadable — you would
+      // never see the answer you dragged for.
+      dragged.current = true;
+      window.setTimeout(() => {
+        dragged.current = false;
+      }, 0);
+      return;
+    }
     const state = drag.current;
     if (state.id !== event.pointerId) return;
     if (state.moved) {
@@ -679,13 +714,50 @@ export function OrbitDial({
         {/* Tasks, at their hour and at the curve's radius. Never occluded — see
             the header. Depth is carried by size and opacity alone, so the mark
             still plots exactly where its score says it does. */}
+        {/* Where the flagged task really is, while a proposal is being tried
+            against another hour. Without it the reader loses the anchor the
+            comparison is against. */}
+        {proposed !== null && flagged
+          ? (() => {
+              const gh = hoursSince(windowStart, flagged.scheduled);
+              const gp = project(gh, radiusFor(flagged.predicted_alertness), tilt);
+              return (
+                <g pointerEvents="none" opacity={0.42}>
+                  <circle
+                    cx={gp.x}
+                    cy={gp.y}
+                    r={px(5.5)}
+                    fill="none"
+                    stroke="var(--ink-3)"
+                    strokeWidth={px(1.6)}
+                    strokeDasharray="2 3"
+                  />
+                </g>
+              );
+            })()
+          : null}
+
         {mine.map((task) => {
-          const h = hoursSince(windowStart, task.scheduled);
-          const p = project(h, radiusFor(task.predicted_alertness), tilt);
+          const isSubject = !!flagged && flagged.task_id === task.task_id;
+          const moved = isSubject && proposed !== null;
+          const realHour = hoursSince(windowStart, task.scheduled);
+          // A proposed task is plotted against the curve's own value at the
+          // hour it was dragged to — the engine's published reading, not a new
+          // one invented here.
+          const h = moved ? (proposed as number) : realHour;
+          const score = moved
+            ? (scoreAt(proposed as number) ?? task.predicted_alertness)
+            : task.predicted_alertness;
+          const p = project(h, radiusFor(score), tilt);
           const tone = task.raises_situation ? toneOf(task.risk_level) : "ok";
-          const color = TONE_VAR[tone];
+          const color = moved
+            ? score >= THRESHOLD
+              ? "var(--ok)"
+              : "var(--warn)"
+            : TONE_VAR[tone];
           const selected = !!task.situation_id && task.situation_id === selectedSituation;
           const clickable = !!task.situation_id;
+          const draggable = isSubject && finePointer;
           // A sixth either way across the ring: enough to read as depth, not
           // enough to be mistaken for a difference in the reading.
           const depth = 1 + p.depth * 0.16;
@@ -695,9 +767,24 @@ export function OrbitDial({
               key={task.task_id}
               role={clickable ? "button" : undefined}
               tabIndex={clickable ? 0 : undefined}
-              aria-label={`${task.label} at ${utcTime(task.scheduled)}, predicted alertness ${task.predicted_alertness.toFixed(2)}, ${task.criticality} criticality`}
-              className={clsx(clickable ? "cursor-pointer" : "cursor-default")}
+              aria-label={`${task.label} at ${utcTime(task.scheduled)}, predicted alertness ${task.predicted_alertness.toFixed(2)}, ${task.criticality} criticality${draggable ? ". Drag around the dial to try it at another hour." : ""}`}
+              className={clsx(
+                draggable ? "cursor-grab" : clickable ? "cursor-pointer" : "cursor-default",
+              )}
               opacity={behind ? 0.5 : 1}
+              onPointerDown={(event) => {
+                if (!draggable) return;
+                // Claim the gesture before the wrapper reads it as a camera move.
+                event.stopPropagation();
+                taskDrag.current = { id: event.pointerId };
+                setScrub(null);
+                setProposed(realHour);
+                try {
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                } catch {
+                  /* no active pointer — the wrapper still sees the moves */
+                }
+              }}
               onClick={() => {
                 if (dragged.current) return;
                 if (clickable) onSelectSituation(task.situation_id as string);
@@ -817,7 +904,54 @@ export function OrbitDial({
                 "radial-gradient(closest-side, color-mix(in oklab, var(--void-deep) 90%, transparent) 52%, transparent 100%)",
             }}
           />
-          {flagged ? (
+          {proposed !== null && flagged ? (
+            /* The what-if.
+
+               Fatigue means nothing except against what happens next, which the
+               page has been asserting in prose and could not let anybody test.
+               Dragging the flagged task round the clock answers it against the
+               engine's own published curve and the same 0.70 line the dial
+               already draws.
+
+               It is scrupulously labelled as a projection. Nothing here asked
+               the engine to re-evaluate: the rules, the roster and the checker
+               all ran against the real scheduled time, and a reader who came
+               away thinking the console had re-decided the case would have
+               learned something false. */
+            (() => {
+              const score = scoreAt(proposed) ?? 0;
+              const clears = score >= THRESHOLD;
+              const colour = clears ? "var(--ok)" : "var(--warn)";
+              return (
+                <>
+                  <div className="label text-[11px] text-[var(--ink-3)]">Proposed</div>
+                  <div
+                    className="readout mt-1 leading-none"
+                    style={{ fontSize: Math.max(21, Math.min(30, width * 0.058)), color: colour }}
+                  >
+                    {clockAt(proposed)}
+                  </div>
+                  <div className="readout mt-1.5 text-[13px] text-[var(--ink-2)]">
+                    {score.toFixed(2)} predicted
+                  </div>
+                  <div className="label mt-1.5" style={{ color: colour }}>
+                    {clears ? "clears the line" : "still below the line"}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setProposed(null)}
+                    className="pointer-events-auto mt-3 rounded-full px-2.5 py-1 text-[11px] text-[var(--ink-2)] transition-colors hover:text-[var(--ink)]"
+                    style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.16)" }}
+                  >
+                    Put it back
+                  </button>
+                  <div className="mt-2 text-[11px] leading-snug text-[var(--ink-3)]">
+                    A projection. HAVEN has not re-evaluated this.
+                  </div>
+                </>
+              );
+            })()
+          ) : flagged ? (
             <>
               <div className="label text-[11px] text-[var(--ink-3)]">
                 {flagged.raises_situation ? "Flagged task" : "Next task"}
