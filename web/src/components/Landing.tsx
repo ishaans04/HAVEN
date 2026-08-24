@@ -8,6 +8,7 @@ import { useParallax } from "@/lib/motion";
 import { fetchAudit, fetchEvaluation } from "@/lib/api";
 import { Counterfactual, verdictFromAudit, type Verdict } from "./Counterfactual";
 import { Earth } from "./Earth";
+import { Suit } from "./Suit";
 import { AlertnessGap, HardLine, LayerStack, PipelineRail } from "./LandingVisuals";
 import { StarField } from "./StarField";
 import { Chip, GlassCard, Label, Reveal } from "./ui";
@@ -234,13 +235,32 @@ function Problem() {
         </GlassCard>
       </Reveal>
 
-      <div className="mt-7 grid gap-x-8 gap-y-6 md:grid-cols-3">
-        {PROBLEMS.map(([title, body], i) => (
-          <Reveal key={title} delay={i * 80} className="divide-top pt-4">
-            <h3 className="text-[15px] font-medium leading-snug text-[var(--ink)]">{title}</h3>
-            <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-3)]">{body}</p>
-          </Reveal>
-        ))}
+      <div className="mt-7 grid gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-center">
+        <div className="grid gap-x-8 gap-y-6 md:grid-cols-3">
+          {PROBLEMS.map(([title, body], i) => (
+            <Reveal key={title} delay={i * 80} className="divide-top pt-4">
+              <h3 className="text-[15px] font-medium leading-snug text-[var(--ink)]">{title}</h3>
+              <p className="mt-2 text-[13px] leading-relaxed text-[var(--ink-3)]">{body}</p>
+            </Reveal>
+          ))}
+        </div>
+
+        {/* The subject. Every other visual on this page is a planet or a
+            chart, and the thing the product actually reasons about is a
+            person — so the section that says a tired brain does not feel
+            broken finally has a body next to it.
+
+            Imagery, and labelled as imagery: nothing about it is derived from
+            crew data. It is the same rule the dial's planet was dimmed under,
+            applied honestly rather than dressed up. */}
+        <Reveal delay={240} className="hidden lg:block">
+          <figure className="relative">
+            <Suit className="h-[380px] w-full" />
+            <figcaption className="mt-2 text-center text-[11px] leading-snug text-[var(--ink-3)]">
+              NASA Advanced Crew Escape Suit · public domain
+            </figcaption>
+          </figure>
+        </Reveal>
       </div>
     </Section>
   );
