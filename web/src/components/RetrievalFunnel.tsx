@@ -32,6 +32,14 @@ interface Lane {
   why: string | null;
 }
 
+/** Trim to a whole word. Cutting mid-word reads as a rendering fault. */
+function clip(text: string, max: number) {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`;
+}
+
 const W = 720;
 const LANE_GAP = 46;
 const TOP = 40;
@@ -51,8 +59,10 @@ export function RetrievalFunnel({
 
   const height = TOP + lanes.length * LANE_GAP + 34;
   const survivorIndex = lanes.findIndex((l) => l.admissible);
-  const exitY = height / 2 + 6;
   const laneY = (i: number) => TOP + i * LANE_GAP;
+  // Level with whichever lane survived, so the citation cannot read as
+  // belonging to a passage that was rejected.
+  const exitY = survivorIndex >= 0 ? laneY(survivorIndex) : height / 2 + 6;
 
   return (
     <div className={className}>
@@ -137,7 +147,7 @@ export function RetrievalFunnel({
               return (
                 <path
                   key={lane.passageId}
-                  d={`M ${LEFT} ${y} L ${GATE_X} ${y} C ${GATE_X + 96} ${y} ${GATE_X + 118} ${exitY} ${W - 130} ${exitY} L ${W - 26} ${exitY}`}
+                  d={`M ${LEFT} ${y} L ${GATE_X} ${y} C ${GATE_X + 96} ${y} ${GATE_X + 118} ${exitY} ${W - 130} ${exitY} L ${W - 44} ${exitY}`}
                   fill="none"
                   stroke="url(#fn-pass)"
                   strokeWidth="3"
@@ -146,11 +156,11 @@ export function RetrievalFunnel({
               );
             }
             // Rejected lanes peel away downward and fade out.
-            const drop = 20 + i * 6;
+            const drop = 16 + i * 4;
             return (
               <path
                 key={lane.passageId}
-                d={`M ${LEFT} ${y} L ${GATE_X} ${y} C ${GATE_X + 54} ${y} ${GATE_X + 70} ${y + drop * 0.6} ${GATE_X + 104} ${y + drop}`}
+                d={`M ${LEFT} ${y} L ${GATE_X} ${y} C ${GATE_X + 26} ${y} ${GATE_X + 34} ${y + drop * 0.6} ${GATE_X + 46} ${y + drop}`}
                 fill="none"
                 stroke="url(#fn-rej)"
                 strokeWidth="2.2"
@@ -192,13 +202,8 @@ export function RetrievalFunnel({
                   {lane.met}/{lane.total}
                 </text>
                 {!lane.admissible && lane.why ? (
-                  <text
-                    x={GATE_X + 112}
-                    y={y + 20 + i * 6}
-                    fill="var(--ink-3)"
-                    fontSize="11"
-                  >
-                    {lane.why.length > 46 ? `${lane.why.slice(0, 44)}…` : lane.why}
+                  <text x={GATE_X + 52} y={y - 9} fill="var(--ink-3)" fontSize="11">
+                    {clip(lane.why, 70)}
                   </text>
                 ) : null}
               </g>
