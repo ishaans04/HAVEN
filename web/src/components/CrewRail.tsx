@@ -2,6 +2,7 @@
 
 import { TrendingDown } from "lucide-react";
 import type { CrewReadiness } from "@/lib/types";
+import { signal } from "@/lib/coach";
 import { Chip, TONE_VAR, toneOf } from "./ui";
 
 /**
@@ -58,7 +59,10 @@ export function CrewRail({
         return (
           <li key={crew.crew_member} className="border-b border-white/[0.055] last:border-b-0">
             <button
-              onClick={() => onSelect(crew.crew_member)}
+              onClick={() => {
+                onSelect(crew.crew_member);
+                signal("crew");
+              }}
               aria-pressed={active}
               className="group flex w-full items-center gap-3 py-2 pl-3 pr-1 text-left transition-colors"
               style={{

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { ChevronDown, X } from "lucide-react";
 import { useFinePointer, useMotionOK, useReveal } from "@/lib/motion";
+import { signal } from "@/lib/coach";
 
 /* --------------------------------------------------------------------------
    Tone
@@ -447,7 +448,14 @@ export function Disclosure({
   return (
     <div>
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          // Announced from the handler, never from inside the updater: a
+          // state updater has to stay pure, and signalling in there fires a
+          // setState on the tour in the middle of this component's own
+          // update, which React is free to drop.
+          if (!open) signal("evidence");
+          setOpen((v) => !v);
+        }}
         aria-expanded={open}
         aria-controls={id}
         className="disclosure"

@@ -5,6 +5,7 @@ import clsx from "clsx";
 import type { CrewReadiness, TimelineTask } from "@/lib/types";
 import { useFinePointer, useMotionOK } from "@/lib/motion";
 import { useElementWidth } from "@/lib/useElementWidth";
+import { signal } from "@/lib/coach";
 import { Earth } from "./Earth";
 import { TONE_VAR, hoursSince, toneOf, utcTime } from "./ui";
 
@@ -73,7 +74,7 @@ const AURORA_IN = 132;
 const AURORA_OUT = 188;
 const BAND_R = 198;
 const LABEL_R = 214;
-const PLANET_R = 112;
+const PLANET_R = 102;
 const THRESHOLD = 0.7;
 
 /**
@@ -317,7 +318,14 @@ export function OrbitDial({
     if (!finePointer) return;
     // Outside the band the reading would be invented, so there is not one.
     const hour = hourFromPointer(event, true);
-    setScrub(hour === null ? null : Math.round(hour * 10) / 10);
+    const at = hour === null ? null : Math.round(hour * 10) / 10;
+    setScrub(at);
+    // Finding the trough is the tour's second ask, and this is the only place
+    // that knows it has been found.
+    if (at !== null) {
+      const reading = scoreAt(at);
+      if (reading !== null && reading < THRESHOLD) signal("trough");
+    }
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -325,7 +333,13 @@ export function OrbitDial({
     // reading under the pointer should move while it does.
     if (taskDrag.current.id === event.pointerId) {
       const hour = hourFromPointer(event, false);
-      if (hour !== null) setProposed(Math.round(hour * 10) / 10);
+      if (hour !== null) {
+        const at = Math.round(hour * 10) / 10;
+        setProposed(at);
+        // The tour's third ask: moved somewhere it would actually clear.
+        const reading = scoreAt(at);
+        if (reading !== null && reading >= THRESHOLD) signal("cleared");
+      }
       return;
     }
     const state = drag.current;
@@ -571,7 +585,15 @@ export function OrbitDial({
       {/* The planet, in its own square box centred on the dial. Real, lit, and
           turning — and dimmed, because on the landing the planet is the subject
           and here it is the thing the window goes round. Its own orbit track is
-          off: this dial is the orbit. */}
+          off: this dial is the orbit.
+
+          Deliberately the room rather than a readout, and dimmed until it
+          reads that way. It carries no data -- the ring does. The honest way
+          to make it carry some, marking the ~16 terminator crossings a crew
+          in low orbit actually sees in a day, is not available here: the API
+          does not publish the orbital phase, and evenly spaced ticks would
+          assert a schedule nobody computed. Better an admitted backdrop than
+          an invented instrument. */}
       <div
         className="pointer-events-none absolute z-0"
         style={{
@@ -582,7 +604,7 @@ export function OrbitDial({
         }}
       >
         <Earth
-          className="absolute inset-0 opacity-[0.62]"
+          className="absolute inset-0 opacity-[0.4]"
           placement={{ cx: 0.5, cy: 0.5, r: PLANET_R / GLOBE_BOX }}
           orbit={false}
           handleKey="__havenDialEarth"
