@@ -2,6 +2,17 @@
 name = "haven"
 version = "2.0.0.dev0"
 description = "Human Adaptation & Vitality Enhancement Network — a fatigue-aware safety co-pilot"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = ["spaceflight", "crew-fatigue", "rag", "langgraph", "watsonx", "decision-support"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
 # Upper bound is deliberate: 3.12-3.14 are verified to have wheels for the whole
 # tree (including onnxruntime via fastembed). Without a cap, uv resolves against
 # unreleased versions and fails on packages that do not claim them yet.
