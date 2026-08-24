@@ -673,6 +673,56 @@ html.js .reveal-in {
   animation: sweep 1.5s ease-in-out infinite;
 }
 
+/* ------------------------------------------------------------------------
+   The overrule
+
+   The one sequence on the page that is allowed to be theatre, because the
+   thing it is staging is the product's whole argument: a passage the retrieval
+   tier scored perfectly, thrown out by a checker that does not care how good
+   the wording was.
+
+   These are CSS animations rather than anything driven by rAF on purpose. §8:
+   requestAnimationFrame runs at a fraction of a hertz in a backgrounded tab,
+   which would leave this sitting unplayed exactly when somebody is looking at
+   it on a second monitor. CSS keyframes run off their own timeline and are not
+   throttled.
+
+   Every one uses `both` fill mode, which is what makes the reduced-motion
+   reset below safe: with the duration forced to ~0 the element lands on its
+   finished state instead of being stranded at `from`.
+   ------------------------------------------------------------------------ */
+@keyframes overrule-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes overrule-pip {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+@keyframes overrule-strike {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes overrule-stamp {
+  from {
+    opacity: 0;
+    transform: scale(1.75) rotate(-7deg);
+  }
+  55% {
+    opacity: 1;
+  }
+}
+@keyframes overrule-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
