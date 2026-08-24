@@ -137,8 +137,8 @@ function Hero() {
           <Reveal delay={180}>
             <p className="mt-7 max-w-lg text-[17px] leading-relaxed text-[var(--ink-2)]">
               A tired crew member and an irreversible task are about to meet. HAVEN sees the
-              collision coming, cites the rule that governs it, and hands a human the decision.
-              When no rule fits, it says so instead of guessing.
+              collision coming, cites the rule that governs it, and hands a person the
+              decision. When no rule fits, it says so.
             </p>
           </Reveal>
 
@@ -205,15 +205,15 @@ function Hero() {
 const PROBLEMS: [string, string][] = [
   [
     "You cannot self-report it",
-    "A tired brain does not feel broken. The gap above is invisible from the inside, which makes self-assessment the one instrument here you cannot trust.",
+    "The gap above is invisible from the inside. It is the one instrument here you cannot trust.",
   ],
   [
     "Your best operators under-report the most",
-    "Astronauts are trained to push through, and they trained for years to be on this task. “Are you too tired for this?” is the question they will answer least honestly.",
+    "They trained for years to be on this task. It is the question they will answer least honestly.",
   ],
   [
     "A tiredness number on its own is noise",
-    "Being tired during a rest period is fine. Being tired forty minutes before an engine burn is not. Fatigue means nothing except against what happens next.",
+    "Tired during a rest period is fine. Tired forty minutes before an engine burn is not.",
   ],
 ];
 
@@ -223,7 +223,7 @@ function Problem() {
       id="how"
       label="The problem"
       title="A tired brain does not feel broken"
-      lead="Reaction time and judgement fall away hours before anybody notices. This is one crew member across one day, under the same model the engine runs."
+      lead="It falls away hours before anybody notices. One crew member across one day, under the same model the engine runs."
     >
       <Reveal>
         <GlassCard className="p-5 sm:p-7">
@@ -265,7 +265,7 @@ function GoldenRule() {
     <Section
       label="The golden rule"
       title="The AI never produces a safety number"
-      lead="Language models state wrong numbers with total confidence. So the numbers and the words are produced on opposite sides of a line, and the line is enforced in code rather than asked for in a prompt."
+      lead="Language models state wrong numbers with total confidence. So the line below is enforced in code, not asked for in a prompt."
     >
       <Reveal>
         <GlassCard className="p-5 sm:p-7">
@@ -297,7 +297,7 @@ function Pipeline() {
     <Section
       label="The pipeline"
       title="Five steps. A person takes the last one."
-      lead="Nothing in this sequence acts on the crew. It watches, calculates, reads the mission’s own rulebook, checks its own suggestion for side effects, and then stops."
+      lead="Nothing in this sequence acts on the crew. It stops at a person."
     >
       <Reveal>
         <GlassCard className="p-5 sm:p-7">
@@ -321,7 +321,7 @@ function Layout() {
     <Section
       label="The console"
       title="Read it in three layers"
-      lead="Somebody seeing it for the first time gets the answer without opening anything. Somebody auditing the decision can reach every condition behind it."
+      lead="The first read gives you the answer. The audit gives you every condition behind it."
     >
       <div className="grid gap-7 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
         <Reveal>
@@ -384,7 +384,7 @@ function Honesty() {
     <Section
       label="Real vs simulated"
       title="What is real here, and what is not"
-      lead="This is a system whose central claim is that it flags risk honestly rather than asserting false certainty. It would be a strange thing to describe dishonestly, so here is the register."
+      lead="A system that claims to flag risk honestly would be a strange thing to describe dishonestly. So here is the register."
     >
       <Reveal>
         <GlassCard className="overflow-hidden">

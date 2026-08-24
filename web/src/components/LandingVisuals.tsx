@@ -167,9 +167,8 @@ export function AlertnessGap({ className }: { className?: string }) {
         <text x={12} y={y(0.2) + 4} fontSize="11" className="mono" fill="var(--ink-3)">0.2</text>
       </svg>
       <figcaption className="mt-3 text-[13px] leading-relaxed text-[var(--ink-3)]">
-        Awake since 06:00. The shaded wedge is the distance between how alert somebody is and how
-        alert they believe they are — widest in the small hours, which is exactly when a schedule
-        that has slipped puts the hardest task in front of them.
+        Awake since 06:00. The wedge is what they cannot feel — widest in the small hours, exactly
+        when a slipped schedule puts the hardest task in front of them.
       </figcaption>
     </figure>
   );
