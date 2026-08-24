@@ -339,6 +339,17 @@ export function Earth({
   onSunrise,
   /** Fires the first time somebody actually grabs it. */
   onGrab,
+  /**
+   * Where the verification handle is published on `window`.
+   *
+   * A page may hold more than one planet — the console has the horizon in
+   * `Scene` and a second sphere at the centre of the dial — and a single
+   * hard-coded global meant the second instance to mount silently replaced the
+   * first one's handle. Since stepping the simulation by hand is the only
+   * honest way to assert any of this moves (rAF is throttled to a fraction of
+   * a hertz in a background tab), losing a handle loses the ability to check.
+   */
+  handleKey = "__havenEarth",
 }: {
   className?: string;
   placement: Placement;
@@ -347,6 +358,7 @@ export function Earth({
   spinBias?: number;
   onSunrise?: (count: number) => void;
   onGrab?: () => void;
+  handleKey?: string;
 }) {
   const glCanvas = useRef<HTMLCanvasElement>(null);
   const overlay = useRef<HTMLCanvasElement>(null);
@@ -867,7 +879,7 @@ export function Earth({
         pixels: { W, H, cx, cy, radius: +radius.toFixed(1) },
       }),
     };
-    (window as unknown as Record<string, unknown>).__havenEarth = handle;
+    (window as unknown as Record<string, unknown>)[handleKey] = handle;
 
     return () => {
       running = false;
@@ -882,9 +894,9 @@ export function Earth({
       gl.deleteTexture(texDay);
       gl.deleteTexture(texNight);
       gl.deleteTexture(texClouds);
-      delete (window as unknown as Record<string, unknown>).__havenEarth;
+      delete (window as unknown as Record<string, unknown>)[handleKey];
     };
-  }, [placement.cx, placement.cy, placement.r, placement.topAt, orbit, interactive, motionOK]);
+  }, [placement.cx, placement.cy, placement.r, placement.topAt, orbit, interactive, motionOK, handleKey]);
 
   return (
     <div className={className} aria-hidden>
