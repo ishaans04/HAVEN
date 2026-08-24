@@ -270,13 +270,54 @@ export function OrbitDial({
     drag.current = { id: event.pointerId, y: event.clientY, moved: false };
   };
 
+  /**
+   * Where the pointer is on the ring, in hours — or null when it is nowhere
+   * near it.
+   *
+   * The inverse of `project` is simpler than it looks: undo the vertical
+   * foreshortening and the angle falls straight out of `atan2`, independent of
+   * radius, so a point anywhere along a spoke maps to the same hour.
+   *
+   * Quantised to six minutes. A dial this size cannot resolve finer, and it
+   * turns a continuous stream of pointer events into at most 240 distinct
+   * states — which matters because every change re-renders a few thousand
+   * projected path points.
+   */
+  const [scrub, setScrub] = useState<number | null>(null);
+
+  const updateScrub = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!finePointer) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (!rect.width) return;
+    const scale = SIZE / rect.width;
+    const px0 = (event.clientX - rect.left) * scale - C;
+    const py0 = (event.clientY - rect.top) * scale - C;
+    // Outside the band the reading would be invented, so there is not one.
+    const radial = Math.hypot(px0, py0 / Math.sin(tilt));
+    if (radial < AURORA_IN - 34 || radial > LABEL_R + 18) {
+      setScrub(null);
+      return;
+    }
+    const angle = Math.atan2(py0 / Math.sin(tilt), px0);
+    const hour = (((angle + Math.PI / 2) / TAU) * 24 + 24) % 24;
+    setScrub(Math.round(hour * 10) / 10);
+  };
+
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const state = drag.current;
-    if (state.id !== event.pointerId) return;
+    if (state.id !== event.pointerId) {
+      updateScrub(event);
+      return;
+    }
     const dy = event.clientY - state.y;
     // A few pixels of slop, so a click on a task is a click and not a one-pixel
     // camera move that swallows it.
-    if (!state.moved && Math.abs(dy) < 4) return;
+    if (!state.moved && Math.abs(dy) < 4) {
+      updateScrub(event);
+      return;
+    }
+    // Once the camera is moving, the reading under the pointer is meaningless.
+    setScrub(null);
     if (!state.moved) {
       state.moved = true;
       // Capture keeps the drag alive when the pointer wanders off the dial, so
@@ -331,6 +372,37 @@ export function OrbitDial({
     { list: between(samples, 6, 18), near: false },
     { list: between(samples, 18, 24), near: true },
   ];
+
+  /**
+   * The curve's own value at an arbitrary hour, linearly interpolated between
+   * the two samples either side of it. The engine publishes the curve at a
+   * fixed cadence; reading between those points is interpolation of real data,
+   * not a second opinion about it.
+   */
+  const scoreAt = (hour: number): number | null => {
+    if (samples.length === 0) return null;
+    if (samples.length === 1) return samples[0].score;
+    for (let i = 0; i < samples.length - 1; i++) {
+      const lo = samples[i];
+      const hi = samples[i + 1];
+      if (hour >= lo.h && hour <= hi.h) {
+        const span = hi.h - lo.h;
+        const t = span > 0 ? (hour - lo.h) / span : 0;
+        return lo.score + (hi.score - lo.score) * t;
+      }
+    }
+    return hour < samples[0].h ? samples[0].score : samples[samples.length - 1].score;
+  };
+
+  /** The wall clock that many hours into the window. */
+  const clockAt = (hour: number) => {
+    const at = new Date(new Date(windowStart).getTime() + hour * 3_600_000);
+    return `${at.toISOString().slice(11, 16)}Z`;
+  };
+
+  const scrubScore = scrub === null ? null : scoreAt(scrub);
+  const scrubPoint =
+    scrub === null || scrubScore === null ? null : project(scrub, radiusFor(scrubScore), tilt);
 
   const circadian = runs(samples.map((s) => ({ h: s.h, flag: s.low })));
   const sleep = runs(samples.map((s) => ({ h: s.h, flag: s.asleep })));
@@ -456,6 +528,10 @@ export function OrbitDial({
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
+      onPointerLeave={(event) => {
+        setScrub(null);
+        endDrag(event);
+      }}
     >
       {/* The planet, in its own square box centred on the dial. Real, lit, and
           turning — and dimmed, because on the landing the planet is the subject
@@ -569,6 +645,37 @@ export function OrbitDial({
           );
         })}
 
+        {/* The scrub hand. A clock face invites being read at a moment, and the
+            dial had no way to answer — the curve's shape was legible but no
+            single hour on it was. Sweeping the ring puts a hand on the hour
+            under the pointer and a dot where the curve is at that instant,
+            which is the product's whole claim made touchable: you can watch the
+            reading fall into the trough and see the task sitting in it.
+
+            Drawn beneath the task markers so probing the day never hides the
+            thing the day is about. */}
+        {scrubPoint && scrubScore !== null ? (
+          <g pointerEvents="none">
+            <line
+              x1={project(scrub as number, AURORA_IN - 26, tilt).x}
+              y1={project(scrub as number, AURORA_IN - 26, tilt).y}
+              x2={scrubPoint.x}
+              y2={scrubPoint.y}
+              stroke="var(--ink)"
+              strokeOpacity={0.34}
+              strokeWidth={1}
+            />
+            <circle
+              cx={scrubPoint.x}
+              cy={scrubPoint.y}
+              r={px(4)}
+              fill="var(--void-deep)"
+              stroke="var(--ink)"
+              strokeWidth={px(1.6)}
+            />
+          </g>
+        ) : null}
+
         {/* Tasks, at their hour and at the curve's radius. Never occluded — see
             the header. Depth is carried by size and opacity alone, so the mark
             still plots exactly where its score says it does. */}
@@ -632,6 +739,31 @@ export function OrbitDial({
           );
         })}
       </svg>
+
+      {/* The reading under the hand. Yields to a task tooltip rather than
+          stacking with it — the task is the more specific answer to the same
+          question, and two labels over one mark is neither of them. */}
+      {scrubPoint && scrubScore !== null && !hovered ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute z-20 w-max rounded-[var(--radius-xs)] px-2 py-1"
+          style={{
+            left: `${(scrubPoint.x / SIZE) * 100}%`,
+            top: `${(scrubPoint.y / SIZE) * 100}%`,
+            transform: "translate(-50%, calc(-100% - 10px))",
+            background: "color-mix(in oklab, var(--void-deep) 90%, transparent)",
+            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.1)",
+          }}
+        >
+          <span className="mono text-[11px] text-[var(--ink-3)]">{clockAt(scrub as number)}</span>
+          <span
+            className="readout ml-1.5 text-[12px]"
+            style={{ color: scrubScore < THRESHOLD ? "var(--warn)" : "var(--ink)" }}
+          >
+            {scrubScore.toFixed(2)}
+          </span>
+        </div>
+      ) : null}
 
       {/* What the pointer is on. Positioned in per cent of a square container,
           which is exactly how the SVG places the mark it belongs to — so the
