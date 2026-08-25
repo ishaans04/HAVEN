@@ -199,9 +199,25 @@ export function Model({
     check();
     window.addEventListener("scroll", check, { passive: true });
     window.addEventListener("resize", check, { passive: true });
+
+    /**
+     * The check that matters most, and the one a scroll listener cannot make.
+     *
+     * "No box, no fetch" is right for a slot a media query has closed, but it
+     * is also true for one measured before first layout -- and a hero model
+     * sits in view from the start, so nothing scrolls and nothing resizes and
+     * the fetch never happens. Watching the element itself covers both: a
+     * closed slot never gains a size, and one that gains a size, whether by
+     * layout settling or by a breakpoint opening, is checked the moment it
+     * does.
+     */
+    const ro = new ResizeObserver(check);
+    ro.observe(host);
+
     return () => {
       window.removeEventListener("scroll", check);
       window.removeEventListener("resize", check);
+      ro.disconnect();
     };
   }, [eager]);
 

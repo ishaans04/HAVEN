@@ -126,13 +126,17 @@ function Hero() {
         <Moon className="absolute inset-0 h-full w-full" cx={0.1} cy={0.085} r={0.03} />
       </div>
 
-      {/* The station, along the bottom-right, under the planet.
+      {/* The station, across the planet's lower limb.
 
-          Measured rather than eyeballed: the type runs to y 720 and x 704, and
-          the planet's disc ends at y 713, which leaves one genuinely empty
-          region -- wide and shallow, below the limb and right of the copy.
-          That happens to be the right shape for a truss. The lower-*left*, my
-          first guess, is where the buttons and the sunrise counter live.
+          It was tucked into the empty strip below the disc, which kept it
+          clear of everything and small enough to miss. Crossing the limb is
+          the shot worth having -- and it is where the station actually is --
+          so it moves up and onto the planet, with a shadow to hold it off the
+          bright ground rather than a gap.
+
+          Still measured against the type: the copy runs to y 720 and x 704,
+          so the box starts right of that and the overlap is with the disc,
+          never with a word.
 
           It is the real thing: 46 modules out of NASA's Lightwave set, merged
           and decimated, truss and solar wings included. See
@@ -143,15 +147,31 @@ function Hero() {
         {...layer({ scroll: 0.26, pointer: 6 })}
         className="iss-slot pointer-events-none absolute inset-0 -z-10 will-change-transform"
       >
-        <div className="absolute" style={{ left: "56%", right: "2%", bottom: "1.5%", height: 132 }}>
+        <div
+          className="absolute"
+          style={{
+            left: "57%",
+            right: "0%",
+            bottom: "6%",
+            height: 250,
+            // Two shadows: a tight dark one to cut the station off the lit
+            // limb, and a wider soft one so the separation does not read as an
+            // outline. The canvas is transparent everywhere the model is not,
+            // so both trace the real silhouette -- wings included -- and keep
+            // tracing it as it turns. No shader work, and nothing that can
+            // drift out of sync with the geometry.
+            filter:
+              "drop-shadow(0 0 3px rgba(2,6,14,0.95)) drop-shadow(0 4px 16px rgba(2,6,14,0.75))",
+          }}
+        >
           <Model
             src="/models/iss.glb"
             label="The International Space Station, slowly turning"
-            className="h-full w-full opacity-[0.92]"
-            spinRate={0.14}
-            // Laid horizontal at export, the tall dimension is now the solar
-            // wings rather than the truss, so a shallow box works. Tuned
-            // against a full turn -- see the check in the commit.
+            className="h-full w-full"
+            spinRate={0.56}
+            // Framed against a full turn rather than one pose: laid horizontal
+            // at export, the widest and tallest silhouettes fall at different
+            // angles, and the tall one is what has to clear the box.
             fit={2.0}
             handleKey="__havenISS"
           />
