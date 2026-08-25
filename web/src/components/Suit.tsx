@@ -103,6 +103,13 @@ interface Prim {
   color: [number, number, number];
 }
 
+/**
+ * Radians a second. Three times the original 0.16: at that rate a full turn
+ * took forty seconds, which on a page nobody scrolls slowly enough to watch
+ * read as a still image with a suspicion of drift.
+ */
+const SPIN_RATE = 0.48;
+
 /** glTF component type to [GL enum, bytes per component]. */
 const COMPONENT: Record<number, [number, number]> = {
   5120: [0x1400, 1],
@@ -452,7 +459,15 @@ export function Suit({ className }: { className?: string }) {
           0, 0, (far + near) / (near - far), -1,
           0, 0, (2 * far * near) / (near - far), 0,
         ]));
-        const dist = span * 3.0;
+        // Framing, re-derived after the geometry was fixed. The original 3.0
+        // was measured against the broken mesh, and a cloud of shrapnel is far
+        // wider than a standing figure -- it filled 80% of the width, so the
+        // distance looked right. Rendered correctly the same value gave a
+        // figure 37% of the width and 67% of the height, adrift in its column.
+        //
+        // Size scales as 1/dist, so 255px of height at 2.85 puts ~323px -- 85%
+        // of the canvas, with 28px of margin top and bottom -- at 2.25.
+        const dist = span * 2.25;
         gl.uniformMatrix4fv(U.view, false, new Float32Array([
           1, 0, 0, 0,
           0, 1, 0, 0,
@@ -488,7 +503,7 @@ export function Suit({ className }: { className?: string }) {
         if (!running || disposed) return;
         const dt = Math.min((now - last) / 1000, 0.1);
         last = now;
-        if (motionOK) spin += dt * 0.16;
+        if (motionOK) spin += dt * SPIN_RATE;
         draw();
         raf = requestAnimationFrame(frame);
       };
@@ -538,7 +553,7 @@ export function Suit({ className }: { className?: string }) {
         span: +span.toFixed(4),
         state: () => ({ spin: +spin.toFixed(3), W, H }),
         tick(seconds: number) {
-          spin += seconds * 0.16;
+          spin += seconds * SPIN_RATE;
           draw();
           return +spin.toFixed(3);
         },

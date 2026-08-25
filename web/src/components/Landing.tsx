@@ -153,11 +153,23 @@ function Hero() {
           Small on purpose: about fifty pixels across the whole hero. Body copy
           that visibly slides while being read is a trick, not depth, and the
           hero is the one place on this site somebody is definitely reading. */}
+      {/* `pointer-events-none`, and the reason is the whole point of the
+          hero.
+
+          This wrapper is `w-full`: it spans the entire section, including all
+          of the globe, and it sits above the planet's layer because that layer
+          is at `-z-10`. So every pointer event over the planet landed here
+          instead, and the page has been telling readers to drag something they
+          could not reach. The invitation was real; the target was not.
+
+          Letting the box through and putting the events back on the column
+          that actually holds type costs nothing -- a div with no background
+          still hit-tests across its whole box, which is exactly the trap. */}
       <div
         {...layer({ scroll: -0.06 })}
-        className="mx-auto w-full max-w-[1560px] will-change-transform"
+        className="pointer-events-none mx-auto w-full max-w-[1560px] will-change-transform"
       >
-        <div className="max-w-2xl">
+        <div className="pointer-events-auto max-w-2xl">
           <Reveal className="flex flex-wrap items-center gap-2">
             <Chip tone="accent">IBM AI Builders Challenge</Chip>
             <Chip tone="neutral">Space exploration</Chip>
