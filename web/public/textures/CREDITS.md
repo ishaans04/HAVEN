@@ -1,7 +1,7 @@
 # Earth maps
 
 `2k_earth_daymap.jpg`, `2k_earth_nightmap.jpg`, `2k_earth_clouds.jpg`,
-`2k_earth_normal_map.jpg`
+`2k_earth_normal_map.jpg`, `2k_moon.jpg`
 
 Solar System Scope texture set, 2048x1024 equirectangular.
 <https://www.solarsystemscope.com/textures/>
@@ -35,3 +35,15 @@ dominant on 100% of samples.
 It loads on its own promise rather than joining the other three. Folded into the
 same `Promise.all`, losing 92 KB of normals would drop the albedo, the city
 lights and the clouds back to procedural along with it.
+
+## The moon map
+
+`2k_moon.jpg` -- same set, same licence, derived from Lunar Reconnaissance
+Orbiter imagery. Recompressed from 1.03 MB to 538 KB at q82: it is drawn about
+seventy pixels across, where the difference is not visible.
+
+It supplies craters and nothing else. The **phase** -- the only thing on that
+disc carrying meaning -- comes from the shared sun vector in `lib/sun.ts`, the
+same one the Earth's terminator uses, so the crescent tracks the day/night line
+on the planet beside it. If this file is missing the moon still shows the
+correct phase in flat grey.

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMotionOK } from "@/lib/motion";
 import { ISS } from "@/lib/iss";
+import { setSun } from "@/lib/sun";
 
 /**
  * The ISS, in silhouette.
@@ -672,6 +673,9 @@ export function Earth({
         y: 0.17 / len,
         z: (Math.sin(sa) * 0.55 + 0.5) / len,
       };
+      // Published for anything else in the scene that has to be lit by the
+      // same sun -- the moon, currently. See `lib/sun.ts`.
+      setSun(sim.sun.x, sim.sun.y, sim.sun.z);
 
       const s = stationAt(sim.t);
       sim.station = s;

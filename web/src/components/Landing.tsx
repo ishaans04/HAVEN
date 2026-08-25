@@ -8,6 +8,7 @@ import { useParallax } from "@/lib/motion";
 import { fetchAudit, fetchEvaluation } from "@/lib/api";
 import { Counterfactual, verdictFromAudit, type Verdict } from "./Counterfactual";
 import { Earth } from "./Earth";
+import { Moon } from "./Moon";
 import { Suit } from "./Suit";
 import { AlertnessGap, HardLine, LayerStack, PipelineRail } from "./LandingVisuals";
 import { StarField } from "./StarField";
@@ -103,6 +104,21 @@ function Hero() {
           onSunrise={setSunrises}
           onGrab={() => setGrabbed(true)}
         />
+      </div>
+
+      {/* The moon, lit by the same vector the planet is -- so the crescent
+          narrows and fattens in step with the terminator rather than being
+          drawn to look nice. Behind the planet's layer and moving at half its
+          parallax rate, which is what puts it further away.
+
+          The slot is gated on height as well as width -- see `.moon-slot`.
+          A short viewport lifts the centred type into this corner, and a lit
+          disc under a headline is the worst place to put one. */}
+      <div
+        {...layer({ scroll: 0.09, pointer: 4 })}
+        className="moon-slot pointer-events-none absolute inset-0 -z-10 will-change-transform"
+      >
+        <Moon className="absolute inset-0 h-full w-full" cx={0.1} cy={0.085} r={0.03} />
       </div>
 
       {/* A scrim weighted to the side the type sits on, falling to nothing well

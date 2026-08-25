@@ -724,6 +724,28 @@ html.js .reveal-in {
 }
 
 /* ------------------------------------------------------------------------
+   The hero's moon slot
+
+   Width alone is the wrong gate. The hero centres its content in a 94vh box,
+   so a *shorter* viewport lifts the type upward into the corner the moon sits
+   in -- and the moon is a bright lit disc, which is the worst possible thing
+   to put under a line of text.
+
+   Measured at 1280x900: the disc spans y 34-110 and the first chip starts at
+   y 146, clearing by 36px. At 820px of viewport height that margin is gone.
+   So the slot opens only when there is room for it, and the page simply has
+   no moon otherwise.
+   ------------------------------------------------------------------------ */
+.moon-slot {
+  display: none;
+}
+@media (min-width: 1024px) and (min-height: 900px) {
+  .moon-slot {
+    display: block;
+  }
+}
+
+/* ------------------------------------------------------------------------
    The sky
 
    Two keyframes, and both are CSS rather than anything driven by rAF for the
