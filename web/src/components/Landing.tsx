@@ -108,14 +108,19 @@ function Hero() {
 
       {/* The moon, lit by the same vector the planet is -- so the crescent
           narrows and fattens in step with the terminator rather than being
-          drawn to look nice. Behind the planet's layer and moving at half its
-          parallax rate, which is what puts it further away.
+          drawn to look nice.
+
+          Its rate is *higher* than the planet's, not lower. A layer here is
+          translated down by `scrollY * rate`, which cancels part of the page's
+          own scroll, so the larger the rate the less it travels against the
+          viewport and the further away it reads. This was 0.09 against the
+          planet's 0.20, which put the moon in front of the Earth.
 
           The slot is gated on height as well as width -- see `.moon-slot`.
           A short viewport lifts the centred type into this corner, and a lit
           disc under a headline is the worst place to put one. */}
       <div
-        {...layer({ scroll: 0.09, pointer: 4 })}
+        {...layer({ scroll: 0.34, pointer: 3 })}
         className="moon-slot pointer-events-none absolute inset-0 -z-10 will-change-transform"
       >
         <Moon className="absolute inset-0 h-full w-full" cx={0.1} cy={0.085} r={0.03} />
@@ -140,7 +145,18 @@ function Hero() {
         }}
       />
 
-      <div className="mx-auto w-full max-w-[1560px]">
+      {/* The type, nearest. A negative rate means it is not merely lagging
+          less than the sky -- it actively leads the scroll, drifting up out of
+          frame a little ahead of the page, which is what the closest thing in
+          a moving scene does.
+
+          Small on purpose: about fifty pixels across the whole hero. Body copy
+          that visibly slides while being read is a trick, not depth, and the
+          hero is the one place on this site somebody is definitely reading. */}
+      <div
+        {...layer({ scroll: -0.06 })}
+        className="mx-auto w-full max-w-[1560px] will-change-transform"
+      >
         <div className="max-w-2xl">
           <Reveal className="flex flex-wrap items-center gap-2">
             <Chip tone="accent">IBM AI Builders Challenge</Chip>

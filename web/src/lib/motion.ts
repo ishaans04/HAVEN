@@ -209,7 +209,28 @@ export function useParallax<T extends HTMLElement>() {
     window.addEventListener("scroll", onScroll, { passive: true });
     if (fine) section.addEventListener("pointermove", onPointer);
 
+    /* A readout, for the same reason every canvas here has one: this moves
+       things by writing transforms from a rAF callback, and rAF is throttled
+       in a backgrounded tab and suspended in a hidden one -- so "is the
+       parallax working" cannot be answered by looking. `apply` forces a write
+       without waiting for a frame. */
+    const handle = {
+      layers: registered.length,
+      rates: registered.map((l) => ({ scroll: l.scroll, pointer: l.pointer })),
+      state: () => ({
+        scrollY,
+        offsets: registered.map((l) => l.node.style.transform || "none"),
+      }),
+      apply(at = window.scrollY) {
+        scrollY = Math.max(0, Math.min(at, section.offsetHeight));
+        write();
+        return registered.map((l) => l.node.style.transform || "none");
+      },
+    };
+    (window as unknown as Record<string, unknown>).__havenParallax = handle;
+
     return () => {
+      delete (window as unknown as Record<string, unknown>).__havenParallax;
       window.removeEventListener("scroll", onScroll);
       section.removeEventListener("pointermove", onPointer);
       if (frame) cancelAnimationFrame(frame);
