@@ -115,13 +115,14 @@ export function AskScreen({
                 >
                   {flagged ? (
                     <span
-                      className="rounded-full px-2.5 py-[3px] text-[11px] font-medium"
-                      style={{
-                        color: "var(--warn)",
-                        background: "color-mix(in oklab, var(--warn) 13%, transparent)",
-                        boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--warn) 32%, transparent)",
-                      }}
+                      className="inline-flex items-center gap-[7px] text-[11px] font-medium uppercase leading-tight tracking-[0.13em]"
+                      style={{ color: "var(--warn)" }}
                     >
+                      <span
+                        aria-hidden
+                        className="shrink-0 rounded-[1px]"
+                        style={{ width: 2, height: 11, background: "var(--warn)" }}
+                      />
                       the checker overrules the AI
                     </span>
                   ) : null}

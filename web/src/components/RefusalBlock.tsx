@@ -153,12 +153,14 @@ function Evidence({ refusal, situation }: { refusal: Refusal; situation: Situati
               none applied
             </span>
           </div>
-          <div className="mono mt-3 flex flex-wrap gap-1.5">
+          {/* Struck-through identifiers, not badges. These are document names
+              the search looked in and found nothing usable, and a name in a
+              lozenge reads as a status rather than as a name. */}
+          <div className="mono mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
             {refusal.searched.map((doc) => (
               <span
                 key={doc}
-                className="rounded-full px-2.5 py-[3px] text-[11px] text-[var(--ink-3)] line-through"
-                style={{ background: "rgba(255,255,255,0.05)" }}
+                className="text-[11px] text-[var(--ink-3)] line-through decoration-[var(--ink-3)]/60"
               >
                 {doc}
               </span>

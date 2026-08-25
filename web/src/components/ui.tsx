@@ -206,11 +206,29 @@ export function Field({
 }
 
 /* --------------------------------------------------------------------------
-   Chip
+   Tag
    --------------------------------------------------------------------------
-   Tinted glass rather than an outlined rectangle. The fill carries the tone at
-   low alpha and the text carries it at full strength, which keeps a row of
-   chips legible without any one of them shouting.
+   A ruled label, not a capsule.
+
+   This was a tinted pill: rounded-full, a fill at low alpha, an inset ring.
+   Six of them in a column is the single most recognisable shape in generated
+   interface design, and a page arguing that its own reasoning is worth
+   checking should not be wearing the house style of software that does not.
+   The honesty ledger was the worst of it -- six identical lozenges stacked
+   down the left of a table, all outline and no information.
+
+   What replaces it is what a spec sheet does: micro-caps, letterspaced, and a
+   short rule in the state's colour standing to the left. The rule is the
+   marker; the type is the value. Nothing is enclosed, so nothing has to earn
+   its enclosure.
+
+   Contrast improves rather than suffers. The tinted fill was lifting the
+   background under every one of these, and removing it puts the text back on
+   the page's own near-black.
+
+   `solid` is for the single most important state on a screen. It thickens the
+   rule and lights it rather than filling a shape -- weight, not decoration,
+   which is the same distinction selection uses everywhere else here.
    -------------------------------------------------------------------------- */
 
 export function Chip({
@@ -228,22 +246,25 @@ export function Chip({
   className?: string;
 }) {
   const color = TONE_VAR[tone];
+  const neutral = tone === "neutral";
   return (
     <span
       className={clsx(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-[3px] text-[12px] font-medium leading-tight tracking-[0.02em]",
+        "inline-flex shrink-0 items-center gap-[7px] text-[11px] font-medium uppercase leading-tight tracking-[0.13em]",
         className,
       )}
-      style={{
-        color: tone === "neutral" ? "var(--ink-2)" : color,
-        background: solid
-          ? `color-mix(in oklab, ${color} 20%, transparent)`
-          : "rgba(255,255,255,0.06)",
-        boxShadow: `inset 0 0 0 1px ${
-          tone === "neutral" ? "rgba(255,255,255,0.12)" : `color-mix(in oklab, ${color} 34%, transparent)`
-        }`,
-      }}
+      style={{ color: neutral ? "var(--ink-2)" : color }}
     >
+      <span
+        aria-hidden
+        className="shrink-0 rounded-[1px]"
+        style={{
+          width: solid ? 3 : 2,
+          height: 11,
+          background: neutral ? "rgba(255,255,255,0.28)" : color,
+          boxShadow: solid ? `0 0 7px -1px ${color}` : undefined,
+        }}
+      />
       {icon}
       {children}
     </span>

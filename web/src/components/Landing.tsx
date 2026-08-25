@@ -536,16 +536,13 @@ function Honesty() {
                 key={subject}
                 className="divide-top grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-1 px-5 py-3.5 sm:grid-cols-[128px_minmax(0,15rem)_1fr] sm:px-6"
               >
-                <span
-                  className="rounded-full px-2.5 py-[3px] text-center text-[11px] font-medium tracking-[0.06em]"
-                  style={{
-                    color: isLive ? "var(--ok)" : "var(--warn)",
-                    background: `color-mix(in oklab, ${isLive ? "var(--ok)" : "var(--warn)"} 12%, transparent)`,
-                    boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${isLive ? "var(--ok)" : "var(--warn)"} 30%, transparent)`,
-                  }}
-                >
-                  {isLive ? "RUNNING" : "SIMULATED"}
-                </span>
+{/* Silver for what is running, copper for what is not. Nominal is
+                    unremarkable here as everywhere else on this page -- the
+                    ledger exists to make the *simulated* rows findable, and a
+                    row that is simply working should not compete with them. */}
+                <Chip tone={isLive ? "ok" : "warn"}>
+                  {isLive ? "running" : "simulated"}
+                </Chip>
                 <span className="text-[14px] font-medium text-[var(--ink)]">{subject}</span>
                 <span className="col-span-2 text-[13px] leading-relaxed text-[var(--ink-3)] sm:col-span-1">
                   {note}

@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { Link2, Lock, Radio, TriangleAlert } from "lucide-react";
 import type { AuditRecord, TierStatus } from "@/lib/types";
 import { Term } from "./Term";
-import { Chip, Disclosure, GlassCard, Label } from "./ui";
+import { Disclosure, GlassCard, Label } from "./ui";
 
 /**
  * Zone 6 — the audit strip.
@@ -105,8 +105,11 @@ export function AuditBar({
           >
             <div className="glass-2 overflow-hidden">
               <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
-                <Chip tone="neutral">{audit.provider}</Chip>
-                <Chip tone="neutral">{audit.model_id}</Chip>
+                {/* Identifiers, printed. A model id is not a status and does
+                    not belong in a status shape -- and `Tag` upper-cases,
+                    which would mangle it. */}
+                <span className="mono text-[11px] text-[var(--ink-2)]">{audit.provider}</span>
+                <span className="mono text-[11px] text-[var(--ink-3)]">{audit.model_id}</span>
               </div>
               <div className="max-h-72 overflow-auto">
                 <table className="w-full border-collapse text-left">
