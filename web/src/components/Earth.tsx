@@ -118,7 +118,9 @@ uniform float uTime;
 uniform sampler2D uDay;    // NASA Blue Marble albedo
 uniform sampler2D uNight;  // NASA Black Marble city lights
 uniform sampler2D uClouds; // cloud opacity, greyscale
+uniform sampler2D uRelief; // tangent-space normals, terrain relief
 uniform float uHasTex;     // 0 until all three have decoded
+uniform float uHasRelief;  // 0 until the normal map has decoded, separately
 
 const float TILT = 0.40910518; // 23.44 degrees, radians
 
@@ -212,6 +214,11 @@ void main() {
   float cloud;
   float water;
   vec3 cityCol;
+  // The normal lighting is computed against. Geometric unless the relief map
+  // has decoded, and never used for the silhouette, the limb or the
+  // atmosphere -- those describe the shape of the planet, which a texture does
+  // not get a vote on.
+  vec3 shadeN = n;
 
   if (uHasTex > 0.5) {
     // Equirectangular lookup. Longitude wraps at the antimeridian, and the
@@ -231,6 +238,32 @@ void main() {
     // bright in every channel and must not glint.
     water = smoothstep(0.02, 0.17, dayTex.b - dayTex.r)
           * (1.0 - smoothstep(0.55, 0.78, dayTex.r));
+
+    /* ---- terrain relief ------------------------------------------------
+       A tangent frame straight off the parameterisation: east is the
+       derivative of position with longitude, north is its cross with the
+       surface normal. The frame degenerates at the poles, where longitude
+       stops meaning anything -- and where there is no relief anybody is
+       looking at, so it falls back to a fixed axis rather than to NaN.
+
+       The map is OpenGL convention (green points north, which is v
+       decreasing here since the image is north-up). Land only: the ocean
+       floor has relief in this map and none of it is visible from orbit. */
+    if (uHasRelief > 0.5) {
+      vec3 N = normalize(p);
+      vec3 eastRaw = vec3(-p.z, 0.0, p.x);
+      float eastLen = length(eastRaw);
+      vec3 east = eastLen > 1e-4 ? eastRaw / eastLen : vec3(1.0, 0.0, 0.0);
+      vec3 north = cross(east, N);
+
+      vec3 nm = texture2D(uRelief, uv).rgb * 2.0 - 1.0;
+      vec3 bumped = normalize(east * nm.x + north * nm.y + N * nm.z);
+      vec3 planetN = normalize(mix(N, bumped, 0.65 * (1.0 - water)));
+
+      // Back into view space: undo the spin, the tilt and the viewing
+      // latitude, in the reverse order the sample point went through them.
+      shadeN = normalize(rotX(uLat) * (rotX(TILT) * (rotY(uSpin) * planetN)));
+    }
   } else {
     /* Domain warping is what stops fBm reading as clouds-on-a-ball: warping
        the lookup with another fBm produces coastlines with inlets and
@@ -268,7 +301,12 @@ void main() {
   /* ---- lighting --------------------------------------------------------
      The terminator. Everything the page claims about sunrises comes from
      this one dot product. */
-  float ndl = dot(n, uSun);
+  // Relief shows in the diffuse term and nowhere else. ndlGeom keeps the
+  // *geometric* terminator for everything the page counts on -- the sunrise
+  // crossing, the dusk band -- so a texture can shade a mountain without
+  // moving the day/night line the product's whole claim rests on.
+  float ndl = dot(shadeN, uSun);
+  float ndlGeom = dot(n, uSun);
   float day = smoothstep(-0.09, 0.22, ndl);
 
   // Limb darkening: the horizon is dimmer because you are looking through
@@ -296,7 +334,7 @@ void main() {
   float rim = pow(1.0 - z, 3.4);
   col += vec3(0.26, 0.50, 0.95) * rim * day * (1.15 + uFlash * 1.1);
   // Dusk runs warm right at the terminator, where light travels furthest.
-  float dusk = exp(-abs(ndl) * 13.0) * (1.0 - rim * 0.5);
+  float dusk = exp(-abs(ndlGeom) * 13.0) * (1.0 - rim * 0.5);
   col += vec3(1.0, 0.44, 0.16) * dusk * 0.30;
 
   // Feather the very edge so the disc does not alias against the page.
@@ -431,6 +469,8 @@ export function Earth({
       lat: gl.getUniformLocation(program, "uLat"),
       flash: gl.getUniformLocation(program, "uFlash"),
       hasTex: gl.getUniformLocation(program, "uHasTex"),
+      hasRelief: gl.getUniformLocation(program, "uHasRelief"),
+      relief: gl.getUniformLocation(program, "uRelief"),
       day: gl.getUniformLocation(program, "uDay"),
       night: gl.getUniformLocation(program, "uNight"),
       clouds: gl.getUniformLocation(program, "uClouds"),
@@ -446,6 +486,7 @@ export function Earth({
        little shimmer near the limb and no seam, which is the better trade for
        a sphere that renders about a third of the texture's width. */
     let texturesReady = false;
+    let reliefReady = false;
     const makeTex = () => {
       const t = gl.createTexture()!;
       gl.bindTexture(gl.TEXTURE_2D, t);
@@ -461,16 +502,20 @@ export function Earth({
     const texDay = makeTex();
     const texNight = makeTex();
     const texClouds = makeTex();
+    const texRelief = makeTex();
 
     gl.uniform1i(U.day, 0);
     gl.uniform1i(U.night, 1);
     gl.uniform1i(U.clouds, 2);
+    gl.uniform1i(U.relief, 3);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texDay);
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, texNight);
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, texClouds);
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, texRelief);
 
     let cancelledLoad = false;
     const load = (url: string, tex: WebGLTexture, unit: number) =>
@@ -502,6 +547,18 @@ export function Earth({
       })
       // A missing or blocked map is not a failure: the procedural planet is
       // still there and still correct.
+      .catch(() => {});
+
+    // Relief loads on its own promise rather than joining the group above, so
+    // that losing 90 KB of normals costs the terrain shading and nothing else.
+    // Folded into the same `Promise.all`, a 404 here would drop the albedo,
+    // the city lights and the clouds back to procedural along with it.
+    load("/textures/2k_earth_normal_map.jpg", texRelief, 3)
+      .then(() => {
+        if (cancelledLoad) return;
+        reliefReady = true;
+        render();
+      })
       .catch(() => {});
 
     /* ---- geometry of the box ------------------------------------------- */
@@ -637,6 +694,7 @@ export function Earth({
       gl.uniform1f(U.lat, sim.userLat);
       gl.uniform1f(U.flash, sim.flash);
       gl.uniform1f(U.hasTex, texturesReady ? 1 : 0);
+      gl.uniform1f(U.hasRelief, reliefReady ? 1 : 0);
       gl.uniform3f(U.sun, sim.sun.x, sim.sun.y, sim.sun.z);
       gl.uniform1f(U.time, sim.t);
       gl.clearColor(0, 0, 0, 0);
@@ -893,6 +951,11 @@ export function Earth({
           periodMinutes: +ISS.periodMinutes.toFixed(3),
         },
         textured: texturesReady,
+        relief: reliefReady,
+        // A GLSL linker discards uniforms nothing reads, so a surviving
+        // location is proof the relief branch is live code rather than a
+        // texture being uploaded into a shader that ignores it.
+        reliefUniformLive: U.relief !== null && U.hasRelief !== null,
         pixels: { W, H, cx, cy, radius: +radius.toFixed(1) },
       }),
     };
@@ -911,6 +974,7 @@ export function Earth({
       gl.deleteTexture(texDay);
       gl.deleteTexture(texNight);
       gl.deleteTexture(texClouds);
+      gl.deleteTexture(texRelief);
       delete (window as unknown as Record<string, unknown>)[handleKey];
     };
   }, [placement.cx, placement.cy, placement.r, placement.topAt, orbit, interactive, motionOK, handleKey]);
