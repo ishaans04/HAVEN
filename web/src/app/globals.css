@@ -723,6 +723,41 @@ html.js .reveal-in {
   }
 }
 
+/* ------------------------------------------------------------------------
+   The sky
+
+   Two keyframes, and both are CSS rather than anything driven by rAF for the
+   reason in the header of `StarField.tsx`: this runs on every screen of both
+   pages, and a background that stops the moment a tab loses focus is worse
+   than one that never moved.
+
+   The drift returns to where it started at 100%, so it loops seamlessly
+   without the field having to tile. Amplitude and period come in as custom
+   properties, which is what makes one keyframe serve three depths.
+   ------------------------------------------------------------------------ */
+@keyframes star-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(var(--drift-x, 0), var(--drift-y, 0), 0);
+  }
+}
+
+/* Scintillation is an atmospheric effect and there is no atmosphere out here,
+   so this is deliberately slight and deliberately rare -- a handful of stars,
+   never the whole field, and never to nothing. */
+@keyframes star-twinkle {
+  0%,
+  100% {
+    opacity: var(--o, 1);
+  }
+  50% {
+    opacity: calc(var(--o, 1) * 0.42);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
