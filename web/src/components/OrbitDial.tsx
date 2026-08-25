@@ -6,7 +6,6 @@ import type { CrewReadiness, TimelineTask } from "@/lib/types";
 import { useFinePointer, useMotionOK } from "@/lib/motion";
 import { useElementWidth } from "@/lib/useElementWidth";
 import { signal } from "@/lib/coach";
-import { Earth } from "./Earth";
 import { TONE_VAR, hoursSince, toneOf, utcTime } from "./ui";
 
 /**
@@ -31,20 +30,24 @@ import { TONE_VAR, hoursSince, toneOf, utcTime } from "./ui";
  *
  * The linear chart still exists, in the details drawer, for reading values off.
  *
- * ## Why it is now a ring in space rather than a flat face
+ * ## Why it is a ring in space rather than a flat face
  *
  * The centre used to hold a planet built out of two radial gradients and eight
- * hard-coded ellipses scrolling sideways under a clip path. It was the same
- * fake the landing page threw out — a shape that knew nothing about where the
- * sun was — and it sat at the middle of the one view judges actually spend
- * their time in. It is gone. `Earth` renders the real sphere here, the same one
- * the landing uses, with its own orbit track switched off: `Scene` already
- * settled that two orbits on one screen would be two different clocks, and the
- * dial *is* this screen's orbit.
+ * hard-coded ellipses scrolling sideways under a clip path — the same fake the
+ * landing page threw out, a shape that knew nothing about where the sun was.
+ * It was replaced by the real `Earth`, and that has now gone too.
  *
- * A real sphere makes a flat ring around it look painted on, so the ring is
- * projected too. It is a genuine circle in 3-space, inclined, sampled and
- * drawn through one projection.
+ * Two planets on one screen is one planet too many. `Scene` already draws the
+ * limb along the bottom of the console as the room the consultation happens
+ * in; a second sphere in the middle of the instrument was competing with it
+ * and carrying no reading of its own to justify the competition. The ring does
+ * not need something to orbit in order to read as a ring: it is a genuine
+ * circle in 3-space, inclined, sampled and drawn through one projection, and
+ * the ellipse plus the depth shading say so on their own.
+ *
+ * What went with it: the occlusion mask, which hid the far half of the ring
+ * where the sphere used to stand. With nothing there to hide behind, masking
+ * would have cut a hole in the band for no reason.
  *
  * ## Three rules the projection obeys
  *
@@ -60,11 +63,10 @@ import { TONE_VAR, hoursSince, toneOf, utcTime } from "./ui";
  * instrument whose 03:00 is somewhere different each time you look is not an
  * instrument. Dragging changes the angle you view the ring from, nothing else.
  *
- * **Geometry occludes; data does not.** The far half of the ring (06–18) is
- * masked where the sphere stands, so it passes genuinely behind the planet
- * rather than over it. Task markers are exempt: a marker hidden behind the
- * globe is a task the reader cannot click, and an unreachable task is a worse
- * failure than a small perspective lie. They dim instead.
+ * **Depth shades; it never hides.** The far half of the ring (06–18) is drawn
+ * dimmer and its marks smaller, which is the whole of the depth cue now that
+ * there is no sphere to pass behind. Nothing is ever hidden: a mark the reader
+ * cannot see is a task they cannot click.
  */
 
 const SIZE = 460;
@@ -74,15 +76,7 @@ const AURORA_IN = 132;
 const AURORA_OUT = 188;
 const BAND_R = 198;
 const LABEL_R = 214;
-const PLANET_R = 102;
 const THRESHOLD = 0.7;
-
-/**
- * The sphere's own box, in viewBox units. Wider than the planet because the
- * shader draws atmosphere *outside* the disc and a box cropped to the disc
- * would clip the limb.
- */
-const GLOBE_BOX = 340;
 
 const TAU = Math.PI * 2;
 const RAD = Math.PI / 180;
@@ -95,9 +89,8 @@ const RAD = Math.PI / 180;
  * The floor is 40° rather than something more dramatic for a measured reason:
  * the hour labels ride at `LABEL_R`, so their vertical reach is
  * `LABEL_R · sin(tilt)`, and below about 38° that carries the 00 and 12 labels
- * onto the lit sphere, where §8's compositing trap makes contrast a thing you
- * can no longer reason about by reading CSS. At 40° they clear the disc by
- * ~25 units at both poles and stay on the page's own dark ground.
+ * into the middle of the ring, on top of the readout. At 40° they clear it by
+ * ~25 units at both poles.
  */
 const TILT_DEFAULT = 62 * RAD;
 const TILT_MIN = 40 * RAD;
@@ -582,35 +575,6 @@ export function OrbitDial({
         endDrag(event);
       }}
     >
-      {/* The planet, in its own square box centred on the dial. Real, lit, and
-          turning — and dimmed, because on the landing the planet is the subject
-          and here it is the thing the window goes round. Its own orbit track is
-          off: this dial is the orbit.
-
-          Deliberately the room rather than a readout, and dimmed until it
-          reads that way. It carries no data -- the ring does. The honest way
-          to make it carry some, marking the ~16 terminator crossings a crew
-          in low orbit actually sees in a day, is not available here: the API
-          does not publish the orbital phase, and evenly spaced ticks would
-          assert a schedule nobody computed. Better an admitted backdrop than
-          an invented instrument. */}
-      <div
-        className="pointer-events-none absolute z-0"
-        style={{
-          left: `${((C - GLOBE_BOX / 2) / SIZE) * 100}%`,
-          top: `${((C - GLOBE_BOX / 2) / SIZE) * 100}%`,
-          width: `${(GLOBE_BOX / SIZE) * 100}%`,
-          height: `${(GLOBE_BOX / SIZE) * 100}%`,
-        }}
-      >
-        <Earth
-          className="absolute inset-0 opacity-[0.4]"
-          placement={{ cx: 0.5, cy: 0.5, r: PLANET_R / GLOBE_BOX }}
-          orbit={false}
-          handleKey="__havenDialEarth"
-        />
-      </div>
-
       <svg
         viewBox={`0 0 ${SIZE} ${SIZE}`}
         className="relative z-10 w-full"
@@ -657,31 +621,18 @@ export function OrbitDial({
             </feMerge>
           </filter>
 
-          {/* Occlusion. Black hides, white keeps, and the gradient softens the
-              cut so a hard circle does not saw across the sphere's limb — which
-              is lit and slightly translucent at the edge, not a flat disc. */}
-          <radialGradient id="od-occluder">
-            <stop offset="86%" stopColor="#000" />
-            <stop offset="100%" stopColor="#fff" />
-          </radialGradient>
-          <mask id="od-behind-planet">
-            <rect x="0" y="0" width={SIZE} height={SIZE} fill="#fff" />
-            <circle cx={C} cy={C} r={PLANET_R + 4} fill="url(#od-occluder)" />
-          </mask>
         </defs>
 
-        {/* The far half, genuinely behind the sphere. */}
-        <g mask="url(#od-behind-planet)">
-          <Ring near={false} />
-        </g>
+        {/* The far half, dimmed rather than hidden. */}
+        <Ring near={false} />
 
         {/* The near half, over it. */}
         <Ring near />
 
-        {/* Hour labels. Chrome, not geometry: they ride the ring but are never
-            masked and never scale, because a label you cannot read has failed
-            at the only job it has. The tilt floor keeps them clear of the
-            sphere at every angle the reader can reach. */}
+        {/* Hour labels. Chrome, not geometry: they ride the ring but never
+            scale, because a label you cannot read has failed at the only job
+            it has. The tilt floor keeps them clear of the readout at every
+            angle the reader can reach. */}
         {[0, 3, 6, 9, 12, 15, 18, 21].map((h) => {
           const p = project(h, LABEL_R, tilt);
           return (
@@ -733,9 +684,9 @@ export function OrbitDial({
           </g>
         ) : null}
 
-        {/* Tasks, at their hour and at the curve's radius. Never occluded — see
-            the header. Depth is carried by size and opacity alone, so the mark
-            still plots exactly where its score says it does. */}
+        {/* Tasks, at their hour and at the curve's radius. Depth is carried by
+            size alone, so the mark still plots exactly where its score says it
+            does. */}
         {/* Where the flagged task really is, while a proposal is being tried
             against another hour. Without it the reader loses the anchor the
             comparison is against. */}
@@ -783,7 +734,6 @@ export function OrbitDial({
           // A sixth either way across the ring: enough to read as depth, not
           // enough to be mistaken for a difference in the reading.
           const depth = 1 + p.depth * 0.16;
-          const behind = !isNear(h) && Math.hypot(p.x - C, p.y - C) < PLANET_R;
           return (
             <g
               key={task.task_id}
@@ -793,7 +743,6 @@ export function OrbitDial({
               className={clsx(
                 draggable ? "cursor-grab" : clickable ? "cursor-pointer" : "cursor-default",
               )}
-              opacity={behind ? 0.5 : 1}
               onPointerDown={(event) => {
                 if (!draggable) return;
                 // Claim the gesture before the wrapper reads it as a camera move.
@@ -913,17 +862,16 @@ export function OrbitDial({
           text: real font metrics, real ellipsis, real selection. */}
       <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
         <div className="relative max-w-[52%] text-center">
-          {/* A well under the type. There is a lit sphere behind this now, and
-              §8's lesson is that contrast over a canvas cannot be reasoned
-              about from CSS alone — it has to be composited first. Putting an
-              opaque enough ground under the text is cheaper than measuring, and
-              it holds at every tilt and every frame of the terminator. */}
+          {/* A well under the type. Lighter than it was, because the lit
+              sphere it had to overcome is gone — but not removed: `Scene`
+              still paints Earth's limb across the bottom of the console, and
+              the dial can sit over it at some window sizes. */}
           <div
             aria-hidden
             className="absolute -inset-x-10 -inset-y-8 -z-10"
             style={{
               background:
-                "radial-gradient(closest-side, color-mix(in oklab, var(--void-deep) 90%, transparent) 52%, transparent 100%)",
+                "radial-gradient(closest-side, color-mix(in oklab, var(--void-deep) 78%, transparent) 50%, transparent 100%)",
             }}
           />
           {proposed !== null && flagged ? (

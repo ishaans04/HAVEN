@@ -151,9 +151,17 @@ export function AlertnessGap({ className }: { className?: string }) {
           <circle cx={x(worst.h)} cy={y(worst.a)} r="5.5" fill="var(--accent)" />
           <circle cx={x(worst.h)} cy={y(worst.a)} r="11" fill="none"
             stroke="var(--accent)" strokeOpacity="0.35" strokeWidth="1.5" />
+          {/* Below the dot, never beside it.
+
+              Level with the marker the label sat exactly on the curve, which
+              runs horizontally through the trough -- the line went straight
+              through the type. Underneath is safe by construction rather than
+              by luck: this marks the curve's global minimum, so no part of the
+              curve is ever below it. The horizontal flip stays, so the text
+              also clears the dashed drop-line rather than straddling it. */}
           <text
-            x={x(worst.h) + (flip ? -16 : 16)}
-            y={y(worst.a) + 4}
+            x={x(worst.h) + (flip ? -12 : 12)}
+            y={y(worst.a) + 26}
             textAnchor={flip ? "end" : "start"}
             fontSize="12.5"
             fill="var(--ink)"
@@ -238,7 +246,7 @@ export function HardLine({ className }: { className?: string }) {
           const y = 78 + i * 52;
           return (
             <g key={row.label}>
-              <text x="26" y={y - 12} fontSize="12" fill="var(--ink-3)">
+              <text x="26" y={y - 17} fontSize="12" fill="var(--ink-3)">
                 {row.label}
               </text>
               <text x="26" y={y + 10} fontSize="21" className="readout" fill="var(--ink)">
@@ -300,8 +308,11 @@ export function PipelineRail({ className }: { className?: string }) {
   const W = 900;
   const H = 150;
   const y = 58;
-  const x0 = 46;
-  const x1 = W - 46;
+  // Wide enough that the end stages' captions stay inside the box. The
+  // longest is 111 units across and is centred on its dot, so anything under
+  // ~56 clips it: "Sleep, duty, workload" was losing its first two letters.
+  const x0 = 66;
+  const x1 = W - 66;
   const step = (x1 - x0) / (STAGES.length - 1);
 
   return (

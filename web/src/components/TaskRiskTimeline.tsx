@@ -119,6 +119,11 @@ export function TaskRiskTimeline({
                 stroke="rgba(255,255,255,0.2)"
                 tick={{ fontSize: 11, fill: "var(--ink-3)" }}
                 tickLine={false}
+                // At the origin the first hour label and the y-axis zero were
+                // overlapping by a couple of pixels -- the default puts both
+                // tight into the corner. A little margin on each axis pushes
+                // them apart without moving the plot itself.
+                tickMargin={8}
               />
               <YAxis
                 domain={[0, 1]}
@@ -126,7 +131,10 @@ export function TaskRiskTimeline({
                 stroke="rgba(255,255,255,0.2)"
                 tick={{ fontSize: 11, fill: "var(--ink-3)" }}
                 tickLine={false}
-                width={46}
+                tickMargin={6}
+                // Room for the labels *and* the margin: at 46 the tick margin
+                // pushed "0.25" three pixels off the left edge of the chart.
+                width={56}
               />
 
               <ReferenceLine
