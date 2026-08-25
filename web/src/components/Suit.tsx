@@ -82,16 +82,24 @@ void main() {
 }
 `;
 
+/** One attribute, described the way WebGL needs to read it. */
+interface Attr {
+  buffer: WebGLBuffer;
+  type: number;
+  normalized: boolean;
+  /** Bytes between consecutive elements. 0 means tightly packed. */
+  stride: number;
+  /** Byte offset of the first element within the buffer. */
+  offset: number;
+}
+
 interface Prim {
-  vbo: WebGLBuffer;
-  nbo: WebGLBuffer;
-  ibo: WebGLBuffer;
+  pos: Attr;
+  nrm: Attr;
+  indices: WebGLBuffer;
+  indexType: number;
+  indexOffset: number;
   count: number;
-  itype: number;
-  posType: number;
-  posNorm: boolean;
-  nrmType: number;
-  nrmNorm: boolean;
   color: [number, number, number];
 }
 
@@ -104,8 +112,6 @@ const COMPONENT: Record<number, [number, number]> = {
   5125: [0x1405, 4],
   5126: [0x1406, 4],
 };
-
-const SIZE_OF: Record<string, number> = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 };
 
 /**
  * What the GPU divides a normalized integer attribute by.
@@ -223,51 +229,72 @@ export function Suit({ className }: { className?: string }) {
 
       const binary = bin;
 
-      /** Raw bytes for one accessor, plus how WebGL should read them. */
-      const read = (index: number) => {
+      /* ---- buffers, one per bufferView -----------------------------------
+         The first version uploaded one buffer per *accessor* and assumed each
+         was tightly packed, reasoning that gltf-transform writes a view per
+         accessor. It does not, and the file says so plainly: every attribute
+         view here carries byteStride 16 -- POSITION and NORMAL interleaved
+         into one view -- and all fourteen index accessors share bufferView 0
+         at different offsets.
+
+         Reading count * 3 * 2 bytes contiguously out of a 16-byte-strided
+         region gets the first vertex right and every one after it wrong. That
+         is why the model rendered as a cloud of shrapnel: real triangles,
+         drawn between coordinates that were never a suit.
+
+         WebGL reads strided data natively. Upload each view once, whole, and
+         let vertexAttribPointer and drawElements do the walking. */
+      const viewBuffers = new Map<string, WebGLBuffer>();
+      const viewBuffer = (bvIndex: number, target: number) => {
+        const key = bvIndex + ":" + target;
+        const cached = viewBuffers.get(key);
+        if (cached) return cached;
+        const bv = json.bufferViews[bvIndex];
+        const b = gl.createBuffer();
+        if (!b) throw new Error("buffer");
+        const bytes = new Uint8Array(
+          binary.buffer,
+          binary.byteOffset + (bv.byteOffset ?? 0),
+          bv.byteLength,
+        );
+        gl.bindBuffer(target, b);
+        gl.bufferData(target, bytes, gl.STATIC_DRAW);
+        viewBuffers.set(key, b);
+        return b;
+      };
+
+      const attr = (index: number): Attr => {
         const acc = json.accessors[index];
         const bv = json.bufferViews[acc.bufferView];
-        const [glType, bytes] = COMPONENT[acc.componentType];
-        const comps = SIZE_OF[acc.type];
-        const start = (bv.byteOffset ?? 0) + (acc.byteOffset ?? 0);
-        // A tightly packed view is enough: gltf-transform writes one
-        // bufferView per accessor, so there is no interleaving to unpick.
-        const slice = new Uint8Array(
-          binary.buffer,
-          binary.byteOffset + start,
-          acc.count * comps * bytes,
-        );
-        return { slice, glType, normalized: !!acc.normalized, count: acc.count };
+        const [glType] = COMPONENT[acc.componentType];
+        return {
+          buffer: viewBuffer(acc.bufferView, gl.ARRAY_BUFFER),
+          type: glType,
+          normalized: !!acc.normalized,
+          stride: bv.byteStride ?? 0,
+          offset: acc.byteOffset ?? 0,
+        };
       };
 
       const prims: Prim[] = [];
       for (const mesh of json.meshes ?? []) {
         for (const pr of mesh.primitives ?? []) {
           if (pr.attributes?.POSITION === undefined || pr.indices === undefined) continue;
-          const pos = read(pr.attributes.POSITION);
-          const nrm = pr.attributes.NORMAL !== undefined ? read(pr.attributes.NORMAL) : pos;
-          const idx = read(pr.indices);
+          const pos = attr(pr.attributes.POSITION);
+          const nrm = pr.attributes.NORMAL !== undefined ? attr(pr.attributes.NORMAL) : pos;
+          const idxAcc = json.accessors[pr.indices];
           const mat = pr.material !== undefined ? json.materials?.[pr.material] : undefined;
           const base = mat?.pbrMetallicRoughness?.baseColorFactor ?? [0.8, 0.8, 0.8, 1];
 
-          const make = (data: Uint8Array, target: number) => {
-            const b = gl.createBuffer();
-            if (!b) throw new Error("buffer");
-            gl.bindBuffer(target, b);
-            gl.bufferData(target, data, gl.STATIC_DRAW);
-            return b;
-          };
-
           prims.push({
-            vbo: make(pos.slice, gl.ARRAY_BUFFER),
-            nbo: make(nrm.slice, gl.ARRAY_BUFFER),
-            ibo: make(idx.slice, gl.ELEMENT_ARRAY_BUFFER),
-            count: idx.count,
-            itype: idx.glType,
-            posType: pos.glType,
-            posNorm: pos.normalized,
-            nrmType: nrm.glType,
-            nrmNorm: nrm.normalized,
+            pos,
+            nrm,
+            indices: viewBuffer(idxAcc.bufferView, gl.ELEMENT_ARRAY_BUFFER),
+            indexType: COMPONENT[idxAcc.componentType][0],
+            // The indices share a view too, so the draw starts at an offset
+            // into it rather than at zero.
+            indexOffset: idxAcc.byteOffset ?? 0,
+            count: idxAcc.count,
             // The factors are authored sRGB-ish; a mild curve keeps them from
             // reading washed out against a very dark page.
             color: [
@@ -445,12 +472,12 @@ export function Suit({ className }: { className?: string }) {
 
         for (const p of prims) {
           gl.uniform3fv(U.color, p.color);
-          gl.bindBuffer(gl.ARRAY_BUFFER, p.vbo);
-          gl.vertexAttribPointer(aPos, 3, p.posType, p.posNorm, 0, 0);
-          gl.bindBuffer(gl.ARRAY_BUFFER, p.nbo);
-          gl.vertexAttribPointer(aNrm, 3, p.nrmType, p.nrmNorm, 0, 0);
-          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, p.ibo);
-          gl.drawElements(gl.TRIANGLES, p.count, p.itype, 0);
+          gl.bindBuffer(gl.ARRAY_BUFFER, p.pos.buffer);
+          gl.vertexAttribPointer(aPos, 3, p.pos.type, p.pos.normalized, p.pos.stride, p.pos.offset);
+          gl.bindBuffer(gl.ARRAY_BUFFER, p.nrm.buffer);
+          gl.vertexAttribPointer(aNrm, 3, p.nrm.type, p.nrm.normalized, p.nrm.stride, p.nrm.offset);
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, p.indices);
+          gl.drawElements(gl.TRIANGLES, p.count, p.indexType, p.indexOffset);
         }
       };
 
@@ -559,7 +586,7 @@ interface GltfDoc {
     min?: number[];
     max?: number[];
   }[];
-  bufferViews: { byteOffset?: number; byteLength: number }[];
+  bufferViews: { byteOffset?: number; byteLength: number; byteStride?: number }[];
   meshes?: {
     primitives?: {
       attributes?: Record<string, number>;
