@@ -172,6 +172,7 @@ export function Moon({
     gl.uniform1i(U.albedo, 0);
 
     let cancelled = false;
+    let requested = false;
     const img = new Image();
     img.onload = () => {
       if (cancelled) return;
@@ -185,13 +186,26 @@ export function Moon({
     // A missing map costs the craters and nothing else: the phase, which is the
     // only thing here carrying meaning, does not depend on it.
     img.onerror = () => {};
-    img.src = "/textures/2k_moon.jpg";
+
+    /**
+     * Half a megabyte, asked for only once there is somewhere to draw it.
+     *
+     * The slot is closed below 1024px wide or 900px tall, and a closed slot
+     * still runs this effect -- so fetching here unconditionally sent the moon
+     * map to every phone that opened the page and then drew none of it.
+     */
+    const requestMap = () => {
+      if (requested || cancelled) return;
+      requested = true;
+      img.src = "/textures/2k_moon.jpg";
+    };
 
     let W = 0;
     let H = 0;
     const resize = () => {
       const rect = node.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
+      requestMap();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       W = Math.round(rect.width * dpr);
       H = Math.round(rect.height * dpr);

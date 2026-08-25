@@ -4,38 +4,32 @@ import { useEffect, useRef, useState } from "react";
 import { useMotionOK } from "@/lib/motion";
 
 /**
- * The person the whole system is reasoning about.
+ * A glTF model, rendered against plain WebGL.
  *
- * Every visual on this page is a planet or a chart, and the subject of the
- * product is neither: it is a human being who cannot tell that their judgement
- * has gone. So the section that says "a tired brain does not feel broken" gets
- * a body beside it — NASA's Advanced Crew Escape Suit, public domain, the
- * orange pressure suit worn for launch and entry.
+ * This began as the astronaut and is now shared with the station, because the
+ * two need exactly the same thing and nothing more: one mesh, flat material
+ * colours, no textures, no animation, no skinning. The alternative was three.js
+ * -- and a dropped-in loader is a component every other entrant can ship too,
+ * where this is about eighty lines that read precisely the subset in hand.
  *
- * **It is imagery, not instrumentation.** Nothing about the pose or the
- * lighting is derived from crew data and nothing should be read off it. That
- * distinction is why the dial's planet was dimmed rather than dressed up with
- * invented markings: a picture is allowed to be a picture, as long as it never
- * pretends to be a reading.
+ * ## What it will and will not do
  *
- * ## Why there is a glTF parser in here
+ * It reads `POSITION`, `NORMAL`, indices and `baseColorFactor`. It honours
+ * `byteStride` and shared bufferViews, which is not a detail: both models here
+ * interleave position and normal into one view and pack every index accessor
+ * into another, and assuming tight packing renders a cloud of shrapnel that
+ * still passes a pixel-coverage check.
  *
- * The obvious route is three.js, and the project declined it — a dropped-in
- * loader is a component every other entrant can ship too. The file needs
- * almost nothing a scene graph offers: one mesh, one node, fourteen
- * primitives, fourteen flat baseColorFactor materials, no textures, no
- * animation, no skinning. What follows is the code that reads exactly that,
- * and nothing else.
+ * It does not read Draco. Both files are decoded once, offline -- Draco's WASM
+ * decoder is around 250 KB, larger than the three.js it would be replacing.
+ * See `public/models/CREDITS.md`.
  *
- * The source is Draco-compressed, which a parser this size genuinely cannot
- * read — and Draco's WASM decoder is around 250 KB, larger than the three.js
- * it would be replacing. So the mesh is decoded **once, offline**, and what
- * ships is plain quantized glTF. See `public/models/CREDITS.md`. Quantization
- * costs the renderer nothing: normalized shorts go straight into
- * `vertexAttribPointer`, and the node's own transform undoes the scaling.
+ * ## Imagery, not instrumentation
  *
- * Fetched only when the section is near the viewport, because 540 KB has no
- * business blocking a landing page that reads perfectly well without it.
+ * Nothing about the pose or the lighting is derived from crew data, and nothing
+ * should be read off either model. That distinction is why the dial's planet
+ * was removed rather than dressed up with invented markings: a picture is
+ * allowed to be a picture, as long as it never pretends to be a reading.
  */
 
 const VERT = `
@@ -103,13 +97,6 @@ interface Prim {
   color: [number, number, number];
 }
 
-/**
- * Radians a second. Three times the original 0.16: at that rate a full turn
- * took forty seconds, which on a page nobody scrolls slowly enough to watch
- * read as a still image with a suspicion of drift.
- */
-const SPIN_RATE = 0.48;
-
 /** glTF component type to [GL enum, bytes per component]. */
 const COMPONENT: Record<number, [number, number]> = {
   5120: [0x1400, 1],
@@ -138,7 +125,36 @@ const NORMALIZE_DIV: Record<number, number> = {
   5123: 65535,
 };
 
-export function Suit({ className }: { className?: string }) {
+export function Model({
+  src,
+  label,
+  className,
+  /**
+   * Radians a second. The suit turns at 0.48 -- three times its first rate,
+   * where a forty-second revolution read as a still image with a suspicion of
+   * drift. The station is slower, because it is bigger and further away.
+   */
+  spinRate = 0.48,
+  /**
+   * Camera distance, as a multiple of the model's longest side. Smaller fills
+   * more of the frame. Measured per model rather than guessed: see the note
+   * beside the projection below.
+   */
+  fit = 2.25,
+  /** Where the verification handle is published on `window`. */
+  handleKey = "__havenModel",
+  /** Skipped entirely until the reader is near it. */
+  eager = false,
+}: {
+  src: string;
+  /** Described for a screen reader; these are pictures, so say what of. */
+  label: string;
+  className?: string;
+  spinRate?: number;
+  fit?: number;
+  handleKey?: string;
+  eager?: boolean;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const motionOK = useMotionOK();
   const [failed, setFailed] = useState(false);
@@ -157,16 +173,23 @@ export function Suit({ className }: { className?: string }) {
    * So the check is the rect itself, on mount and on scroll, and it unhooks as
    * soon as it fires. No frames involved.
    */
-  const [near, setNear] = useState(false);
+  const [near, setNear] = useState(eager);
 
   useEffect(() => {
+    if (eager) return;
     const host = hostRef.current;
     if (!host) return;
     let done = false;
     const check = () => {
       if (done) return;
+      const r = host.getBoundingClientRect();
+      // A `display: none` element reports an all-zero rect, and zero is very
+      // near the top of the viewport -- so without this the phone downloads
+      // every model on the page for slots it will never draw. No box, no
+      // fetch; the resize listener picks it up if the slot ever opens.
+      if (!r.width && !r.height) return;
       // A screen and a half out, so it is decoded by the time it is looked at.
-      if (host.getBoundingClientRect().top < window.innerHeight * 1.6) {
+      if (r.top < window.innerHeight * 1.6) {
         done = true;
         setNear(true);
         window.removeEventListener("scroll", check);
@@ -180,7 +203,7 @@ export function Suit({ className }: { className?: string }) {
       window.removeEventListener("scroll", check);
       window.removeEventListener("resize", check);
     };
-  }, []);
+  }, [eager]);
 
   useEffect(() => {
     const node = canvasRef.current;
@@ -198,7 +221,13 @@ export function Suit({ className }: { className?: string }) {
 
       let buffer: ArrayBuffer;
       try {
-        const res = await fetch("/models/crew-escape-suit.glb", { cache: "force-cache" });
+        // Default cache mode, deliberately. "force-cache" uses a cached copy
+        // even when it is stale, and these files live at stable URLs with no
+        // content hash -- so updating a model would keep serving returning
+        // visitors the old one indefinitely. The static server sends
+        // Last-Modified and ETag; letting the browser revalidate costs one
+        // conditional request and cannot go stale.
+        const res = await fetch(src);
         if (!res.ok) throw new Error(String(res.status));
         buffer = await res.arrayBuffer();
       } catch {
@@ -459,15 +488,10 @@ export function Suit({ className }: { className?: string }) {
           0, 0, (far + near) / (near - far), -1,
           0, 0, (2 * far * near) / (near - far), 0,
         ]));
-        // Framing, re-derived after the geometry was fixed. The original 3.0
-        // was measured against the broken mesh, and a cloud of shrapnel is far
-        // wider than a standing figure -- it filled 80% of the width, so the
-        // distance looked right. Rendered correctly the same value gave a
-        // figure 37% of the width and 67% of the height, adrift in its column.
-        //
-        // Size scales as 1/dist, so 255px of height at 2.85 puts ~323px -- 85%
-        // of the canvas, with 28px of margin top and bottom -- at 2.25.
-        const dist = span * 2.25;
+        // Size scales as 1/dist, so this is measured per model rather than
+        // guessed. The suit at 2.25 fills 86% of its canvas height with 22px
+        // of margin at the tightest of twelve angles.
+        const dist = span * fit;
         gl.uniformMatrix4fv(U.view, false, new Float32Array([
           1, 0, 0, 0,
           0, 1, 0, 0,
@@ -503,7 +527,7 @@ export function Suit({ className }: { className?: string }) {
         if (!running || disposed) return;
         const dt = Math.min((now - last) / 1000, 0.1);
         last = now;
-        if (motionOK) spin += dt * SPIN_RATE;
+        if (motionOK) spin += dt * spinRate;
         draw();
         raf = requestAnimationFrame(frame);
       };
@@ -547,19 +571,19 @@ export function Suit({ className }: { className?: string }) {
       // The same synchronous handle every other canvas here exposes, for the
       // same reason: rAF is throttled to a fraction of a hertz in a background
       // tab, so stepping by hand is the only way to assert this moves.
-      (window as unknown as Record<string, unknown>).__havenSuit = {
+      (window as unknown as Record<string, unknown>)[handleKey] = {
         primitives: prims.length,
         triangles: prims.reduce((sum, p) => sum + p.count / 3, 0),
         span: +span.toFixed(4),
         state: () => ({ spin: +spin.toFixed(3), W, H }),
         tick(seconds: number) {
-          spin += seconds * SPIN_RATE;
+          spin += seconds * spinRate;
           draw();
           return +spin.toFixed(3);
         },
       };
       cleanup.push(() => {
-        delete (window as unknown as Record<string, unknown>).__havenSuit;
+        delete (window as unknown as Record<string, unknown>)[handleKey];
       });
     };
 
@@ -569,7 +593,7 @@ export function Suit({ className }: { className?: string }) {
       disposed = true;
       cleanup.forEach((fn) => fn());
     };
-  }, [motionOK, near]);
+  }, [motionOK, near, src, spinRate, fit, handleKey]);
 
   // A page that reads fine without it should lose nothing when WebGL is
   // unavailable or the model does not arrive.
@@ -581,7 +605,7 @@ export function Suit({ className }: { className?: string }) {
         ref={canvasRef}
         className="h-full w-full"
         role="img"
-        aria-label="NASA Advanced Crew Escape Suit, slowly rotating"
+        aria-label={label}
       />
     </div>
   );
@@ -611,4 +635,21 @@ interface GltfDoc {
   }[];
   materials?: { pbrMetallicRoughness?: { baseColorFactor?: number[] } }[];
   nodes?: { translation?: number[]; rotation?: number[]; scale?: number[] }[];
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/** The astronaut. Kept as its own name because the page reads better for it. */
+export function Suit({ className }: { className?: string }) {
+  return (
+    <Model
+      src="/models/crew-escape-suit.glb"
+      label="NASA Advanced Crew Escape Suit, slowly rotating"
+      className={className}
+      spinRate={0.48}
+      fit={2.25}
+      handleKey="__havenSuit"
+    />
+  );
 }

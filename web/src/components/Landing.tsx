@@ -9,7 +9,7 @@ import { fetchAudit, fetchEvaluation } from "@/lib/api";
 import { Counterfactual, verdictFromAudit, type Verdict } from "./Counterfactual";
 import { Earth } from "./Earth";
 import { Moon } from "./Moon";
-import { Suit } from "./Suit";
+import { Model, Suit } from "./Model";
 import { AlertnessGap, HardLine, LayerStack, PipelineRail } from "./LandingVisuals";
 import { StarField } from "./StarField";
 import { Chip, GlassCard, Label, Reveal } from "./ui";
@@ -124,6 +124,38 @@ function Hero() {
         className="moon-slot pointer-events-none absolute inset-0 -z-10 will-change-transform"
       >
         <Moon className="absolute inset-0 h-full w-full" cx={0.1} cy={0.085} r={0.03} />
+      </div>
+
+      {/* The station, along the bottom-right, under the planet.
+
+          Measured rather than eyeballed: the type runs to y 720 and x 704, and
+          the planet's disc ends at y 713, which leaves one genuinely empty
+          region -- wide and shallow, below the limb and right of the copy.
+          That happens to be the right shape for a truss. The lower-*left*, my
+          first guess, is where the buttons and the sunrise counter live.
+
+          It is the real thing: 46 modules out of NASA's Lightwave set, merged
+          and decimated, truss and solar wings included. See
+          `public/models/CREDITS.md`. Slower than the suit because it is bigger
+          and further off, and on its own parallax rate between the planet and
+          the type. */}
+      <div
+        {...layer({ scroll: 0.26, pointer: 6 })}
+        className="iss-slot pointer-events-none absolute inset-0 -z-10 will-change-transform"
+      >
+        <div className="absolute" style={{ left: "56%", right: "2%", bottom: "1.5%", height: 132 }}>
+          <Model
+            src="/models/iss.glb"
+            label="The International Space Station, slowly turning"
+            className="h-full w-full opacity-[0.92]"
+            spinRate={0.14}
+            // Laid horizontal at export, the tall dimension is now the solar
+            // wings rather than the truss, so a shallow box works. Tuned
+            // against a full turn -- see the check in the commit.
+            fit={2.0}
+            handleKey="__havenISS"
+          />
+        </div>
       </div>
 
       {/* A scrim weighted to the side the type sits on, falling to nothing well

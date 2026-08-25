@@ -724,6 +724,23 @@ html.js .reveal-in {
 }
 
 /* ------------------------------------------------------------------------
+   The hero's station slot
+
+   Same reasoning as the moon below it: the hero centres its content in a 94vh
+   box, so a shorter viewport lifts the type down-left into the corner the
+   station occupies. It opens only when there is room, and the page simply has
+   no station otherwise.
+   ------------------------------------------------------------------------ */
+.iss-slot {
+  display: none;
+}
+@media (min-width: 1024px) and (min-height: 820px) {
+  .iss-slot {
+    display: block;
+  }
+}
+
+/* ------------------------------------------------------------------------
    The hero's moon slot
 
    Width alone is the wrong gate. The hero centres its content in a 94vh box,
