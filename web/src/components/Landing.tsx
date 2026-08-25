@@ -150,10 +150,32 @@ function Hero() {
         <div
           className="absolute"
           style={{
-            left: "57%",
+            // Sized off what the hero actually occupies rather than by eye:
+            // no word in this section reaches right of x 704 or below y 646,
+            // so the whole right-hand column is free top to bottom and the box
+            // takes it, stopping above the fold because the hero runs taller
+            // than the viewport and anything past it is cut.
+            //
+            // The left edge is a `max` and not a percentage because the copy
+            // does not scale with the viewport -- it is capped at `max-w-2xl`,
+            // so its right edge sits near x 704 at every width the slot opens
+            // at. A bare 55.5% clears that at 1440 and lands at x 568 on a
+            // 1024 screen, straight through the headline. The floor holds the
+            // clearance and the percentage takes over once there is room.
+            left: "max(55.5%, 720px)",
             right: "0%",
-            bottom: "6%",
-            height: 250,
+            bottom: "10%",
+            // Height from the box's own width, not a fixed number.
+            //
+            // `fit` frames on height alone -- the station lands at 86% of the
+            // box height at every width, and the width it needs simply follows
+            // from the silhouette's 1.10 aspect. So a fixed height is only
+            // safe while the box stays wide: with the left edge pinned at
+            // 720px, a 1024 screen leaves 294px of width for a 600px box and
+            // the solar wings run off both sides. Deriving the height keeps
+            // the proportion at every width the slot opens at, and 1.12 leaves
+            // the silhouette about 8% of margin on the sides.
+            aspectRatio: "1.12",
             // Two shadows: a tight dark one to cut the station off the lit
             // limb, and a wider soft one so the separation does not read as an
             // outline. The canvas is transparent everywhere the model is not,
@@ -172,6 +194,10 @@ function Hero() {
             // Framed against a full turn rather than one pose: laid horizontal
             // at export, the widest and tallest silhouettes fall at different
             // angles, and the tall one is what has to clear the box.
+            //
+            // The station renders height-bound in this box -- it filled 85% of
+            // the height at only 41% of the width -- so growing the box was
+            // what made it bigger, and the camera stays where it framed well.
             fit={2.0}
             handleKey="__havenISS"
           />
