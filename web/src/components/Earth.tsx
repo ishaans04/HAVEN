@@ -825,9 +825,20 @@ export function Earth({
       const down = (e: PointerEvent) => {
         if (!inside(e)) return;
         id = e.pointerId;
-        over.setPointerCapture(id);
         sim.dragging = true;
+        // Announce the grab *before* asking for capture. Capture throws for a
+        // pointer the browser no longer considers active, and with the call
+        // ordered the other way that exception skipped the callback entirely:
+        // the planet turned, but the "drag the planet" hint never learned that
+        // anyone had, so it sat there telling a reader to do the thing they
+        // were already doing. Capture is an enhancement here -- it keeps the
+        // drag alive off the canvas -- so it fails quietly.
         grabCb.current?.();
+        try {
+          over.setPointerCapture(id);
+        } catch {
+          /* no active pointer -- drag on without capture */
+        }
         sim.spinVel = 0;
         sim.latVel = 0;
         lastX = e.clientX;

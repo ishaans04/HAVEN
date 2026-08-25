@@ -385,33 +385,70 @@ const LAYERS = [
   { k: "The evidence", v: "Every rule, condition and hash", tone: "var(--ok)" },
 ];
 
+/**
+ * Three bands, and the spacing has to answer to the slant.
+ *
+ * The cost label used to sit at a fixed `W - 52`, which is exactly where the
+ * band's leaning right edge passes at that height -- so "no clicks" was
+ * printed on the border rather than inside it. A skewed box has no single
+ * right margin: the edge moves as you go down it, so anything aligned to it
+ * has to be positioned from the edge at *its own* baseline, not from the box.
+ *
+ * The bands were also 46 tall carrying two lines of type plus their leading,
+ * which left the title and the subtitle almost touching, and the whole stack
+ * finished 54 units short of the viewBox with the slack all dumped at the
+ * bottom. Bands are 52 now, the type has room, and the box ends where the
+ * drawing does.
+ */
+const BAND_H = 56;
+const BAND_STEP = 72;
+const BAND_SKEW = 26;
+const BAND_TOP = 20;
+
 export function LayerStack({ className }: { className?: string }) {
   const W = 620;
-  const H = 250;
+  const H = BAND_TOP * 2 + BAND_STEP * (LAYERS.length - 1) + BAND_H;
+
+  /** Where the leaning right edge sits, this far down a band. */
+  const rightEdgeAt = (dy: number) => W - 40 - BAND_SKEW * (dy / BAND_H);
+
   return (
     <figure className={className}>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img">
         <title>One screen, readable at three depths</title>
         {LAYERS.map((l, i) => {
           const inset = i * 46;
-          const y = 26 + i * 62;
+          const y = BAND_TOP + i * BAND_STEP;
+          // Both baselines, and the cost label rides the first one so it reads
+          // as an annotation of the layer's name rather than floating between
+          // the two lines with nothing to align to.
+          // 21 apart rather than 18: at 14px over 12px the two em boxes were
+          // leaving 2.6px between them, which reads as one crowded block.
+          const titleDy = 21;
+          const subDy = 42;
           return (
             <g key={l.k}>
               <path
-                d={`M${60 + inset},${y} L${W - 40},${y} L${W - 40 - 26},${y + 46} L${34 + inset},${y + 46} Z`}
+                d={`M${60 + inset},${y} L${W - 40},${y} L${W - 40 - BAND_SKEW},${y + BAND_H} L${34 + inset},${y + BAND_H} Z`}
                 fill={`color-mix(in oklab, ${l.tone} ${14 - i * 3}%, transparent)`}
                 stroke={`color-mix(in oklab, ${l.tone} 40%, transparent)`}
                 strokeWidth="1"
               />
-              <text x={78 + inset} y={y + 21} fontSize="14" fontWeight="500" fill={l.tone}>
+              <text x={78 + inset} y={y + titleDy} fontSize="14" fontWeight="500" fill={l.tone}>
                 {l.k}
               </text>
-              <text x={78 + inset} y={y + 38} fontSize="12" fill="var(--ink-2)">
+              <text x={78 + inset} y={y + subDy} fontSize="12" fill="var(--ink-2)">
                 {l.v}
               </text>
-              <text x={W - 52} y={y + 28} fontSize="11" textAnchor="end" className="mono"
-                fill="var(--ink-3)">
-                {i === 0 ? "no clicks" : i === 1 ? "no clicks" : "one click"}
+              <text
+                x={rightEdgeAt(titleDy) - 18}
+                y={y + titleDy}
+                fontSize="11"
+                textAnchor="end"
+                className="mono"
+                fill="var(--ink-3)"
+              >
+                {i === 2 ? "one click" : "no clicks"}
               </text>
             </g>
           );
