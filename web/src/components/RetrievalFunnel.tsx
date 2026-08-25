@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { Citation } from "@/lib/types";
 
 /**
@@ -29,6 +30,8 @@ interface Lane {
   admissible: boolean;
   met: number;
   total: number;
+  /** One per precondition, in the order the checker tested them. */
+  flags: boolean[];
   why: string | null;
 }
 
@@ -40,7 +43,7 @@ function clip(text: string, max: number) {
   return `${(space > max * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`;
 }
 
-const W = 720;
+const W = 820;
 const LANE_GAP = 46;
 const TOP = 40;
 const GATE_X = 300;
@@ -55,6 +58,16 @@ export function RetrievalFunnel({
   citation: Citation | null | undefined;
   className?: string;
 }) {
+  /**
+   * Which lane the reader is on.
+   *
+   * Four lanes of near-identical wording is exactly the situation the corpus
+   * was built to create, so telling them apart is the work. Holding one dims
+   * the rest, which is the cheapest way to isolate a row in a diagram that
+   * cannot use whitespace to separate them.
+   */
+  const [held, setHeld] = useState<string | null>(null);
+
   if (!lanes.length) return null;
 
   const height = TOP + lanes.length * LANE_GAP + 34;
@@ -169,11 +182,33 @@ export function RetrievalFunnel({
             );
           })}
 
-          {/* Lane identities and the tally that decided each one. */}
+          {/* Lane identities, the tally that decided each one, and which of
+              its conditions the checker actually failed. */}
           {lanes.map((lane, i) => {
             const y = laneY(i);
+            const dim = held !== null && held !== lane.passageId;
             return (
-              <g key={`l-${lane.passageId}`}>
+              <g
+                key={`l-${lane.passageId}`}
+                tabIndex={0}
+                role="button"
+                aria-label={`${lane.passageId}, similarity ${lane.relevance.toFixed(3)}, ${lane.met} of ${lane.total} preconditions satisfied${lane.admissible ? ", admitted" : `, rejected${lane.why ? `: ${lane.why}` : ""}`}`}
+                opacity={dim ? 0.32 : 1}
+                style={{ transition: "opacity .22s ease", outline: "none" }}
+                onMouseEnter={() => setHeld(lane.passageId)}
+                onMouseLeave={() => setHeld((v) => (v === lane.passageId ? null : v))}
+                onFocus={() => setHeld(lane.passageId)}
+                onBlur={() => setHeld((v) => (v === lane.passageId ? null : v))}
+              >
+                {/* A hit area over the whole row: the marks themselves are
+                    hairlines and 11px text, which is nothing to aim at. */}
+                <rect
+                  x={LEFT}
+                  y={y - 22}
+                  width={W - LEFT * 2}
+                  height={LANE_GAP - 6}
+                  fill="transparent"
+                />
                 <text
                   x={LEFT + 2}
                   y={y - 9}
@@ -201,9 +236,23 @@ export function RetrievalFunnel({
                 >
                   {lane.met}/{lane.total}
                 </text>
+                {/* One lamp per precondition, in the order they were tested.
+                    Only the failures carry colour -- a row of green ticks
+                    beside a row of red ones spends the reader's attention on
+                    the conditions that were fine. */}
+                {lane.flags.map((ok, c) => (
+                  <circle
+                    key={c}
+                    cx={GATE_X + 50 + c * 11}
+                    cy={y - 13}
+                    r={3.4}
+                    fill={ok ? "color-mix(in oklab, var(--ok) 42%, transparent)" : "var(--bad)"}
+                  />
+                ))}
+
                 {!lane.admissible && lane.why ? (
-                  <text x={GATE_X + 52} y={y - 9} fill="var(--ink-3)" fontSize="11">
-                    {clip(lane.why, 70)}
+                  <text x={GATE_X + 116} y={y - 9} fill="var(--ink-3)" fontSize="11">
+                    {clip(lane.why, 78)}
                   </text>
                 ) : null}
               </g>

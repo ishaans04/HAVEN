@@ -90,6 +90,9 @@ export function ProcedureReasoning({
       admissible: admissibleIds.has(candidate.passage_id),
       met: clauses.filter((c) => c.satisfied).length,
       total: clauses.length,
+      // Per clause, not just counted: the funnel shows *which* condition
+      // killed a lane, which is the question "3/4" raises and cannot answer.
+      flags: clauses.map((c) => c.satisfied),
       why: rejectionById.get(candidate.passage_id)?.why ?? null,
     };
   });
