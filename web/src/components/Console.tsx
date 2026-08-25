@@ -238,9 +238,49 @@ export function Console() {
                 data-tour="verdict"
               >
                 <Answer situation={situation} />
+
+                {/* The roster, in the space the answer was not using.
+
+                    It sat under the dial in the right column, which made that
+                    column taller than the viewport -- and a `sticky` element
+                    taller than the viewport cannot be scrolled to the bottom
+                    of, so the last two operators were unreachable. Moving it
+                    here fixes that by subtraction, fills a screen's worth of
+                    empty left margin, and puts the one genuinely interactive
+                    control on this page where a reader is already looking. */}
+                <div className="mt-auto pt-10" data-tour="crew">
+                  <div className="mb-1 flex flex-wrap items-baseline gap-x-3">
+                    <Label>Crew readiness</Label>
+                    <span className="mono text-[11px] text-[var(--ink-3)]">
+                      {evaluation.readiness.length} operators
+                    </span>
+                  </div>
+                  {/* Says what the click does, and who the answer is about --
+                      the two things that were previously left to be inferred
+                      from a dial quietly changing shape. */}
+                  <p className="mb-3 text-[12px] leading-snug text-[var(--ink-3)]">
+                    Pick anyone to put their day on the dial.
+                    {situation ? (
+                      <>
+                        {" "}
+                        The answer above is about{" "}
+                        <span className="text-[var(--ink-2)]">
+                          {situation.crew_member_name}
+                        </span>
+                        , the only operator HAVEN raised in this window.
+                      </>
+                    ) : null}
+                  </p>
+                  <CrewRail
+                    readiness={evaluation.readiness}
+                    selected={crew?.crew_member ?? null}
+                    onSelect={setCrewId}
+                  />
+                </div>
+
                 <a
                   href="#why"
-                  className="group mt-auto hidden items-center gap-2 pt-10 text-[12px] uppercase tracking-[0.14em] text-[var(--ink-3)] transition-colors hover:text-[var(--accent)] lg:flex"
+                  className="group mt-6 hidden items-center gap-2 text-[12px] uppercase tracking-[0.14em] text-[var(--ink-3)] transition-colors hover:text-[var(--accent)] lg:flex"
                 >
                   <ChevronDown
                     size={14}
@@ -312,17 +352,43 @@ export function Console() {
                 context you glance at rather than a card you have to read.
                 --------------------------------------------------------------- */}
             <div className="min-w-0 lg:col-span-5 lg:col-start-8 lg:row-start-1">
+              {/* Sticky, and bounded. A sticky element taller than the space
+                  it sticks in has an unreachable bottom -- the reason the
+                  roster below the dial could not be scrolled to. The roster
+                  has moved out, and the cap plus `overflow-y-auto` means that
+                  if this ever outgrows the viewport again it scrolls instead
+                  of silently truncating. `no-bar` keeps the scrollbar from
+                  appearing across the scene when it is not needed. */}
               <div
-                className="lg:sticky"
+                className="no-bar lg:sticky lg:max-h-[calc(100svh-var(--masthead-h,56px)-32px)] lg:overflow-y-auto"
                 style={{ top: "calc(var(--masthead-h, 56px) + 16px)" }}
               >
                 <div data-tour="dial">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                    <Label>The window</Label>
+                    {/* Whose day this is. The dial swapped silently when a
+                        different operator was picked, which reads as nothing
+                        having happened. */}
+                    <Label>{crew ? `${crew.name} · 24 h` : "The window"}</Label>
                     <span className="mono text-[11px] text-[var(--ink-3)]">
-                      {evaluation.window.start.slice(0, 10)} · 24 h
+                      {evaluation.window.start.slice(0, 10)}
                     </span>
                   </div>
+
+                  {/* The two figures that shape the curve above.
+
+                      The roster is synthetic and several operators share
+                      inputs -- three distinct curves across six people -- so
+                      switching between two of them changes the name and
+                      nothing else on the dial. Printing what drives the shape
+                      makes that legible rather than mysterious: two operators
+                      look alike because they have been awake the same time
+                      and carry the same debt. */}
+                  {crew ? (
+                    <p className="readout mt-1 text-[11px] text-[var(--ink-3)]">
+                      {crew.hours_awake.toFixed(1)} h awake · {crew.sleep_debt_h.toFixed(1)} h sleep
+                      debt · baseline {crew.baseline_alertness.toFixed(2)}
+                    </p>
+                  ) : null}
 
                   <div className="mx-auto w-full max-w-[560px]">
                     <OrbitDial
@@ -336,20 +402,6 @@ export function Console() {
                   </div>
 
                   <OrbitLegend className="mt-1" />
-                </div>
-
-                <div className="mt-6" data-tour="crew">
-                  <div className="mb-2 flex flex-wrap items-baseline gap-x-3">
-                    <Label>Crew readiness</Label>
-                    <span className="mono text-[11px] text-[var(--ink-3)]">
-                      {evaluation.readiness.length} operators
-                    </span>
-                  </div>
-                  <CrewRail
-                    readiness={evaluation.readiness}
-                    selected={crew?.crew_member ?? null}
-                    onSelect={setCrewId}
-                  />
                 </div>
 
               </div>
