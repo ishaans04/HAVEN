@@ -3,8 +3,20 @@
 `2k_earth_daymap.jpg`, `2k_earth_nightmap.jpg`, `2k_earth_clouds.jpg`,
 `2k_earth_normal_map.jpg`, `2k_moon.jpg`
 
-Solar System Scope texture set, 2048x1024 equirectangular.
+Solar System Scope texture set, sourced at 2048x1024 equirectangular.
 <https://www.solarsystemscope.com/textures/>
+
+The `2k_` prefix records where each file came from, not what ships. Two of
+them were resampled to what they are actually drawn at -- see below. As
+shipped:
+
+| file | shipped | source |
+| --- | --- | --- |
+| `2k_earth_daymap.jpg` | 2048x1024, 452 KB | unchanged |
+| `2k_earth_nightmap.jpg` | 2048x1024, 249 KB | unchanged |
+| `2k_earth_normal_map.jpg` | 2048x1024, 90 KB | converted from TIFF |
+| `2k_earth_clouds.jpg` | **1536x768, 391 KB** | was 2048x1024, 943 KB |
+| `2k_moon.jpg` | **512x256, 43 KB** | was 2048x1024, 538 KB |
 
 Licensed **CC BY 4.0**. Derived from NASA imagery: Blue Marble Next Generation
 (albedo), Black Marble / VIIRS Day-Night Band (city lights), MODIS cloud
@@ -39,11 +51,33 @@ lights and the clouds back to procedural along with it.
 ## The moon map
 
 `2k_moon.jpg` -- same set, same licence, derived from Lunar Reconnaissance
-Orbiter imagery. Recompressed from 1.03 MB to 538 KB at q82: it is drawn about
-seventy pixels across, where the difference is not visible.
+Orbiter imagery.
+
+Resampled to **512x256, 43 KB**, down from 538 KB, because the disc renders 84
+device pixels across. An equirectangular map shows half its width at once, so
+2048 put 1024 texels behind those 84 pixels -- twelve times more than could be
+resolved. At 512 it is still 3x oversampled at dpr 1 and 1.5x on a retina
+screen. Measured on the rendered disc before and after: mean RGB moves 0.17 of
+255, contrast drops 1%, the lit area is identical to the pixel.
 
 It supplies craters and nothing else. The **phase** -- the only thing on that
 disc carrying meaning -- comes from the shared sun vector in `lib/sun.ts`, the
 same one the Earth's terminator uses, so the crescent tracks the day/night line
 on the planet beside it. If this file is missing the moon still shows the
 correct phase in flat grey.
+
+## The cloud map
+
+Resampled to **1536x768 at q90, 391 KB**, down from 943 KB -- the largest file
+on the site, for the layer carrying the least information.
+
+Two things make that safe. The shader reads `.r` and nothing else (it is an
+opacity mask, and the source is already pure grey -- mean chroma measured at
+0.00), and the planet renders 729 device pixels across, so 1536 puts 768 texels
+behind them: right at Nyquist, where 2048 was 1.4x oversampled. Re-encoding at
+q90 costs the same rmse of 3.13 whether the map is 2048 or 1536, so the
+resolution is where the saving is, not the quality.
+
+Note the asymmetry with the albedo, which is deliberate: the daymap stays at
+2048 because at 729 pixels it is only 1.4x oversampled at dpr 1 and *under*
+sampled on a retina screen, and it is the map carrying the coastlines.
