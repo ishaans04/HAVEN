@@ -2,19 +2,19 @@
 
 import { useEffect, useState } from "react";
 import clsx from "clsx";
-import { BookOpen, ChevronDown, X } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { fetchProcedures } from "@/lib/api";
 import type { ProcedureSummary } from "@/lib/types";
-import { Tag } from "./ui";
+import { Chip, Label, Sheet, type Tone } from "./ui";
 
 /**
  * The corpus, readable.
  *
- * `GET /api/procedures` has existed since v1 and nothing ever called it, which
- * meant the rulebook every recommendation cites was invisible unless you read
- * the source. That is a strange gap in a system whose case rests on citing
- * procedure rather than asserting conclusions: a citation an operator cannot
- * look up is not much of a citation.
+ * `GET /api/procedures` existed from v1 and nothing called it, which meant the
+ * rulebook every recommendation cites was invisible unless you read the source.
+ * That is a strange gap in a system whose case rests on citing procedure rather
+ * than asserting conclusions: a citation an operator cannot look up is not much
+ * of a citation.
  *
  * Two things it shows that a plain list would not.
  *
@@ -52,132 +52,122 @@ export function ProcedureBrowser({ onClose }: { onClose: () => void }) {
   // should see on the row rather than infer from the document name.
   const canPrescribe = (authority: string) =>
     authority === "authoritative" || authority === "prototype";
-  const authorityTone = (authority: string) =>
-    authority === "authoritative" ? "good" : canPrescribe(authority) ? "neutral" : "warn";
+  const authorityTone = (authority: string): Tone =>
+    authority === "authoritative" ? "ok" : canPrescribe(authority) ? "neutral" : "warn";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/70 p-4 backdrop-blur-sm">
-      <div className="hv-panel my-8 w-full max-w-4xl">
-        <header className="flex items-start gap-3 border-b border-[var(--hv-line)] px-4 py-3">
-          <BookOpen size={16} className="mt-0.5 shrink-0 text-[color:var(--hv-accent)]" />
-          <div className="min-w-0 flex-1">
-            <h2 className="text-[13px] font-semibold">The procedure corpus</h2>
-            <p className="mt-0.5 text-[11px] leading-snug text-[var(--hv-muted)]">
-              Every passage the reasoning tier may read. Only{" "}
-              <span className="text-[var(--hv-text)]">authoritative</span> requirements may ground
-              an action — guidance and research are here to be read and rejected, as are the
-              near-misses. The corpus is adversarial by construction, and rejecting is the
-              judgement.
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="shrink-0 rounded border border-[var(--hv-line-bright)] p-1 text-[var(--hv-muted)] transition-colors hover:text-[var(--hv-text)]"
-          >
-            <X size={13} />
-          </button>
-        </header>
+    <Sheet
+      open
+      onClose={onClose}
+      title="The rulebook"
+      hint={
+        <>
+          Every passage the reasoning tier may read. Only{" "}
+          <span className="text-[var(--ink)]">authoritative</span> requirements may ground an action
+          — guidance and research are here to be read and rejected, as are the near-misses. The
+          corpus is adversarial by construction, and rejecting is the judgement.
+        </>
+      }
+    >
+      {error ? (
+        <p className="py-6 text-[13px] text-[var(--bad)]">{error}</p>
+      ) : !procedures ? (
+        <p className="py-6 text-[13px] text-[var(--ink-2)]">Loading the corpus…</p>
+      ) : (
+        <>
+          <p className="mono border-t border-white/[0.08] py-3 text-[12px] text-[var(--ink-3)]">
+            {total} passages across {byDoc.size} documents · {extracted} extracted from source
+            documents, {total - extracted} written for this prototype
+          </p>
 
-        {error ? (
-          <p className="p-6 text-[12px] text-[color:var(--hv-degraded)]">{error}</p>
-        ) : !procedures ? (
-          <p className="p-6 text-[12px] text-[var(--hv-muted)]">Loading the corpus…</p>
-        ) : (
-          <>
-            <div className="border-b border-[var(--hv-line)] px-4 py-2">
-              <span className="mono text-[10px] text-[var(--hv-dim)]">
-                {total} passages across {byDoc.size} documents · {extracted} extracted from source
-                documents, {total - extracted} written for this prototype
-              </span>
-            </div>
-
-            <div className="max-h-[65vh] overflow-auto p-4">
-              {Array.from(byDoc.entries()).map(([doc, passages]) => (
-                <section key={doc} className="mb-5 last:mb-0">
-                  <div className="hv-zone-label mb-2">{doc}</div>
-                  <ul className="space-y-1.5">
-                    {passages.map((procedure: ProcedureSummary) => {
-                      const open = expanded === procedure.passage_id;
-                      return (
-                        <li
-                          key={procedure.passage_id}
-                          className="rounded border border-[var(--hv-line)] bg-[var(--hv-panel-raised)]"
+          <div className="max-h-[62vh] space-y-5 overflow-auto pr-1">
+            {Array.from(byDoc.entries()).map(([doc, passages]) => (
+              <section key={doc}>
+                <Label className="mb-2">{doc}</Label>
+                <ul className="space-y-2">
+                  {passages.map((procedure) => {
+                    const open = expanded === procedure.passage_id;
+                    return (
+                      <li key={procedure.passage_id} className="glass-2">
+                        <button
+                          onClick={() => setExpanded(open ? null : procedure.passage_id)}
+                          aria-expanded={open}
+                          className="flex w-full items-start gap-3 px-4 py-3 text-left"
                         >
-                          <button
-                            onClick={() => setExpanded(open ? null : procedure.passage_id)}
-                            className="flex w-full items-start gap-2 px-3 py-2 text-left"
-                          >
-                            <span className="mono shrink-0 text-[10px] text-[var(--hv-dim)]">
-                              §{procedure.section}
-                            </span>
-                            <span className="min-w-0 flex-1 text-[12px] leading-snug">
-                              {procedure.title}
-                            </span>
-                            <span className="flex shrink-0 items-center gap-1.5">
-                              {procedure.near_miss_note ? <Tag tone="warn">near-miss</Tag> : null}
-                              {!procedure.prescribes ? (
-                                <Tag tone="neutral">no action</Tag>
-                              ) : null}
-                              <Tag tone={authorityTone(procedure.authority)}>
-                                {procedure.authority}
-                              </Tag>
-                              <Tag tone={procedure.provenance === "extracted" ? "good" : "neutral"}>
-                                {procedure.provenance}
-                              </Tag>
-                              <ChevronDown
-                                size={12}
-                                className={clsx(
-                                  "text-[var(--hv-dim)] transition-transform",
-                                  open && "rotate-180",
-                                )}
-                              />
-                            </span>
-                          </button>
+                          <span className="mono shrink-0 text-[12px] text-[var(--ink-3)]">
+                            §{procedure.section}
+                          </span>
+                          <span className="min-w-0 flex-1 text-[13px] leading-snug text-[var(--ink)]">
+                            {procedure.title}
+                          </span>
+                          <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                            {procedure.near_miss_note ? <Chip tone="warn">near-miss</Chip> : null}
+                            {!procedure.prescribes ? <Chip tone="neutral">no action</Chip> : null}
+                            <Chip tone={authorityTone(procedure.authority)}>
+                              {procedure.authority}
+                            </Chip>
+                            <Chip tone={procedure.provenance === "extracted" ? "ok" : "neutral"}>
+                              {procedure.provenance}
+                            </Chip>
+                            <ChevronDown
+                              size={14}
+                              className={clsx(
+                                "text-[var(--ink-3)] transition-transform duration-300",
+                                open && "rotate-180",
+                              )}
+                            />
+                          </span>
+                        </button>
 
-                          {open ? (
-                            <div className="border-t border-[var(--hv-line)] px-3 py-2.5">
-                              <p className="text-[11px] leading-relaxed text-[var(--hv-text)]">
-                                {procedure.text}
+                        {open ? (
+                          <div className="rise border-t border-white/[0.07] p-4">
+                            <p className="text-[13px] leading-relaxed text-[var(--ink-2)]">
+                              {procedure.text}
+                            </p>
+
+                            {procedure.near_miss_note ? (
+                              <p
+                                className="mt-3 rounded-[var(--radius-xs)] px-3 py-2 text-[12px] leading-snug text-[var(--warn)]"
+                                style={{
+                                  background: "color-mix(in oklab, var(--warn) 8%, transparent)",
+                                  boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--warn) 26%, transparent)",
+                                }}
+                              >
+                                Retrieved on purpose, and must be rejected:{" "}
+                                {procedure.near_miss_note}
                               </p>
+                            ) : null}
 
-                              {procedure.near_miss_note ? (
-                                <p className="mt-2 rounded border border-[color:var(--hv-watch)]/40 bg-[color:var(--hv-watch)]/[0.06] px-2 py-1.5 text-[10px] leading-snug text-[color:var(--hv-watch)]">
-                                  Retrieved on purpose, and must be rejected:{" "}
-                                  {procedure.near_miss_note}
-                                </p>
+                            <dl className="mono mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[12px]">
+                              <dt className="text-[var(--ink-3)]">applies to</dt>
+                              <dd className="text-[var(--ink-2)]">
+                                {procedure.task_types.join(", ") || "—"}
+                              </dd>
+                              <dt className="text-[var(--ink-3)]">prescribes</dt>
+                              <dd className="text-[var(--ink-2)]">
+                                {procedure.prescribes ??
+                                  "nothing — it cannot ground a recommendation"}
+                              </dd>
+                              <dt className="text-[var(--ink-3)]">source</dt>
+                              <dd className="text-[var(--ink-2)]">{procedure.source}</dd>
+                              {procedure.reviewed_by ? (
+                                <>
+                                  <dt className="text-[var(--ink-3)]">reviewed by</dt>
+                                  <dd className="text-[var(--ink-2)]">{procedure.reviewed_by}</dd>
+                                </>
                               ) : null}
-
-                              <dl className="mono mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[10px]">
-                                <dt className="text-[var(--hv-dim)]">applies to</dt>
-                                <dd className="text-[var(--hv-muted)]">
-                                  {procedure.task_types.join(", ") || "—"}
-                                </dd>
-                                <dt className="text-[var(--hv-dim)]">prescribes</dt>
-                                <dd className="text-[var(--hv-muted)]">
-                                  {procedure.prescribes ?? "nothing — it cannot ground a recommendation"}
-                                </dd>
-                                <dt className="text-[var(--hv-dim)]">source</dt>
-                                <dd className="text-[var(--hv-muted)]">{procedure.source}</dd>
-                                {procedure.reviewed_by ? (
-                                  <>
-                                    <dt className="text-[var(--hv-dim)]">reviewed by</dt>
-                                    <dd className="text-[var(--hv-muted)]">{procedure.reviewed_by}</dd>
-                                  </>
-                                ) : null}
-                              </dl>
-                            </div>
-                          ) : null}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+                            </dl>
+                          </div>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ))}
+          </div>
+        </>
+      )}
+    </Sheet>
   );
 }
