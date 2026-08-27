@@ -150,31 +150,31 @@ function Hero() {
         <div
           className="absolute"
           style={{
-            // Sized off what the hero actually occupies rather than by eye:
-            // no word in this section reaches right of x 704 or below y 646,
-            // so the whole right-hand column is free top to bottom and the box
-            // takes it, stopping above the fold because the hero runs taller
-            // than the viewport and anything past it is cut.
+            // A quarter of the free column, and capped.
             //
-            // The left edge is a `max` and not a percentage because the copy
+            // This was `left: max(55.5%, 720px)` against `right: 0`, which
+            // makes the box "whatever is left of the viewport" -- verified at
+            // 1440 where that is 636px, and unbounded above it. On a 2560
+            // monitor the same rule hands the station a 1139px box and it
+            // swallows the planet. Anchoring the width instead of both edges
+            // is what stops that.
+            //
+            // The free column is still measured the same way, because the copy
             // does not scale with the viewport -- it is capped at `max-w-2xl`,
             // so its right edge sits near x 704 at every width the slot opens
-            // at. A bare 55.5% clears that at 1440 and lands at x 568 on a
-            // 1024 screen, straight through the headline. The floor holds the
-            // clearance and the percentage takes over once there is room.
-            left: "max(55.5%, 720px)",
-            right: "0%",
+            // at, and 55.5% lands at x 568 on a 1024 screen, straight through
+            // the headline. The 720px floor holds that clearance. The station
+            // then takes a quarter of what remains, clamped at both ends: the
+            // ceiling stops it running away on a large monitor, and the floor
+            // stops it vanishing on a small one -- a quarter of the column a
+            // 1024 screen leaves is 76px, which renders as a speck.
+            width: "clamp(150px, calc((100% - max(55.5%, 720px)) / 4), 300px)",
+            right: "2%",
             bottom: "10%",
-            // Height from the box's own width, not a fixed number.
-            //
-            // `fit` frames on height alone -- the station lands at 86% of the
-            // box height at every width, and the width it needs simply follows
-            // from the silhouette's 1.10 aspect. So a fixed height is only
-            // safe while the box stays wide: with the left edge pinned at
-            // 720px, a 1024 screen leaves 294px of width for a 600px box and
-            // the solar wings run off both sides. Deriving the height keeps
-            // the proportion at every width the slot opens at, and 1.12 leaves
-            // the silhouette about 8% of margin on the sides.
+            // Height from the box's own width. `fit` frames on height alone --
+            // the station lands at 86% of the box height at every width, and
+            // the width it needs follows from the silhouette's 1.10 aspect, so
+            // 1.12 leaves it about 8% of margin on the sides.
             aspectRatio: "1.12",
             // Two shadows: a tight dark one to cut the station off the lit
             // limb, and a wider soft one so the separation does not read as an
@@ -183,7 +183,7 @@ function Hero() {
             // tracing it as it turns. No shader work, and nothing that can
             // drift out of sync with the geometry.
             filter:
-              "drop-shadow(0 0 3px rgba(2,6,14,0.95)) drop-shadow(0 4px 16px rgba(2,6,14,0.75))",
+              "drop-shadow(0 0 1.5px rgba(2,6,14,0.95)) drop-shadow(0 2px 7px rgba(2,6,14,0.75))",
           }}
         >
           <Model
