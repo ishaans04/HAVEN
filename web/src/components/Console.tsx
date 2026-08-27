@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Answer } from "@/components/Answer";
 import { ArgumentWalk, BEATS } from "@/components/ArgumentWalk";
 import { AskScreen } from "@/components/AskScreen";
-import { AuditBar } from "@/components/AuditBar";
+import { AuditBar, TierStrip } from "@/components/AuditBar";
 import { CrewDetail, CrewRail } from "@/components/CrewRail";
 import { OrbitDial, OrbitLegend } from "@/components/OrbitDial";
 import { ProcedureBrowser } from "@/components/ProcedureBrowser";
@@ -302,11 +302,7 @@ export function Console() {
               ) : null}
 
               <div className="rise mt-4" style={{ animationDelay: "240ms" }} data-tour="audit">
-                <AuditBar
-                  tierStatus={evaluation.tier_status}
-                  audit={audit}
-                  evaluationId={evaluation.evaluation_id}
-                />
+                <AuditBar tierStatus={evaluation.tier_status} audit={audit} />
               </div>
 
               {/* The readings behind the dial. Detail about the evidence,
@@ -345,6 +341,17 @@ export function Console() {
                   {evaluation.scenario_note}
                 </p>
               ) : null}
+
+              {/* How the answer was produced, under the note about why this
+                  case exists. Both are commentary on the run rather than part
+                  of the answer, so they read as one footnote. Grouped by a
+                  hairline rather than a box, like every other aside here. */}
+              <div className="divide-top mt-5 pt-4">
+                <TierStrip
+                  tierStatus={evaluation.tier_status}
+                  evaluationId={evaluation.evaluation_id}
+                />
+              </div>
             </div>
 
             {/* ---------------------------------------------------------------

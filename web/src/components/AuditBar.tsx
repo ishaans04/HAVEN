@@ -7,22 +7,26 @@ import { Term } from "./Term";
 import { Disclosure, GlassCard, Label } from "./ui";
 
 /**
- * Zone 6 — the audit strip.
+ * The audit record: the log reference, how many steps it holds, and whether
+ * the chain still verifies.
  *
- * Which tier is live, which provider answered, and the hash chain. It is shown
- * because "traceable" has to mean something checkable: each entry is bound to
- * the one before it, so an altered step stops verifying. It is also the surface
- * that distinguishes a quiet system from a broken one, which is why it stays
- * visible even when there is nothing to decide.
+ * It is shown because "traceable" has to mean something checkable: each entry
+ * is bound to the one before it, so an altered step stops verifying. It is
+ * also the surface that distinguishes a quiet system from a broken one, which
+ * is why it stays visible even when there is nothing to decide.
+ *
+ * Which tier answered used to sit above this and crowded it -- six labels and
+ * an id ahead of the one line anybody reads. That is provenance about the run
+ * rather than about the answer, so it moved to `TierStrip` below the case
+ * note. The degraded banner stays here: it is a warning about the answer being
+ * handed over, and a warning demoted to a footnote is not a warning.
  */
 export function AuditBar({
   tierStatus,
   audit,
-  evaluationId,
 }: {
   tierStatus: TierStatus;
   audit: AuditRecord | null;
-  evaluationId: string;
 }) {
   return (
     <GlassCard className="overflow-hidden">
@@ -42,40 +46,6 @@ export function AuditBar({
           </p>
         </div>
       ) : null}
-
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4">
-        <span className="flex items-center gap-2">
-          <span className="relative flex h-2.5 w-2.5 items-center justify-center">
-            <span
-              className="breathe absolute inset-0 rounded-full"
-              style={{
-                background: tierStatus.degraded ? "var(--warn)" : "var(--ok)",
-                opacity: 0.5,
-              }}
-            />
-            <Radio
-              size={11}
-              className="relative"
-              style={{ color: tierStatus.degraded ? "var(--warn)" : "var(--ok)" }}
-            />
-          </span>
-          <Label className="!text-[11px]">Live</Label>
-        </span>
-
-        <Tier label="Deterministic" value={tierStatus.deterministic} color="var(--ok)" />
-        <Tier label="Retrieval" value={tierStatus.retrieval} color="var(--info)" />
-        <Tier label="Reasoning" value={tierStatus.reasoning} color="var(--accent)" />
-        {tierStatus.provider_chain && tierStatus.provider_chain.length > 1 ? (
-          <ProviderChain
-            chain={tierStatus.provider_chain}
-            servedBy={tierStatus.served_by ?? ""}
-            degraded={tierStatus.degraded}
-          />
-        ) : null}
-        <Tier label="Orchestration" value={tierStatus.orchestration} color="var(--warn)" />
-
-        <span className="mono ml-auto text-[11px] text-[var(--ink-3)]">{evaluationId}</span>
-      </div>
 
       {audit ? (
         <div className="px-5 pb-4">
@@ -145,6 +115,58 @@ export function AuditBar({
         </div>
       ) : null}
     </GlassCard>
+  );
+}
+
+
+/**
+ * Which tier answered, and the evaluation id.
+ *
+ * Provenance, not verdict. It sits under the case note at the foot of the
+ * consultation, where a reader goes when they want to know how the answer was
+ * produced rather than what it was.
+ */
+export function TierStrip({
+  tierStatus,
+  evaluationId,
+}: {
+  tierStatus: TierStatus;
+  evaluationId: string;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+      <span className="flex items-center gap-2">
+        <span className="relative flex h-2.5 w-2.5 items-center justify-center">
+          <span
+            className="breathe absolute inset-0 rounded-full"
+            style={{
+              background: tierStatus.degraded ? "var(--warn)" : "var(--ok)",
+              opacity: 0.5,
+            }}
+          />
+          <Radio
+            size={11}
+            className="relative"
+            style={{ color: tierStatus.degraded ? "var(--warn)" : "var(--ok)" }}
+          />
+        </span>
+        <Label className="!text-[11px]">Live</Label>
+      </span>
+
+      <Tier label="Deterministic" value={tierStatus.deterministic} color="var(--ok)" />
+      <Tier label="Retrieval" value={tierStatus.retrieval} color="var(--info)" />
+      <Tier label="Reasoning" value={tierStatus.reasoning} color="var(--accent)" />
+      {tierStatus.provider_chain && tierStatus.provider_chain.length > 1 ? (
+        <ProviderChain
+          chain={tierStatus.provider_chain}
+          servedBy={tierStatus.served_by ?? ""}
+          degraded={tierStatus.degraded}
+        />
+      ) : null}
+      <Tier label="Orchestration" value={tierStatus.orchestration} color="var(--warn)" />
+
+      <span className="mono ml-auto text-[11px] text-[var(--ink-3)]">{evaluationId}</span>
+    </div>
   );
 }
 
