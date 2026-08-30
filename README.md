@@ -31,6 +31,8 @@
 
 </div>
 
+![HAVEN — the front door](docs/images/landing.jpeg)
+
 ---
 
 ## Why HAVEN?
@@ -141,6 +143,24 @@ well-formed, correctly cited recommendation. Neither can ever *create* one.
 
 > **In one line:** the AI decides what to *say*; the deterministic layer decides
 > what is *true*, what is *allowed*, and what an operator is actually shown.
+
+### All of that, on one screen
+
+![The deterministic evidence behind a recommendation](docs/images/console-reasoning.jpeg)
+
+Everything above is deterministic. **0.69** alertness against the **0.70**
+execution threshold; NASA-TLX workload, hours awake and body-clock state; the
+forward projection to **0.76** that clears the line — and it says in plain words
+that this is *"a projection under the Three-Process Model, not a measurement."*
+
+**ROSTER HOLDS** is the schedule-impact screen: six operators checked, Alvarez
+`STEPS BACK`, Petrova `COVERS`, and the safety-critical roles still `STAFFED`.
+Had no one qualified been available, that screen would have blocked the
+recommendation outright.
+
+The model's contribution is the prose. The footer is the point:
+**"HAVEN never acts on this itself. Record what the operator decided."** —
+Approve or Override, with the reason logged into the audit trail.
 
 ---
 
@@ -253,6 +273,27 @@ exists because that number is never going to be 100%.
 
 *Model accuracy* is what the provider proposed. *System accuracy* is what HAVEN
 did, after VERIFY disposed of that proposal. The second is the requirement.
+
+---
+
+## The operator console
+
+The console is a consultation, not a dashboard. It asks one question and answers
+it at the size of the claim; everything needed to *believe* the answer follows
+underneath, in the order a person would ask for it.
+
+![The console answering a question about a reboost burn](docs/images/console-answer.jpeg)
+
+This is `burn_fatigue`. The question is **"Is Alvarez fit to fly this burn?"** and
+the answer is **"Not alone."** — a cited second-operator verification under
+`OPS-FATIGUE-04 §4.2`, with the governing rule named beside the risk band.
+
+The dial on the right is the operator's day: predicted alertness against the
+execution threshold, the circadian low, and scheduled sleep, with the flagged
+task at 12:40Z sitting on it. Alvarez is the only operator HAVEN raised in this
+window — the rest of the crew is listed with their readiness so a reader can see
+what *wasn't* flagged, which is how the system distinguishes a quiet result from
+a broken one.
 
 ---
 
@@ -734,6 +775,30 @@ digest catches a field edited in place with a stale hash; it cannot catch an
 entry rewritten and re-digested, because anyone can recompute an unkeyed digest.
 The signing key is generated on first use, so a fresh clone with no configuration
 simply works.
+
+#### What one evaluation leaves behind
+
+![Audit trail — the deterministic and retrieval steps](docs/images/audit-trail-1.jpeg)
+
+![Audit trail — the reasoning steps and the schedule screen](docs/images/audit-trail-2.jpeg)
+
+Nine steps, each sealed to the last, with the provider and model recorded at the
+top and **`chain verified`** in the corner. Every step carries its tier, so the
+division of labour is legible from the record alone:
+
+| Step | Tier | What it did |
+|---|---|---|
+| TRIGGER · CONFIDENCE | `deterministic` | Scored Alvarez, judged the input sufficient |
+| RETRIEVE | `retrieval` | BM25 over the corpus — **top-4 including topical near-misses** |
+| ADMISSIBILITY | `deterministic` | Checked all 4 candidates **independently of the reasoning tier** |
+| SELECT | `reasoning` | *"Model read 4 passages as prose and proposed P-FAT-4.2"* |
+| VERIFY | `deterministic` | *"Checker confirmed every compiled precondition; the model's selection stands"* |
+| FUSE · GENERATE | `reasoning` | Wrote the justification and the cited recommendation |
+| SCHEDULE_IMPACT | `deterministic` | Confirmed Petrova covers and safety-critical roles stay staffed |
+
+Read steps 4, 5 and 6 in order and the whole architecture is visible in the
+record: the checker forms its verdict **before** the model speaks, the model
+proposes from prose alone, and the checker then disposes of that proposal.
 
 ---
 
