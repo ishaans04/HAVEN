@@ -952,6 +952,12 @@ this build. Named rather than half-built.
 
 ---
 
+## AI Assistance
+
+Portions of the README were developed and refined with assistance from Claude (Anthropic). All content was reviewed and verified against the project's implementation.
+
+---
+
 ## License
 
 Licensed under the **Apache License, Version 2.0** — see [`LICENSE`](LICENSE).
